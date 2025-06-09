@@ -23,6 +23,11 @@ class Project(models.Model):
 
     members = models.ManyToManyField(Employee, through='ProjectMember', related_name='projects')
 
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=['name', 'description'], name='unique_project_name_description')
+        ]
+
     def __str__(self):
         return self.name
 
@@ -57,7 +62,6 @@ class Task(models.Model):
     description = models.TextField(blank=True)
     labels = models.ManyToManyField('Label', blank=True, related_name='tasks')
     comments = GenericRelation('Comment', related_query_name='task_comments')
-    assigned_to = models.ForeignKey(Employee, on_delete=models.SET_NULL, null=True, blank=True, related_name='assigned_tasks')
     created_by = models.ForeignKey(Employee, on_delete=models.SET_NULL, null=True, blank=True, related_name='created_tasks')
     due_date = models.DateField(null=True, blank=True)
     status = models.CharField(max_length=20, choices=TaskStatus.choices, default=TaskStatus.TODO)
@@ -65,6 +69,11 @@ class Task(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     priority = models.CharField(max_length=20, choices=Priority.choices, default=Priority.MEDIUM)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=['title', 'project'], name='unique_task_title_per_project')
+        ]
 
     def __str__(self):
         return self.title
@@ -77,25 +86,23 @@ class Subtask(models.Model):
     labels = models.ManyToManyField('Label', blank=True, related_name='subtasks')
     comments = GenericRelation('Comment', related_query_name='subtask_comments')
     due_date = models.DateField(null=True, blank=True)
-    assigned_to = models.ForeignKey(Employee, null=True, blank=True, on_delete=models.SET_NULL)
+    assigned_to = models.ForeignKey(Employee, null=True, blank=True, on_delete=models.SET_NULL, related_name='subtasks')
+    estimated_hours = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
     status = models.CharField(max_length=20, choices=TaskStatus.choices)
     priority = models.CharField(max_length=20, choices=Priority.choices, default=Priority.MEDIUM)
     created_by = models.ForeignKey(Employee, on_delete=models.SET_NULL, null=True, blank=True, related_name='created_subtasks')
     created_at = models.DateTimeField(auto_now_add=True)
 
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=['task', 'title', 'description'],
+                name='unique_subtask_per_task'
+            )
+        ]
+
     def __str__(self):
         return self.title
-
-
-class TaskAssignmentAudit(models.Model):
-    task = models.ForeignKey(Task, on_delete=models.CASCADE, related_name='assignment_audits')
-    previous_assignee = models.ForeignKey(Employee, null=True, blank=True, on_delete=models.SET_NULL, related_name='previous_tasks')
-    new_assignee = models.ForeignKey(Employee, null=True, blank=True, on_delete=models.SET_NULL, related_name='new_tasks')
-    changed_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True)
-    timestamp = models.DateTimeField(auto_now_add=True)
-
-    def __str__(self):
-        return f"Task {self.task_id} reassigned by {self.changed_by}"
 
 
 class SubtaskAssignmentAudit(models.Model):
