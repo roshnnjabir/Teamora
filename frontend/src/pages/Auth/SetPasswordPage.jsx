@@ -31,7 +31,7 @@ export default function SetPasswordPage() {
     try {
       setSubmitting(true);
       await apiClient.post("/api/set-password/", {
-        uid,
+        uidb64: uid,
         token,
         new_password: newPassword,
       });

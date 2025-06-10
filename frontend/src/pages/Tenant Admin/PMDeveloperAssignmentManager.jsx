@@ -1,17 +1,24 @@
 import { useEffect, useState } from "react";
 import apiClient from "../../contexts/apiClient";
+import ConfirmToast from "../../components/Modals/ConfirmToast";
 import {
   DragDropContext,
   Droppable,
   Draggable,
 } from "@hello-pangea/dnd";
 
-const PMDeveloperAssignmentManager = ({ onAssignmentChange, refreshTrigger }) => {
+const PMDeveloperAssignmentManager = ({ 
+  onAssignmentChange,
+  refreshTrigger,
+  onBlocked,
+  onSuccessMessage,
+  }) => {
   const [columns, setColumns] = useState({});
   const [columnOrder, setColumnOrder] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [pendingReassignment, setPendingReassignment] = useState(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -60,6 +67,59 @@ const PMDeveloperAssignmentManager = ({ onAssignmentChange, refreshTrigger }) =>
     fetchData();
   }, [success, refreshTrigger]);
 
+  const confirmReassignment = async () => {
+    const { developer, devId, fromCol, toCol, destinationIndex } = pendingReassignment;
+    const managerId = parseInt(toCol.id);
+  
+    const updatedSource = fromCol.developers.filter((d) => d.id !== devId);
+    const updatedDest = [...toCol.developers];
+    updatedDest.splice(destinationIndex, 0, developer);
+  
+    setColumns((prev) => ({
+      ...prev,
+      [fromCol.id]: { ...fromCol, developers: updatedSource },
+      [toCol.id]: { ...toCol, developers: updatedDest },
+    }));
+  
+    try {
+      await apiClient.post("/api/pm-assignments/", {
+        manager: managerId === 0 ? null : managerId,
+        developer: devId,
+      });
+    
+      setSuccess("Developer reassigned.");
+      setError("");
+      onAssignmentChange?.();
+    } catch (err) {
+      console.error(err);
+      setSuccess("");
+      // Rollback the UI
+      setColumns((prev) => ({
+        ...prev,
+        [fromCol.id]: { ...fromCol, developers: [...fromCol.developers] },
+        [toCol.id]: {
+          ...toCol,
+          developers: toCol.developers.filter((d) => d.id !== devId),
+        },
+      }));
+    
+      const res = err?.response;
+    
+      // Handle blocked subtasks case
+      if (
+        res &&
+        res.status === 400 &&
+        res.data?.detail?.includes("Developer still has active subtasks")
+      ) {
+        onBlocked?.(res.data.blocking_subtasks || [], devId);
+      } else {
+        setError("Failed to reassign developer.");
+      }
+    } finally {
+      setPendingReassignment(null);
+    }
+  };
+
   useEffect(() => {
     if (success) {
       const timer = setTimeout(() => setSuccess(""), 1000);
@@ -67,47 +127,22 @@ const PMDeveloperAssignmentManager = ({ onAssignmentChange, refreshTrigger }) =>
     }
   }, [success]);
 
-  const handleDragEnd = async (result) => {
-    const { source, destination, draggableId } = result;
-    
-    if (!destination || source.droppableId === destination.droppableId) return;
-    
+  const handleDragEnd = ({ source, destination, draggableId }) => {
+    if (!destination || destination.droppableId === source.droppableId) return;
+
     const sourceCol = columns[source.droppableId];
     const destCol = columns[destination.droppableId];
-    const dev = sourceCol.developers.find((d) => d.id.toString() === draggableId);
-    
-    const newSourceDevs = [...sourceCol.developers];
-    newSourceDevs.splice(source.index, 1);
-    const newDestDevs = [...destCol.developers];
-    newDestDevs.splice(destination.index, 0, dev);
-    
-    const newCols = {
-      ...columns,
-      [source.droppableId]: { ...sourceCol, developers: newSourceDevs },
-      [destination.droppableId]: { ...destCol, developers: newDestDevs },
-    };
-  
-    setColumns(newCols);
-  
-    try {
-      const managerId = Number(destination.droppableId);
-    
-      await apiClient.post("/api/pm-assignments/", {
-        manager: managerId === 0 ? null : managerId,
-        developer: Number(draggableId),
-      });
-    
-      setSuccess("Developer reassigned.");
-      setError("");
-    
-      if (typeof onAssignmentChange === "function") {
-        onAssignmentChange();
-      }
-    } catch (err) {
-      console.error(err);
-      setError("Failed to reassign developer.");
-      setSuccess("");
-    }
+    const devId = parseInt(draggableId);
+    const developer = sourceCol.developers.find((d) => d.id === devId);
+    if (!developer) return;
+
+    setPendingReassignment({
+      developer,
+      devId,
+      fromCol: sourceCol,
+      toCol: destCol,
+      destinationIndex: destination.index,
+    });
   };
 
 
@@ -164,6 +199,16 @@ const PMDeveloperAssignmentManager = ({ onAssignmentChange, refreshTrigger }) =>
           })}
         </div>
       </DragDropContext>
+
+      {pendingReassignment && (
+        <ConfirmToast
+          message={`Are you sure you want to reassign ${
+            pendingReassignment.developer?.full_name || "this developer"
+          } from "${pendingReassignment.fromCol?.title || "Unknown"}" to "${pendingReassignment.toCol?.title || "Unknown"}"?`}
+          onConfirm={confirmReassignment}
+          onCancel={() => setPendingReassignment(null)}
+        />
+      )}
     </div>
   );
 };

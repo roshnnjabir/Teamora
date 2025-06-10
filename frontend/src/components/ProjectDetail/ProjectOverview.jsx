@@ -1,46 +1,64 @@
-// components/ProjectOverview.jsx
 import InlineEditField from "./InlineEditField";
 import { getPriorityColor } from "../../utils/projectUtils";
 
-const ProjectOverview = ({ project, onFieldUpdate }) => {
+const ProjectOverview = ({ project = {}, isProjectActive = false, onFieldUpdate }) => {
+  const {
+    start_date = "",
+    end_date = "",
+    status = "planning",
+    priority = "medium",
+  } = project;
+
+  const handleSave = (field) => (val) => {
+    if (!isProjectActive) return; // Prevent save action
+    onFieldUpdate(field, val);
+  };
+
   return (
-    <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+    <section
+      className={`grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 rounded-xl transition-opacity ${
+        isProjectActive ? "opacity-100" : "opacity-60 pointer-events-none"
+      }`}
+    >
       <InlineEditField
         name="start_date"
         label="Start Date"
-        value={project.start_date}
+        value={start_date}
         type="date"
-        onSave={(val) => onFieldUpdate("start_date", val)}
         icon="📅"
+        onSave={handleSave("start_date")}
       />
+
       <InlineEditField
         name="end_date"
         label="End Date"
-        value={project.end_date || ""}
+        value={end_date}
         type="date"
-        onSave={(val) => onFieldUpdate("end_date", val)}
         icon="🏁"
+        onSave={handleSave("end_date")}
       />
+
       <InlineEditField
         name="status"
         label="Status"
-        value={project.status}
+        value={status}
         type="select"
         options={["planning", "in_progress", "completed", "on_hold"]}
-        onSave={(val) => onFieldUpdate("status", val)}
         icon="📊"
+        onSave={handleSave("status")}
       />
+
       <InlineEditField
         name="priority"
         label="Priority"
-        value={project.priority}
+        value={priority}
         type="select"
         options={["low", "medium", "high"]}
-        onSave={(val) => onFieldUpdate("priority", val)}
         icon="🔥"
-        valueClassName={getPriorityColor(project.priority)}
+        valueClassName={getPriorityColor(priority)}
+        onSave={handleSave("priority")}
       />
-    </div>
+    </section>
   );
 };
 

@@ -32,7 +32,7 @@ const InlineEditField = ({
 
       try {
         const result = await onSave(tempValue);
-        if (result && result[name]) {
+        if (result && typeof result === "object" && Object.keys(result).length > 0) {
           setErrors(result);
           return;
         }

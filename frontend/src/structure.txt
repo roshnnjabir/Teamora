@@ -1,0 +1,125 @@
+Folder PATH listing
+Volume serial number is 60AC-7DFE
+C:.
+|   App.jsx
+|   main.jsx
+|   structure.txt
+|   
++---api
+|       apiClient.jsx
+|       
++---assets
+|   |   react.svg
+|   |   signup.jpeg
+|   |   
+|   \---teamora
+|           broerp.png
+|           broerp1.png
+|           team.png
+|           teamora.png
+|           teamora_logo.png
+|           
++---components
+|   +---Forms
+|   \---Layout
++---constants
++---domains
+|   +---auth
+|   |   +---features
+|   |   |       authSlice.jsx
+|   |   |       authThunks.jsx
+|   |   |       
+|   |   \---pages
+|   |           LoginForm.jsx
+|   |           SetPasswordPage.jsx
+|   |           TenantSignup.jsx
+|   |           
+|   +---general
+|   |   +---components
+|   |   |   \---landingPage
+|   |   |           CTASection.jsx
+|   |   |           EarlyAdopterSection.jsx
+|   |   |           FeaturesSection.jsx
+|   |   |           Footer.jsx
+|   |   |           HeroSection.jsx
+|   |   |           Navigation.jsx
+|   |   |           RoadmapSection.jsx
+|   |   |           SocialProofSection.jsx
+|   |   |           
+|   |   \---pages
+|   |           LandingPage.jsx
+|   |           NotFound.jsx
+|   |           
+|   +---hr
+|   |   \---admin
+|   |       \---pages
+|   |               Dashboard.jsx
+|   |               
+|   +---project
+|   |   +---developer
+|   |   |   \---pages
+|   |   |           Dashboard.jsx
+|   |   |           
+|   |   +---manager
+|   |   |   +---modals
+|   |   |   |       CreateProjectModal.jsx
+|   |   |   |       CreateTaskModal.jsx
+|   |   |   |       EditProjectModal.jsx
+|   |   |   |       ManageMembersModal.jsx
+|   |   |   |       
+|   |   |   \---pages
+|   |   |           Dashboard.jsx
+|   |   |           ProjectDetail.jsx
+|   |   |           
+|   |   \---shared
+|   |       \---components
+|   |               ComingSoonSection.jsx
+|   |               DeleteZone.jsx
+|   |               InlineEditField.jsx
+|   |               LoadingState.jsx
+|   |               NotFoundState.jsx
+|   |               ProjectHeader.jsx
+|   |               ProjectOverview.jsx
+|   |               ScrollContainer.jsx
+|   |               TaskAssignmentSection.jsx
+|   |               TaskCard.jsx
+|   |               TaskColumn.jsx
+|   |               TeamMembersSection.jsx
+|   |               
+|   +---superAdmin
+|   |   \---pages
+|   |           Dashboard.jsx
+|   |           
+|   \---tenantAdmin
+|       \---pages
+|               Dashboard.jsx
+|               EmployeeFormModal.jsx
+|               PMDeveloperAssignmentManager.jsx
+|               
++---layouts
+|       AppLayout.jsx
+|       
++---routes
+|       AppRoutes.jsx
+|       AuthRoutes.jsx
+|       HRRoutes.jsx
+|       ProjectRoutes.jsx
+|       
++---store
+|       index.js
+|       
++---styles
+|       formClasses.jsx
+|       global.css
+|       
++---utils
+|       constants.jsx
+|       domainUtils.jsx
+|       projectUtils.jsx
+|       
+\---wrappers
+        ConditionalLandingPage.jsx
+        DomainWrapper.jsx
+        ProtectedRoute.jsx
+        UnprotectedRoute.jsx
+        

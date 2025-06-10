@@ -7,6 +7,7 @@ import SuperAdminDashboard from '../pages/Super Admin/SuperAdminDashboard';
 import HrDashboard from "../pages/HR/HrDashboard";
 import ProjectManagerDashboard from "../pages/Project Manager/ProjectManagerDashboard";
 import ProjectManagerProjectDetail from '../pages/Project Manager/ProjectDetail';
+import TenantAdminProjectDetail from '../pages/Tenant Admin/TenantAdminProjectDetail';
 import ProtectedRoute from '../wrappers/ProtectedRoute';
 import UnprotectedRoute from '../wrappers/UnprotectedRoute';
 import ConditionalLanding from '../wrappers/ConditionalLandingPage';
@@ -14,6 +15,8 @@ import DeveloperDashboard from '../pages/Developer/DeveloperDashboard';
 import NotFound from '../pages/OtherPages/NotFound';
 import AppLayout from '../layouts/AppLayout';
 import DomainWrapper from '../wrappers/DomainWrapper';
+import TaskDetailPage from '../components/ProjectDetail/TaskDetailPage';
+import SubtaskDetailPage from '../components/ProjectDetail/SubtaskDetailPage';
 
 const AppRoutes = () => (
   <Routes>
@@ -66,6 +69,16 @@ const AppRoutes = () => (
           <ProjectManagerProjectDetail />
         </ProtectedRoute>
       } />
+
+      <Route path="tenant_admin/projects/:projectId" element={
+        <ProtectedRoute allowedRoles={["Tenant Admin", "tenant_admin"]}>
+          <TenantAdminProjectDetail />
+        </ProtectedRoute>
+      } />
+      
+      <Route path="project_manager/tasks/:taskId" element={<TaskDetailPage />} />
+
+      <Route path="project_manager/tasks/:taskId/subtasks/:subtaskId" element={<SubtaskDetailPage />} />
 
       <Route path="developer" element={
         <ProtectedRoute allowedRoles={["Developer", "developer"]}>

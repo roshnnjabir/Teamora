@@ -1,13 +1,17 @@
 import { useState } from "react";
 import apiClient from "../../contexts/apiClient";
 
-const CreateProjectModal = ({ onClose, onSuccess }) => {
+const CreateProjectModal = ({ onClose, onSuccess, currentUser, allProjectManagers = [] }) => {
+  const isTenantAdmin = currentUser?.role === "tenant_admin";
+  const isProjectManager = currentUser?.role === "project_manager";
+
   const [formData, setFormData] = useState({
     name: "",
     description: "",
     start_date: "",
     end_date: "",
     priority: "medium",
+    assigned_pm: isProjectManager ? currentUser.id : "",
   });
 
   const [errors, setErrors] = useState({});
@@ -16,30 +20,29 @@ const CreateProjectModal = ({ onClose, onSuccess }) => {
   const validateForm = () => {
     const newErrors = {};
 
-    if (!formData.name.trim()) {
-      newErrors.name = ["Project name is required."];
-    }
+    if (!formData.name.trim()) newErrors.name = ["Project name is required."];
 
-    if (formData.description && formData.description.trim().length < 10) {
+    if (formData.description && formData.description.trim().length < 10)
       newErrors.description = ["Description must be at least 10 characters."];
-    }
 
     const today = new Date().toISOString().split("T")[0];
 
-    if (formData.start_date && formData.start_date < today) {
+    if (formData.start_date && formData.start_date < today)
       newErrors.start_date = ["Start date cannot be in the past."];
-    }
 
-    if (formData.start_date && formData.end_date && formData.end_date < formData.start_date) {
+    if (formData.start_date && formData.end_date && formData.end_date < formData.start_date)
       newErrors.end_date = ["End date cannot be before start date."];
-    }
+
+    if (isTenantAdmin && !formData.assigned_pm)
+      newErrors.assigned_pm = ["Project manager is required."];
 
     return newErrors;
   };
 
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-    setErrors({ ...errors, [e.target.name]: null });
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+    setErrors(prev => ({ ...prev, [name]: null }));
   };
 
   const handleSubmit = async (e) => {
@@ -56,11 +59,11 @@ const CreateProjectModal = ({ onClose, onSuccess }) => {
 
     try {
       await apiClient.post("/api/projects/", formData);
-      if (onSuccess) onSuccess();
+      onSuccess?.();
       onClose();
     } catch (error) {
       const response = error?.response?.data;
-      setErrors(response || { non_field_errors: "Something went wrong." });
+      setErrors(response || { non_field_errors: ["Something went wrong."] });
     } finally {
       setIsSubmitting(false);
     }
@@ -78,7 +81,6 @@ const CreateProjectModal = ({ onClose, onSuccess }) => {
             <input
               type="text"
               name="name"
-              required
               value={formData.name}
               onChange={handleChange}
               className={`mt-1 w-full px-3 py-2 border-2 rounded-lg ${
@@ -99,12 +101,10 @@ const CreateProjectModal = ({ onClose, onSuccess }) => {
                 errors.description ? "border-red-500" : "border-gray-200"
               } focus:outline-none focus:ring-2 focus:ring-blue-400`}
             />
-            {errors.description && (
-              <p className="text-red-500 text-sm mt-1">{errors.description[0]}</p>
-            )}
+            {errors.description && <p className="text-red-500 text-sm mt-1">{errors.description[0]}</p>}
           </div>
 
-          {/* Dates */}
+          {/* Start/End Dates */}
           <div className="flex gap-4">
             <div className="flex-1">
               <label className="block text-sm font-medium text-gray-700">Start Date</label>
@@ -117,9 +117,7 @@ const CreateProjectModal = ({ onClose, onSuccess }) => {
                   errors.start_date ? "border-red-500" : "border-gray-200"
                 } focus:outline-none focus:ring-2 focus:ring-blue-400`}
               />
-              {errors.start_date && (
-                <p className="text-red-500 text-sm mt-1">{errors.start_date[0]}</p>
-              )}
+              {errors.start_date && <p className="text-red-500 text-sm mt-1">{errors.start_date[0]}</p>}
             </div>
 
             <div className="flex-1">
@@ -133,9 +131,7 @@ const CreateProjectModal = ({ onClose, onSuccess }) => {
                   errors.end_date ? "border-red-500" : "border-gray-200"
                 } focus:outline-none focus:ring-2 focus:ring-blue-400`}
               />
-              {errors.end_date && (
-                <p className="text-red-500 text-sm mt-1">{errors.end_date[0]}</p>
-              )}
+              {errors.end_date && <p className="text-red-500 text-sm mt-1">{errors.end_date[0]}</p>}
             </div>
           </div>
 
@@ -157,6 +153,32 @@ const CreateProjectModal = ({ onClose, onSuccess }) => {
             )}
           </div>
 
+          {/* Assigned PM */}
+          {isTenantAdmin && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Assign Project Manager</label>
+              <select
+                name="assigned_pm"
+                value={formData.assigned_pm}
+                onChange={handleChange}
+                className={`mt-1 w-full px-3 py-2 border-2 rounded-lg ${
+                  errors.assigned_pm ? "border-red-500" : "border-gray-200"
+                } focus:outline-none focus:ring-2 focus:ring-blue-400`}
+              >
+                <option value="">-- Select a PM --</option>
+                {allProjectManagers.map(pm => (
+                  <option key={pm.id} value={pm.id}>
+                    {pm.full_name}
+                  </option>
+                ))}
+              </select>
+              {errors.assigned_pm && (
+                <p className="text-red-500 text-sm mt-1">{errors.assigned_pm[0]}</p>
+              )}
+            </div>
+          )}
+
+          {/* Global errors */}
           {errors.non_field_errors && (
             <div className="mt-3 mb-4 text-sm text-red-600">
               {errors.non_field_errors.map((err, i) => (
@@ -165,7 +187,7 @@ const CreateProjectModal = ({ onClose, onSuccess }) => {
             </div>
           )}
 
-          {/* Buttons */}
+          {/* Actions */}
           <div className="flex justify-end gap-3 pt-4">
             <button
               type="button"

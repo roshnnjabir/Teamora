@@ -5,9 +5,14 @@ import { format } from "date-fns";
 import apiClient from "../../contexts/apiClient";
 import PMDeveloperAssignmentManager from "./PMDeveloperAssignmentManager";
 import EmployeeFormModal from "./EmployeeFormModal";
+import CreateProjectModal from "./CreateProjectModal";
+import SubtaskBlockToast from "../../components/Modals/SubTaskBlockToast";
+import { useNavigate } from "react-router-dom";
+
 
 const TenantAdminDashboard = () => {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const [refreshAssignments, setRefreshAssignments] = useState(false);
   const [employees, setEmployees] = useState([]);
   const [auditLogs, setAuditLogs] = useState([]);
@@ -22,6 +27,16 @@ const TenantAdminDashboard = () => {
   const [notification, setNotification] = useState({ message: "", type: "" });
   const [limit, setLimit] = useState(10);
 
+  const [projects, setProjects] = useState([]);
+  const [loadingProjects, setLoadingProjects] = useState(true);
+  const [projectError, setProjectError] = useState("");
+  const [showCreateModal, setShowCreateModal] = useState(false);
+
+  const [showBlockToast, setShowBlockToast] = useState(false);
+  const [blockingSubtasks, setBlockingSubtasks] = useState([]);
+  const [blockedDeveloperId, setBlockedDeveloperId] = useState(null);
+  const [success, setSuccess] = useState("");
+
   const handleLogout = () => dispatch(logoutUser());
 
   const showNotification = (message, type = "success") => {
@@ -32,6 +47,16 @@ const TenantAdminDashboard = () => {
     }, 3000); // Hide after 3 seconds
   };
 
+  const fetchProjects = async () => {
+    try {
+      const res = await apiClient.get("/api/projects/");
+      setProjects(res.data.results || res.data);
+    } catch (err) {
+      setProjectError("Failed to fetch projects.");
+    } finally {
+      setLoadingProjects(false);
+    }
+  };
 
   const fetchEmployees = async () => {
     try {
@@ -129,6 +154,7 @@ const TenantAdminDashboard = () => {
   useEffect(() => {
     fetchEmployees();
     fetchAuditLogs();
+    fetchProjects();
   }, [limit]);
 
 
@@ -165,6 +191,12 @@ const TenantAdminDashboard = () => {
             {notification.message}
           </div>
         )}
+        {success && (
+          <div className="mb-4 p-4 rounded bg-green-100 text-green-800">
+            {success}
+          </div>
+        )}
+
 
         <section>
           <div className="flex justify-between items-center mb-4">
@@ -238,6 +270,68 @@ const TenantAdminDashboard = () => {
           )}
         </section>
 
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-2xl font-semibold">All Projects</h2>
+            {employees.filter(emp => emp.role === 'project_manager').length > 0 ? (
+              <button
+                onClick={() => setShowCreateModal(true)}
+                className="bg-[#00C4B4] text-white px-4 py-2 rounded hover:bg-teal-600"
+              >
+                + Create Project
+              </button>
+            ) : (
+              <button
+                disabled
+                className="bg-gray-300 text-gray-500 px-4 py-2 rounded cursor-not-allowed"
+                title="You must have at least one Project Manager to create a project"
+              >
+                + Create Project
+              </button>
+            )}
+        </div>
+        {loadingProjects ? (
+          <p>Loading projects...</p>
+        ) : projectError ? (
+          <p className="text-red-600">{projectError}</p>
+        ) : projects.length === 0 ? (
+          <p>No projects found.</p>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {projects.map((project) => (
+              <div
+                key={project.id}
+                onClick={() => navigate(`/tenant_admin/projects/${project.id}`)}
+                className="bg-white p-4 rounded shadow border border-[#E5E8EC] hover:bg-[#F3F4F6] cursor-pointer transition"
+              >
+                <div className="flex justify-between items-center mb-2">
+                  <h3 className="text-lg font-bold">{project.name}</h3>
+                  <span className="text-sm px-2 py-1 rounded-full bg-blue-100 text-blue-600 capitalize">
+                    {project.status || "planning"}
+                  </span>
+                </div>
+                <p className="text-sm text-gray-600 mb-4">
+                  {project.description?.slice(0, 100)}...
+                </p>
+                <p className="text-sm text-gray-500">
+                  📅 {project.start_date} - {project.end_date || "N/A"}
+                </p>
+                <p className="text-sm mt-1">
+                  🔥 Priority: <strong>{project.priority || "medium"}</strong>
+                </p>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {showCreateModal && (
+          <CreateProjectModal
+            onClose={() => setShowCreateModal(false)}
+            onSuccess={fetchProjects}
+            currentUser={{ role: "tenant_admin" }} // or from auth
+            allProjectManagers={employees.filter(emp => emp.role === 'project_manager')}
+          />
+        )}
+
         {showModal && (
           <EmployeeFormModal
             onClose={() => {
@@ -252,8 +346,16 @@ const TenantAdminDashboard = () => {
           />
         )}
 
-
-        <PMDeveloperAssignmentManager onAssignmentChange={fetchAuditLogs} refreshTrigger={refreshAssignments}/>
+        <PMDeveloperAssignmentManager
+          onAssignmentChange={fetchAuditLogs}
+          refreshTrigger={refreshAssignments}
+          onBlocked={(subtasks, devId) => {
+            setBlockingSubtasks(subtasks);
+            setBlockedDeveloperId(devId);
+            setShowBlockToast(true);
+          }}
+          onSuccessMessage={setSuccess}
+        />
 
         <section className="mb-6">
           <h3 className="text-lg font-medium mb-2">Filter Logs</h3>
@@ -345,6 +447,17 @@ const TenantAdminDashboard = () => {
           )}
         </section>
       </main>
+      {showBlockToast && (
+        <SubtaskBlockToast
+          developerId={blockedDeveloperId}
+          blockingSubtasks={blockingSubtasks}
+          onClose={() => setShowBlockToast(false)}
+          onNotified={() => {
+            setShowBlockToast(false);
+            setSuccess("Project Manager has been notified.");
+          }}
+        />
+      )}
     </div>
   );
 };

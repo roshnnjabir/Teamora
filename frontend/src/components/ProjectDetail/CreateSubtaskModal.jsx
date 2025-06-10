@@ -1,43 +1,37 @@
 import { useState, useEffect } from "react";
 import apiClient from "../../contexts/apiClient";
+import { PRIORITIES, TASK_STATUSES } from "../../utils/constants";
 
-const priorities = ["low", "medium", "high"];
 
-const CreateTaskModal = ({ projectId, onClose, onTaskCreated }) => {
-  const [labels, setLabels] = useState([]);
-  const [selectedLabels, setSelectedLabels] = useState([]);
+const CreateSubtaskModal = ({ taskId, projectId, onClose, onCreated }) => {
+  const [developers, setDevelopers] = useState([]);
   const [formData, setFormData] = useState({
     title: "",
     description: "",
-    priority: "medium",
     due_date: "",
+    status: "todo",
+    priority: "medium",
+    assigned_to: "",
   });
-
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
-    const fetchLabels = async () => {
+    const fetchDevelopers = async () => {
       try {
-        const res = await apiClient.get("/api/labels/");
-        setLabels(res.data.results || []);
+        const res = await apiClient.get(`/api/my-developers/?project_id=${projectId}`);
+        setDevelopers(res.data);
       } catch (err) {
-        console.error("Failed to load labels", err);
+        console.error("Failed to load developers", err);
       }
     };
 
-    fetchLabels();
-  }, []);
+    fetchDevelopers();
+  }, [projectId]);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
-    setErrors((prev) => ({ ...prev, [e.target.name]: null }));
-  };
-
-  const toggleLabel = (id) => {
-    setSelectedLabels((prev) =>
-      prev.includes(id) ? prev.filter((l) => l !== id) : [...prev, id]
-    );
+    setErrors({ ...errors, [e.target.name]: null });
   };
 
   const handleSubmit = async (e) => {
@@ -45,28 +39,15 @@ const CreateTaskModal = ({ projectId, onClose, onTaskCreated }) => {
     setIsSubmitting(true);
     setErrors({});
 
-    // Client-side validation for missing projectId
-    if (!projectId) {
-      setErrors({ general: "Project ID is missing." });
-      setIsSubmitting(false);
-      return;
-    }
-
     try {
       const payload = {
         ...formData,
-        project: projectId,
-        assigned_to: null,
+        task: taskId,
         due_date: formData.due_date || null,
-        label_ids: selectedLabels,
       };
 
-      const res = await apiClient.post("/api/tasks/", payload);
-
-      if (onTaskCreated) {
-        onTaskCreated(res.data); // not .results
-      }
-
+      await apiClient.post("/api/subtasks/", payload);
+      onCreated?.();
       onClose();
     } catch (error) {
       const response = error?.response?.data;
@@ -79,6 +60,7 @@ const CreateTaskModal = ({ projectId, onClose, onTaskCreated }) => {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
       <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-lg mx-4 relative">
+        {/* Close Icon */}
         <button
           onClick={onClose}
           className="absolute top-3 right-3 text-gray-500 hover:text-red-500 text-xl"
@@ -86,7 +68,7 @@ const CreateTaskModal = ({ projectId, onClose, onTaskCreated }) => {
           ×
         </button>
 
-        <h2 className="text-xl font-semibold text-[#2F3A4C] mb-4">Create New Task</h2>
+        <h2 className="text-xl font-semibold text-[#2F3A4C] mb-4">Create Subtask</h2>
 
         {errors.general && (
           <p className="mb-4 text-sm text-red-600">{errors.general}</p>
@@ -95,7 +77,7 @@ const CreateTaskModal = ({ projectId, onClose, onTaskCreated }) => {
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Title */}
           <div>
-            <label className="block text-sm font-medium text-gray-700">Task Title</label>
+            <label className="block text-sm font-medium text-gray-700">Title</label>
             <input
               type="text"
               name="title"
@@ -106,11 +88,7 @@ const CreateTaskModal = ({ projectId, onClose, onTaskCreated }) => {
                 errors.title ? "border-red-500" : "border-gray-200"
               } focus:outline-none focus:ring-2 focus:ring-blue-400`}
             />
-            {errors.title && (
-              <p className="text-red-500 text-sm mt-1">
-                {Array.isArray(errors.title) ? errors.title[0] : errors.title}
-              </p>
-            )}
+            {errors.title && <p className="text-red-500 text-sm mt-1">{errors.title[0]}</p>}
           </div>
 
           {/* Description */}
@@ -129,7 +107,7 @@ const CreateTaskModal = ({ projectId, onClose, onTaskCreated }) => {
             )}
           </div>
 
-          {/* Due Date & Priority */}
+          {/* Due Date, Status, Priority */}
           <div className="flex gap-4">
             <div className="flex-1">
               <label className="block text-sm font-medium text-gray-700">Due Date</label>
@@ -156,7 +134,7 @@ const CreateTaskModal = ({ projectId, onClose, onTaskCreated }) => {
                 onChange={handleChange}
                 className="mt-1 w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
               >
-                {priorities.map((p) => (
+                {PRIORITIES.map((p) => (
                   <option key={p} value={p}>
                     {p.charAt(0).toUpperCase() + p.slice(1)}
                   </option>
@@ -165,49 +143,49 @@ const CreateTaskModal = ({ projectId, onClose, onTaskCreated }) => {
             </div>
           </div>
 
-          {/* Labels */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Labels</label>
-            {labels.length === 0 ? (
-              <p className="text-sm text-gray-500 italic">No labels available.</p>
-            ) : (
-              <div className="flex flex-wrap gap-2">
-                {labels.map((label) => (
-                  <button
-                    key={label.id}
-                    type="button"
-                    onClick={() => toggleLabel(label.id)}
-                    className={`px-3 py-1 rounded-full text-sm font-medium transition border-2 ${
-                      selectedLabels.includes(label.id)
-                        ? "text-white"
-                        : "text-gray-700"
-                    }`}
-                    style={{
-                      borderColor: label.color,
-                      backgroundColor: selectedLabels.includes(label.id)
-                        ? label.color
-                        : "#fff",
-                      color: selectedLabels.includes(label.id)
-                        ? "#fff"
-                        : label.color,
-                    }}
-                  >
-                    {label.name}
-                  </button>
+          {/* Status & Assigned To */}
+          <div className="flex gap-4">
+            <div className="flex-1">
+              <label className="block text-sm font-medium text-gray-700">Status</label>
+              <select
+                name="status"
+                value={formData.status}
+                onChange={handleChange}
+                className="mt-1 w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
+              >
+                {TASK_STATUSES.map((s) => (
+                  <option key={s} value={s}>
+                    {s.replace("_", " ").toUpperCase()}
+                  </option>
                 ))}
-              </div>
-            )}
+              </select>
+              {errors.status && (
+                <p className="text-red-500 text-sm mt-1">{errors.status[0]}</p>
+              )}
+            </div>
+
+            <div className="flex-1">
+              <label className="block text-sm font-medium text-gray-700">Assign to</label>
+              <select
+                name="assigned_to"
+                value={formData.assigned_to}
+                onChange={handleChange}
+                className="mt-1 w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
+              >
+                <option value="">-- Select Developer --</option>
+                {developers.map((dev) => (
+                  <option key={dev.id} value={dev.id}>
+                    {dev.full_name || dev.email}
+                  </option>
+                ))}
+              </select>
+              {errors.assigned_to && (
+                <p className="text-red-500 text-sm mt-1">{errors.assigned_to[0]}</p>
+              )}
+            </div>
           </div>
 
-          {errors.non_field_errors && (
-            <div className="mb-4 text-sm text-red-600">
-              {errors.non_field_errors.map((err, idx) => (
-                <p key={idx}>{err}</p>
-              ))}
-            </div>
-          )}
-
-          {/* Action Buttons */}
+          {/* Buttons */}
           <div className="flex justify-end gap-3 pt-4">
             <button
               type="button"
@@ -231,4 +209,4 @@ const CreateTaskModal = ({ projectId, onClose, onTaskCreated }) => {
   );
 };
 
-export default CreateTaskModal;
+export default CreateSubtaskModal;
