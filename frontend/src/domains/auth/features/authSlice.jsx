@@ -1,5 +1,5 @@
 import { createSlice } from '@reduxjs/toolkit';
-import apiClient from '../../contexts/apiClient';
+import apiClient from '../../../api/apiClient';
 
 const initialState = {
   user: null,   // load this after verifying the session via API

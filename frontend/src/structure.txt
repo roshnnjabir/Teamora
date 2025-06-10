@@ -21,18 +21,24 @@ C:.
 |           
 +---components
 |   +---Forms
-|   \---Layout
+|   +---Layout
+|   \---Modals
+|           ConfirmToast.jsx
+|           InfoModal.jsx
+|           SubtaskBlockToast.jsx
+|           Toast.jsx
+|           
 +---constants
++---contexts
 +---domains
 |   +---auth
-|   |   +---features
-|   |   |       authSlice.jsx
-|   |   |       authThunks.jsx
-|   |   |       
-|   |   \---pages
-|   |           LoginForm.jsx
-|   |           SetPasswordPage.jsx
-|   |           TenantSignup.jsx
+|   |   |   LoginForm.jsx
+|   |   |   SetPasswordPage.jsx
+|   |   |   TenantSignup.jsx
+|   |   |   
+|   |   \---features
+|   |           authSlice.jsx
+|   |           authThunks.jsx
 |   |           
 |   +---general
 |   |   +---components
@@ -53,12 +59,13 @@ C:.
 |   +---hr
 |   |   \---admin
 |   |       \---pages
-|   |               Dashboard.jsx
+|   |               HrDashboard.jsx
 |   |               
 |   +---project
 |   |   +---developer
 |   |   |   \---pages
-|   |   |           Dashboard.jsx
+|   |   |           DeveloperDashboard.jsx
+|   |   |           StatusUpdateModal.jsx
 |   |   |           
 |   |   +---manager
 |   |   |   +---modals
@@ -68,42 +75,59 @@ C:.
 |   |   |   |       ManageMembersModal.jsx
 |   |   |   |       
 |   |   |   \---pages
-|   |   |           Dashboard.jsx
 |   |   |           ProjectDetail.jsx
+|   |   |           ProjectManagerDashboard.jsx
 |   |   |           
 |   |   \---shared
 |   |       \---components
 |   |               ComingSoonSection.jsx
+|   |               CommentsModal.jsx
+|   |               CreateSubtaskModal.jsx
 |   |               DeleteZone.jsx
+|   |               EditTaskLabelsModal.jsx
 |   |               InlineEditField.jsx
+|   |               LabelChip.jsx
 |   |               LoadingState.jsx
 |   |               NotFoundState.jsx
 |   |               ProjectHeader.jsx
 |   |               ProjectOverview.jsx
 |   |               ScrollContainer.jsx
-|   |               TaskAssignmentSection.jsx
+|   |               SubtaskAssignmentSection.jsx
+|   |               SubtaskDetailPage.jsx
+|   |               SubtaskModal.jsx
 |   |               TaskCard.jsx
 |   |               TaskColumn.jsx
+|   |               TaskDetailPage.jsx
+|   |               TaskListSection.jsx
 |   |               TeamMembersSection.jsx
 |   |               
 |   +---superAdmin
 |   |   \---pages
-|   |           Dashboard.jsx
+|   |           SuperAdminDashboard.jsx
 |   |           
 |   \---tenantAdmin
+|       +---components
+|       |       PMDeveloperAssignmentManager.jsx
+|       |       
+|       +---modals
+|       |       CreateProjectModal.jsx
+|       |       EditProjectModal.jsx
+|       |       EmployeeFormModal.jsx
+|       |       
 |       \---pages
-|               Dashboard.jsx
-|               EmployeeFormModal.jsx
-|               PMDeveloperAssignmentManager.jsx
+|               TenantAdminDashboard.jsx
+|               TenantAdminProjectDetail.jsx
 |               
 +---layouts
 |       AppLayout.jsx
 |       
++---pages
+|   +---HR
+|   +---Project Manager
+|   +---Super Admin
+|   \---Tenant Admin
 +---routes
 |       AppRoutes.jsx
-|       AuthRoutes.jsx
-|       HRRoutes.jsx
-|       ProjectRoutes.jsx
 |       
 +---store
 |       index.js

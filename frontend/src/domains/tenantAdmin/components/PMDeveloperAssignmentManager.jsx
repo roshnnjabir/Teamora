@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import apiClient from "../../contexts/apiClient";
-import ConfirmToast from "../../components/Modals/ConfirmToast";
+import ConfirmToast from "../../../components/Modals/ConfirmToast";
 import {
   DragDropContext,
   Droppable,

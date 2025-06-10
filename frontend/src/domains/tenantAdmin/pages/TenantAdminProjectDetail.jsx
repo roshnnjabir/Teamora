@@ -1,7 +1,7 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { useEffect, useState, useCallback } from "react";
 import apiClient from "../../contexts/apiClient";
-import Toast from "../../components/modals/Toast";
+import Toast from "../../../components/modals/Toast";
 
 // Components
 import ProjectHeader from "../../components/ProjectDetail/ProjectHeader";
@@ -19,7 +19,7 @@ import ManageMembersModal from "./CreateProjectModal";
 import CreateTaskModal from "./CreateProjectModal";
 
 // Utils
-import { generateColumns } from "../../utils/projectUtils";
+import { generateColumns } from "../../../utils/projectUtils";
 
 const TenantAdminProjectDetail = () => {
   const { projectId } = useParams();

@@ -1,17 +1,17 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { useEffect, useState, useCallback } from "react";
 import apiClient from "../../contexts/apiClient";
-import Toast from "../../components/modals/Toast";
+import Toast from "../../../../components/modals/Toast";
 
 // Components
-import ProjectHeader from "../../components/ProjectDetail/ProjectHeader";
-import ProjectOverview from "../../components/ProjectDetail/ProjectOverview";
-import TeamMembersSection from "../../components/ProjectDetail/TeamMembersSection";
-import TaskListSection from "../../components/ProjectDetail/TaskListSection";
-import SubtaskAssignmentSection from "../../components/ProjectDetail/SubtaskAssignmentSection";
-import LoadingState from "../../components/ProjectDetail/LoadingState";
-import NotFoundState from "../../components/ProjectDetail/NotFoundState";
-import ComingSoonSection from "../../components/ProjectDetail/ComingSoonSection";
+import ProjectHeader from "../../../../components/ProjectDetail/ProjectHeader";
+import ProjectOverview from "../../../../components/ProjectDetail/ProjectOverview";
+import TeamMembersSection from "../../../../components/ProjectDetail/TeamMembersSection";
+import TaskListSection from "../../../../components/ProjectDetail/TaskListSection";
+import SubtaskAssignmentSection from "../../../../components/ProjectDetail/SubtaskAssignmentSection";
+import LoadingState from "../../../../components/ProjectDetail/LoadingState";
+import NotFoundState from "../../../../components/ProjectDetail/NotFoundState";
+import ComingSoonSection from "../../../../components/ProjectDetail/ComingSoonSection";
 
 // Modals
 import EditProjectModal from "./EditProjectModal";
@@ -19,7 +19,7 @@ import ManageMembersModal from "./ManageMembersModal";
 import CreateTaskModal from "./CreateTaskModal";
 
 // Utils
-import { generateColumns } from "../../utils/projectUtils";
+import { generateColumns } from "../../../../utils/projectUtils";
 
 const ProjectManagerProjectDetail = () => {
   const { projectId } = useParams();

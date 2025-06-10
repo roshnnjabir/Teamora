@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { getInputClasses } from "../../styles/formClasses";
+import { getInputClasses } from "../../../styles/formClasses";
 
 const roles = ["project_manager", "hr", "developer"];
 

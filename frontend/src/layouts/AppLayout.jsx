@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useDispatch } from 'react-redux';
-import { setUser, clearUser } from '../features/Auth/authSlice';
+import { setUser, clearUser } from '../domains/auth/features/authSlice';
 import apiClient from '../contexts/apiClient';
 import { Outlet } from 'react-router-dom';
 
