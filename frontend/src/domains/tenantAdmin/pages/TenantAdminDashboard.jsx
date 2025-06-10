@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
 import { useDispatch } from "react-redux";
-import { logoutUser } from "../../features/Auth/authThunks";
+import { logoutUser } from "../../auth/features/authThunks";
 import { format } from "date-fns";
-import apiClient from "../../contexts/apiClient";
-import PMDeveloperAssignmentManager from "./PMDeveloperAssignmentManager";
-import EmployeeFormModal from "./EmployeeFormModal";
-import CreateProjectModal from "./CreateProjectModal";
+import apiClient from "../../../api/apiClient";
+import PMDeveloperAssignmentManager from "../components/PMDeveloperAssignmentManager";
+import EmployeeFormModal from "../modals/EmployeeFormModal";
+import CreateProjectModal from "../modals/CreateProjectModal";
 import SubtaskBlockToast from "../../../components/Modals/SubTaskBlockToast";
 import { useNavigate } from "react-router-dom";
 

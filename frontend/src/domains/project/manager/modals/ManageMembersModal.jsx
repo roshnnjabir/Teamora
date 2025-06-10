@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import apiClient from "../../contexts/apiClient";
+import apiClient from "../../../../api/apiClient";
 
 const ManageMembersModal = ({ projectId, developers = [], currentMembers = [], onClose, onSuccess }) => {
   const [selectedDevIds, setSelectedDevIds] = useState([]);

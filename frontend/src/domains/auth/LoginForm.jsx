@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useDispatch } from 'react-redux';
 import { useNavigate, Link } from 'react-router-dom';
-import apiClient from '../../contexts/apiClient';
-import { setUser } from '../../features/Auth/authSlice';
+import apiClient from '../../api/apiClient';
+import { setUser } from './features/authSlice';
 import logo from '../../assets/teamora/teamora.png';
 import { getInputClasses } from '../../styles/formClasses';
 

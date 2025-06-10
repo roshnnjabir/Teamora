@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
-import apiClient from "../../contexts/apiClient";
-import { PRIORITIES, TASK_STATUSES } from "../../utils/constants";
+import apiClient from "../../../../api/apiClient";
+import { PRIORITIES, TASK_STATUSES } from "../../../../utils/constants";
 
 
 const CreateSubtaskModal = ({ taskId, projectId, onClose, onCreated }) => {

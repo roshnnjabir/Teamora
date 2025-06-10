@@ -1,22 +1,22 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { useEffect, useState, useCallback } from "react";
-import apiClient from "../../contexts/apiClient";
+import apiClient from "../../../../api/apiClient";
 import Toast from "../../../../components/modals/Toast";
 
 // Components
-import ProjectHeader from "../../../../components/ProjectDetail/ProjectHeader";
-import ProjectOverview from "../../../../components/ProjectDetail/ProjectOverview";
-import TeamMembersSection from "../../../../components/ProjectDetail/TeamMembersSection";
-import TaskListSection from "../../../../components/ProjectDetail/TaskListSection";
-import SubtaskAssignmentSection from "../../../../components/ProjectDetail/SubtaskAssignmentSection";
-import LoadingState from "../../../../components/ProjectDetail/LoadingState";
-import NotFoundState from "../../../../components/ProjectDetail/NotFoundState";
-import ComingSoonSection from "../../../../components/ProjectDetail/ComingSoonSection";
+import ProjectHeader from "../../shared/components/ProjectHeader";
+import ProjectOverview from "../../shared/components/ProjectOverview";
+import TeamMembersSection from "../../shared/components/TeamMembersSection";
+import TaskListSection from "../../shared/components/TaskListSection";
+import SubtaskAssignmentSection from "../../shared/components/SubtaskAssignmentSection";
+import LoadingState from "../../shared/components/LoadingState";
+import NotFoundState from "../../shared/components/NotFoundState";
+import ComingSoonSection from "../../shared/components/ComingSoonSection";
 
 // Modals
-import EditProjectModal from "./EditProjectModal";
-import ManageMembersModal from "./ManageMembersModal";
-import CreateTaskModal from "./CreateTaskModal";
+import EditProjectModal from "../modals/EditProjectModal";
+import ManageMembersModal from "../modals/ManageMembersModal";
+import CreateTaskModal from "../modals/CreateTaskModal";
 
 // Utils
 import { generateColumns } from "../../../../utils/projectUtils";

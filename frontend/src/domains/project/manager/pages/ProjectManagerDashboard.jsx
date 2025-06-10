@@ -1,9 +1,9 @@
 import { useDispatch } from "react-redux";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { logoutUser } from "../../features/Auth/authThunks";
-import CreateProjectModal from "./CreateProjectModal";
-import apiClient from "../../contexts/apiClient";
+import { logoutUser } from "../../../auth/features/authThunks";
+import CreateProjectModal from "../modals/CreateProjectModal";
+import apiClient from "../../../../api/apiClient";
 
 const PmDashboard = () => {
   const dispatch = useDispatch();

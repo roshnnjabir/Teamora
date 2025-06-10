@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useDispatch } from "react-redux";
-import { logoutUser } from "../../features/Auth/authThunks";
-import apiClient from "../../contexts/apiClient";
+import { logoutUser } from "../../../auth/features/authThunks";
+import apiClient from "../../../../api/apiClient";
 import StatusUpdateModal from "./StatusUpdateModal";
 import { format } from "date-fns";
 

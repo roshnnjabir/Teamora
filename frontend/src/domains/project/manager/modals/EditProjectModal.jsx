@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import apiClient from "../../contexts/apiClient";
+import apiClient from "../../../../api/apiClient";
 
 const EditProjectModal = ({ project, onClose, onUpdate }) => {
   const [formData, setFormData] = useState({

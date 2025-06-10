@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
-import { getStatusBadge, getPriorityLabel } from "../../utils/projectUtils";
-import CreateTaskModal from "../../pages/Project Manager/CreateTaskModal";
+import { getStatusBadge, getPriorityLabel } from "../../../../utils/projectUtils";
+import CreateTaskModal from "../../manager/modals/CreateTaskModal";
 
 // Task Card Component for better organization
 const TaskCard = ({ task, isExpanded, onToggle }) => {

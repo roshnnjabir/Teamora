@@ -1,5 +1,5 @@
 import InlineEditField from "./InlineEditField";
-import { getPriorityColor } from "../../utils/projectUtils";
+import { getPriorityColor } from "../../../../utils/projectUtils";
 
 const ProjectOverview = ({ project = {}, isProjectActive = false, onFieldUpdate }) => {
   const {

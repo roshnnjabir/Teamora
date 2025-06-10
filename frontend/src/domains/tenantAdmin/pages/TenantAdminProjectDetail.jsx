@@ -1,22 +1,22 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { useEffect, useState, useCallback } from "react";
-import apiClient from "../../contexts/apiClient";
+import apiClient from "../../../api/apiClient";
 import Toast from "../../../components/modals/Toast";
 
 // Components
-import ProjectHeader from "../../components/ProjectDetail/ProjectHeader";
-import ProjectOverview from "../../components/ProjectDetail/ProjectOverview";
-import TeamMembersSection from "../../components/ProjectDetail/TeamMembersSection";
-import TaskListSection from "../../components/ProjectDetail/TaskListSection";
-import SubtaskAssignmentSection from "../../components/ProjectDetail/SubtaskAssignmentSection";
-import LoadingState from "../../components/ProjectDetail/LoadingState";
-import NotFoundState from "../../components/ProjectDetail/NotFoundState";
-import ComingSoonSection from "../../components/ProjectDetail/ComingSoonSection";
+import ProjectHeader from "../../project/shared/components/ProjectHeader";
+import ProjectOverview from "../../project/shared/components/ProjectOverview";
+import TeamMembersSection from "../../project/shared/components/TeamMembersSection";
+import TaskListSection from "../../project/shared/components/TaskListSection";
+import SubtaskAssignmentSection from "../../project/shared/components/SubtaskAssignmentSection";
+import LoadingState from "../../project/shared/components/LoadingState";
+import NotFoundState from "../../project/shared/components/NotFoundState";
+import ComingSoonSection from "../../project/shared/components/ComingSoonSection";
 
 // Modals
-import EditProjectModal from "./EditProgitjectModal";
-import ManageMembersModal from "./CreateProjectModal";
-import CreateTaskModal from "./CreateProjectModal";
+import EditProjectModal from "../../../domains/project/manager/modals/EditProjectModal";
+import ManageMembersModal from "../../../domains/project/manager/modals/ManageMembersModal";
+import CreateTaskModal from "../../../domains/project/manager/modals/CreateProjectModal";
 
 // Utils
 import { generateColumns } from "../../../utils/projectUtils";

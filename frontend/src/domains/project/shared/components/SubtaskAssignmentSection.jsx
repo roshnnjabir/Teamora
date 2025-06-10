@@ -4,7 +4,7 @@ import ScrollContainer from "./ScrollContainer";
 import TaskColumn from "./TaskColumn";
 import DeleteZone from "./DeleteZone";
 import SubtaskModal from "./SubtaskModal";
-import apiClient from "../../contexts/apiClient";
+import apiClient from "../../../../api/apiClient";
 
 // Statistics Component
 const AssignmentStats = ({ columns, totalSubtasks }) => {

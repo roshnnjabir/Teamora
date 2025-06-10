@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import apiClient from "../../contexts/apiClient";
+import apiClient from "../../../../api/apiClient";
 import { useSelector } from "react-redux";
 
 const SubtaskDetailPage = () => {

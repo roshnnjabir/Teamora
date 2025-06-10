@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import apiClient from "../../contexts/apiClient";
+import apiClient from "../../api/apiClient";
 import { getInputClasses } from "../../styles/formClasses";
 
 export default function SetPasswordPage() {

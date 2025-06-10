@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { useDispatch } from 'react-redux';
 import { setUser, clearUser } from '../domains/auth/features/authSlice';
-import apiClient from '../contexts/apiClient';
+import apiClient from '../api/apiClient';
 import { Outlet } from 'react-router-dom';
 
 const AppLayout = () => {
