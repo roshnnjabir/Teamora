@@ -1,5 +1,6 @@
 asgiref==3.8.1
 Django==5.2.1
+django-cors-headers==4.7.0
 django-environ==0.12.0
 django-tenants==3.8.0
 djangorestframework==3.16.0
