@@ -1,12 +1,12 @@
 import { useSelector, useDispatch } from "react-redux";
-import { logout } from "../features/auth/authSlice";
+import { logoutUser } from "../features/Auth/authThunks";
 
 export default function ProfilePage() {
   const dispatch = useDispatch();
   const user = useSelector((state) => state.auth.user);
 
   const handleLogout = () => {
-    dispatch(logout());
+    dispatch(logoutUser());
   };
 
   if (!user) {

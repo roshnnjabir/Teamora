@@ -1,16 +1,27 @@
 import { useState } from 'react';
 import { useDispatch } from 'react-redux';
-import { loginUser } from '../../api/auth/login';
-import { loginSuccess } from '../../features/auth/authSlice';
-import { jwtDecode } from 'jwt-decode';
+import { useNavigate } from 'react-router-dom';
+import apiClient, { loginUser } from '../../api/auth/login';
+import { setUser } from '../../features/Auth/authSlice';
 
 const LoginForm = () => {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
+
+  // helper to fetch user info from /api/me
+  const fetchUserInfo = async () => {
+      try {
+        const response = await apiClient.get('/api/me/');
+        return response.data;
+      } catch (error) {
+        throw new Error('Failed to fetch user info');
+      }
+    };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -18,9 +29,10 @@ const LoginForm = () => {
     setLoading(true);
 
     try {
-      const data = await loginUser(email, password);
-      const token = data.access;
-      const payload = jwtDecode(token);
+      await loginUser(email, password);
+
+      // fetch user info from /api/me using cookies
+      const user = await fetchUserInfo();
 
       const roleMap = {
         super_admin: "Super Admin",
@@ -31,31 +43,27 @@ const LoginForm = () => {
       };
 
       dispatch(
-        loginSuccess({
-          token,
-          user: {
-            ...payload,
-            displayRole: roleMap[payload.role] || payload.role // fallback if not matched
-          }
+        setUser({
+          ...user,
+          displayRole: roleMap[user.role] || user.role,
         })
       );
 
-
-      switch (payload.role) {
+      switch (user.role) {
         case 'tenant_admin':
-          window.location.href = '/admin';
+          navigate('/admin');
           break;
         case 'project_manager':
-          window.location.href = '/project_manager';
+          navigate('/project_manager');
           break;
         case 'developer':
-          window.location.href = '/developer';
+          navigate('/developer');
           break;
         case 'hr':
-          window.location.href = '/hr';
+          navigate('/hr');
           break;
         default:
-          window.location.href = '/dashboard';
+          navigate('/dashboard');
       }
     } catch (err) {
       setError(err?.message || 'Login failed. Please try again.');

@@ -1,37 +1,34 @@
 import { createSlice } from '@reduxjs/toolkit';
-
-const initialToken = localStorage.getItem("token");
-
-let decodedUser = null;
-if (initialToken) {
-  try {
-    decodedUser = JSON.parse(atob(initialToken.split(".")[1]));
-  } catch (e) {
-    localStorage.removeItem("token");
-  }
-}
+import apiClient from '../../api/auth/login';
 
 const initialState = {
-  token: initialToken || null,
-  user: decodedUser || null,
+  user: null,   // load this after verifying the session via API
+  isAuthenticated: false,
 };
 
 const authSlice = createSlice({
   name: 'auth',
   initialState,
   reducers: {
-    loginSuccess: (state, action) => {
-      state.token = action.payload.token;
-      state.user = action.payload.user;
-      localStorage.setItem("token", action.payload.token);
+    setUser: (state, action) => {
+      state.user = action.payload;
+      state.isAuthenticated = true;
     },
-    logout: (state) => {
-      state.token = null;
+    clearUser: (state) => {
       state.user = null;
-      localStorage.removeItem("token");
+      state.isAuthenticated = false;
     },
   },
 });
 
-export const { loginSuccess, logout } = authSlice.actions;
+export async function logout() {
+  try {
+    await apiClient.post('/api/logout/');
+    return true;
+  } catch (error) {
+    throw new Error("Logout failed");
+  }
+}
+
+export const { setUser, clearUser } = authSlice.actions;
 export default authSlice.reducer;
