@@ -1,6 +1,10 @@
-from django.urls import path
-from tenant_apps.employee.views import EmployeeCreateView
+from django.urls import path, include
+from tenant_apps.employee.views import EmployeeViewSet
+from rest_framework.routers import DefaultRouter
+
+router = DefaultRouter()
+router.register(r'employees', EmployeeViewSet, basename = 'employee')
 
 urlpatterns = [
-    path('employees/create/', EmployeeCreateView.as_view(), name='employee-create'),
+    path('api/', include(router.urls)),
 ]

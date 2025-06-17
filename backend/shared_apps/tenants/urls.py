@@ -7,5 +7,4 @@ from rest_framework_simplejwt.views import TokenObtainPairView
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/tenants/signup/', views.TenantSignupView.as_view(), name='tenant-signup'),
-    path('api/users/create/', views.TenantUserCreateView.as_view(), name='tenant_user_create'),
 ]

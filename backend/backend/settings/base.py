@@ -18,6 +18,7 @@ CORS_ALLOWED_ORIGINS = [
     "http://bigco.localhost:5173",
     "http://acme.localhost:5173",
     "http://brototype.localhost:5173",
+    "http://britco.localhost:5173"
 ]
 
 CORS_ALLOW_CREDENTIALS = True

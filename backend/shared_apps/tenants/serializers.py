@@ -48,39 +48,3 @@ class TenantSignupSerializer(serializers.Serializer):
         user.save()
 
         return tenant
-
-ALLOWED_ROLES = {
-    UserRoles.PROJECT_MANAGER,
-    UserRoles.HR,
-    UserRoles.DEVELOPER
-}
-
-class TenantUserCreateSerializer(serializers.ModelSerializer):
-    password = serializers.CharField(write_only=True)
-    role = serializers.ChoiceField(choices=[(r, r.label) for r in ALLOWED_ROLES])
-
-    class Meta:
-        model = User
-        fields = ['email', 'password', 'role']
-
-    def validate_role(self, value):
-        if value not in ALLOWED_ROLES:
-            raise serializers.ValidationError("Only PM, HR, and Developer roles are allowed.")
-        return value
-
-    def create(self, validated_data):
-        request = self.context['request']
-        user = request.user
-
-        if not user or not user.is_authenticated:
-            raise ValidationError("User is not authenticated.")
-
-        if not hasattr(user, 'tenant') or user.tenant is None:
-            raise ValidationError("Authenticated user is not assigned to any tenant.")
-
-        return User.objects.create_user(
-            email=validated_data['email'],
-            password=validated_data['password'],
-            role=validated_data['role'],
-            tenant=user.tenant,
-        )

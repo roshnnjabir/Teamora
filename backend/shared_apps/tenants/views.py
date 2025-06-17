@@ -6,7 +6,7 @@ from django_tenants.utils import schema_context
 from rest_framework.permissions import AllowAny
 from rest_framework.authentication import SessionAuthentication, BasicAuthentication
 from shared_apps.custom_auth.models import User
-from shared_apps.tenants.serializers import TenantSignupSerializer, TenantUserCreateSerializer
+from shared_apps.tenants.serializers import TenantSignupSerializer
 from shared_apps.tenants.models import Client, Domain
 from core.permissions import IsTenantAdmin
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -24,7 +24,7 @@ class TenantSignupView(APIView):
             # Get tenant admin user based on direct tenant relationship
             tenant_admin_user = User.objects.filter(
                 tenant=tenant,
-                role='TENANT_ADMIN'  # or use UserRoles.TENANT_ADMIN if using constants
+                role='tenant_admin'  # or use UserRoles.TENANT_ADMIN if using constants
             ).first()
 
             if not tenant_admin_user:
@@ -42,9 +42,3 @@ class TenantSignupView(APIView):
             }, status=status.HTTP_201_CREATED)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-
-class TenantUserCreateView(generics.CreateAPIView):
-    queryset = User.objects.all()
-    serializer_class = TenantUserCreateSerializer
-    permission_classes = [IsTenantAdmin]
