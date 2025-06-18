@@ -18,7 +18,8 @@ CORS_ALLOWED_ORIGINS = [
     "http://bigco.localhost:5173",
     "http://acme.localhost:5173",
     "http://brototype.localhost:5173",
-    "http://britco.localhost:5173"
+    "http://britco.localhost:5173",
+    "http://luminar.localhost:5173",
 ]
 
 CORS_ALLOW_CREDENTIALS = True
@@ -104,6 +105,7 @@ REST_FRAMEWORK = {
         'rest_framework.renderers.JSONRenderer',
         'rest_framework.renderers.BrowsableAPIRenderer',
     ),
+    'EXCEPTION_HANDLER': 'core.exceptions.custom_exception_handler',
 }
 
 SIMPLE_JWT = {
@@ -125,6 +127,13 @@ AUTH_PASSWORD_VALIDATORS = [
         'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
     },
 ]
+
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+EMAIL_HOST = env("EMAIL_HOST")
+EMAIL_PORT = env.int("EMAIL_PORT")
+EMAIL_USE_TLS = env.bool("EMAIL_USE_TLS")
+EMAIL_HOST_USER = env("EMAIL_HOST_USER")
+EMAIL_HOST_PASSWORD = env("EMAIL_HOST_PASSWORD")
 
 LANGUAGE_CODE = 'en-us'
 TIME_ZONE = 'UTC'

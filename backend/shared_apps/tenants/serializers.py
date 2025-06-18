@@ -4,6 +4,8 @@ from shared_apps.custom_auth.models import User
 from core.constants import UserRoles
 from django.utils import timezone
 from rest_framework.exceptions import ValidationError
+from shared_apps.tenants.utils.email import send_tenant_created_email
+
 
 class TenantSignupSerializer(serializers.Serializer):
     tenant_name = serializers.CharField(max_length=100)
@@ -29,8 +31,9 @@ class TenantSignupSerializer(serializers.Serializer):
         )
 
         # Step 2: Create Domain
+        domain_url = validated_data['domain_url']
         Domain.objects.create(
-            domain=validated_data['domain_url'],
+            domain=domain_url,
             tenant=tenant,
             is_primary=True
         )
@@ -39,12 +42,14 @@ class TenantSignupSerializer(serializers.Serializer):
         user = User.objects.create_user(
             email=validated_data['email'],
             password=validated_data['password'],
-            role='TENANT_ADMIN',  # replace with UserRoles.TENANT_ADMIN if using enum/constants
+            role='tenant_admin',
             tenant=tenant
         )
-
-        # Optional: You can also store full_name if you're using first_name/last_name fields
+        
         user.first_name = validated_data['full_name']
         user.save()
+
+        # Step 4: Send Email with Link
+        send_tenant_created_email(to_email=user.email, tenant_domain=domain_url)
 
         return tenant
