@@ -1,13 +1,13 @@
 import { Routes, Route } from 'react-router-dom';
-import Dashboard from '../components/Dashboard';
 import LoginForm from '../components/auth/LoginForm';
 import TenantSignup from '../components/auth/TenantSignup';
+import SetPasswordPage from '../components/auth/SetPasswordPage';
 import AdminDashboard from "../features/Tenant Admin/AdminDashboard";
 import HrDashboard from "../features/HR/HrDashboard";
 import ProjectManagerDashboard from "../features/Project Manager/ProjectManagerDashboard";
 import ProtectedRoute from './ProtectedRoute';
 import UnprotectedRoute from './unProtectedRoute';
-import LandingPage from '../components/LandingPage';
+import ConditionalLanding from './ConditionalLandingPage';
 import DeveloperDashboard from '../features/Developer/DeveloperDashboard';
 import NotFound from '../components/errors/NotFound';
 import AppLayout from '../layouts/AppLayout';
@@ -15,8 +15,7 @@ import AppLayout from '../layouts/AppLayout';
 const AppRoutes = () => (
   <Routes>
     <Route path="/" element={<AppLayout />}>
-      <Route index element={<LandingPage />} />
-      <Route path="dashboard" element={<Dashboard />} />
+      <Route index element={<ConditionalLanding />} />
 
       <Route path="/login" element={
         <UnprotectedRoute>
@@ -29,6 +28,8 @@ const AppRoutes = () => (
           <TenantSignup />
         </UnprotectedRoute>
       } />
+
+      <Route path="/set-password/:uid/:token" element={<SetPasswordPage />} />
 
       <Route path="admin" element={
         <ProtectedRoute allowedRoles={["Tenant Admin", "tenant_admin", "super_admin", "Super Admin"]}>

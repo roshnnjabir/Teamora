@@ -17,7 +17,7 @@ const UnprotectedRoute = ({ children }) => {
       case "hr":
         return <Navigate to="/hr" replace />;
       default:
-        return <Navigate to="/dashboard" replace />;
+        return <Navigate to="/unauthorized" replace />;
     }
   }
 

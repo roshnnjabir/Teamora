@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import { useDispatch } from 'react-redux';
-import { useNavigate } from 'react-router-dom';
-import apiClient, { loginUser } from '../../api/auth/login';
+import { useNavigate, Link } from 'react-router-dom';
+import { loginUser } from '../../api/auth/loginUser';
+import apiClient from '../../contexts/apiClient';
 import { setUser } from '../../features/Auth/authSlice';
+import logo from '../../assets/teamora/teamora.png';
 
-const LoginForm = () => {
+export default function LoginForm() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
@@ -13,42 +15,31 @@ const LoginForm = () => {
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  // helper to fetch user info from /api/me
   const fetchUserInfo = async () => {
-      try {
-        const response = await apiClient.get('/api/me/');
-        return response.data;
-      } catch (error) {
-        throw new Error('Failed to fetch user info');
-      }
-    };
-
+    const response = await apiClient.get('/api/me/');
+    console.log(response.data);
+    return response.data;
+  };
+  
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError(null);
     setLoading(true);
-
+  
     try {
       await loginUser(email, password);
-
-      // fetch user info from /api/me using cookies
       const user = await fetchUserInfo();
-
+    
       const roleMap = {
         super_admin: "Super Admin",
         tenant_admin: "Tenant Admin",
         project_manager: "Project Manager",
         hr: "HR",
-        developer: "Developer"
+        developer: "Developer",
       };
-
-      dispatch(
-        setUser({
-          ...user,
-          displayRole: roleMap[user.role] || user.role,
-        })
-      );
-
+    
+      dispatch(setUser({ ...user, displayRole: roleMap[user.role] || user.role }));
+    
       switch (user.role) {
         case 'tenant_admin':
           navigate('/admin');
@@ -62,58 +53,91 @@ const LoginForm = () => {
         case 'hr':
           navigate('/hr');
           break;
-        default:
-          navigate('/dashboard');
       }
     } catch (err) {
-      setError(err?.message || 'Login failed. Please try again.');
+      console.error("Login error:", err);
+    
+      let message = 'Login failed. Please try again.';
+    
+      if (err.response?.data?.detail) {
+        message = err.response.data.detail;
+      } else if (typeof err.response?.data === 'string') {
+        message = err.response.data;
+      } else if (typeof err.message === 'string') {
+        message = err.message;
+      }
+    
+      setError(message);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-100">
-      <form
-        onSubmit={handleSubmit}
-        className="bg-white p-8 rounded-lg shadow-md w-full max-w-md"
-      >
-        <h2 className="text-2xl font-semibold mb-6 text-center text-gray-800">Login</h2>
+    <div className="min-h-screen flex items-center justify-center bg-[#F9FAFB] px-4">
+      <div className="w-full max-w-4xl grid grid-cols-1 md:grid-cols-2 bg-white rounded-lg shadow-lg overflow-hidden">
 
-        <input
-          type="email"
-          value={email}
-          placeholder="Email"
-          onChange={(e) => setEmail(e.target.value)}
-          required
-          className="w-full p-3 border border-gray-300 rounded mb-4 focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
+        {/* Left - Image */}
+        <div className="hidden md:block">
+          <img
+            src={logo}
+            alt="Login Visual"
+            className="w-full h-full object-cover"
+          />
+        </div>
 
-        <input
-          type="password"
-          value={password}
-          placeholder="Password"
-          onChange={(e) => setPassword(e.target.value)}
-          required
-          className="w-full p-3 border border-gray-300 rounded mb-4 focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
+        {/* Right - Form */}
+        <div className="p-8 sm:p-10">
+          <div className="mb-6 flex justify-between items-center">
+            <h2 className="text-2xl font-semibold text-[#1A2A44]">Login</h2>
+            <Link to="/" className="text-sm text-[#00C4B4] hover:underline">← Back</Link>
+          </div>
 
-        <button
-          type="submit"
-          disabled={loading}
-          className={`w-full py-3 rounded text-white transition duration-200 ${
-            loading ? 'bg-blue-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'
-          }`}
-        >
-          {loading ? 'Logging in...' : 'Login'}
-        </button>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label className="text-sm mb-1 block">Email</label>
+              <input
+                type="email"
+                value={email}
+                onChange={e => setEmail(e.target.value)}
+                required
+                placeholder="you@example.com"
+                className="w-full px-3 py-2 rounded-md border border-[#B0B8C5] bg-[#E5E8EC] focus:outline-none focus:ring-1 focus:ring-[#00C4B4]"
+              />
+            </div>
 
-        {error && (
-          <p className="mt-4 text-red-600 text-sm text-center">{error}</p>
-        )}
-      </form>
+            <div>
+              <label className="text-sm mb-1 block">Password</label>
+              <input
+                type="password"
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+                required
+                placeholder="Your password"
+                className="w-full px-3 py-2 rounded-md border border-[#B0B8C5] bg-[#E5E8EC] focus:outline-none focus:ring-1 focus:ring-[#00C4B4]"
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className={`w-full py-2 rounded-md font-medium text-white transition ${
+                loading
+                  ? 'bg-[#B0B8C5] cursor-not-allowed'
+                  : 'bg-[#00C4B4] hover:bg-teal-600'
+              }`}
+            >
+              {loading ? 'Logging in...' : 'Login'}
+            </button>
+
+            {error && (
+              <div className="text-center mt-4 bg-red-100 text-red-700 py-2 px-3 rounded-md">
+                {error}
+              </div>
+            )}
+          </form>
+        </div>
+      </div>
     </div>
   );
-};
-
-export default LoginForm;
+}
