@@ -10,7 +10,7 @@ import ProtectedRoute from '../wrappers/ProtectedRoute';
 import UnprotectedRoute from '../wrappers/UnprotectedRoute';
 import ConditionalLanding from '../wrappers/ConditionalLandingPage';
 import DeveloperDashboard from '../features/Developer/DeveloperDashboard';
-import NotFound from '../components/errors/NotFound';
+import NotFound from '../components/OtherPages/NotFound';
 import AppLayout from '../layouts/AppLayout';
 import DomainWrapper from '../wrappers/DomainWrapper';
 

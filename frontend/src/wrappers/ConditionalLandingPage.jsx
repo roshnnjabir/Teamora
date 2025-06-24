@@ -1,5 +1,5 @@
 import { Navigate } from 'react-router-dom';
-import LandingPage from '../components/LandingPage';
+import LandingPage from '../components/LandingPage/LandingPage';
 import { isSubdomain } from '../utils/domainUtils';
 
 const ConditionalLanding = () => {
