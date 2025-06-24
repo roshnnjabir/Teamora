@@ -6,5 +6,6 @@ from rest_framework_simplejwt.views import TokenObtainPairView
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path("", include("shared_apps.custom_auth.urls")),
     path('api/tenants/signup/', views.TenantSignupView.as_view(), name='tenant-signup'),
 ]

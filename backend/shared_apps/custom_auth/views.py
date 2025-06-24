@@ -24,6 +24,11 @@ class MyTokenObtainPairView(TokenObtainPairView):
     serializer_class = MyTokenObtainPairSerializer
 
     def post(self, request, *args, **kwargs):
+        host = request.get_host().split(':')[0]
+        subdomain = host.split('.')[0] if '.' in host else None
+        
+        
+
         response = super().post(request, *args, **kwargs)
 
         if response.status_code == 200:
@@ -53,6 +58,7 @@ class MyTokenObtainPairView(TokenObtainPairView):
             # remove tokens from response body
             response.data.pop("access", None)
             response.data.pop("refresh", None)
+            response.data = {"detail": "Login successful"}
 
         return response
 

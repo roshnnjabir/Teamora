@@ -20,6 +20,7 @@ CORS_ALLOWED_ORIGINS = [
     "http://brototype.localhost:5173",
     "http://britco.localhost:5173",
     "http://luminar.localhost:5173",
+    "http://openai.localhost:5173"
 ]
 
 CORS_ALLOW_CREDENTIALS = True
@@ -61,7 +62,7 @@ DATABASE_ROUTERS = (
 
 AUTH_USER_MODEL = "custom_auth.User"
 PUBLIC_SCHEMA_NAME = 'public'
-PUBLIC_SCHEMA_URLCONF = "shared_apps.custom_auth.urls"
+PUBLIC_SCHEMA_URLCONF = "shared_apps.tenants.urls"
 
 MIDDLEWARE = [
     'django_tenants.middleware.TenantMainMiddleware',
