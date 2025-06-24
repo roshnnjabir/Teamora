@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useDispatch } from "react-redux";
-import { logoutUser } from "../Auth/authThunks";
+import { logoutUser } from "../../features/Auth/authThunks";
 import apiClient from "../../contexts/apiClient";
 
 const SuperAdminDashboard = () => {

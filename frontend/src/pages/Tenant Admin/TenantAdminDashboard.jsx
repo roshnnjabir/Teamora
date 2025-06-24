@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useDispatch } from "react-redux";
-import { logoutUser } from "../Auth/authThunks";
+import { logoutUser } from "../../features/Auth/authThunks";
 import apiClient from "../../contexts/apiClient";
 import EmployeeFormModal from "./EmployeeFormModal";
 
@@ -12,8 +12,18 @@ const TenantAdminDashboard = () => {
   const [showModal, setShowModal] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState(null);
   const [formError, setFormError] = useState("");
+  const [notification, setNotification] = useState({ message: "", type: "" });
 
   const handleLogout = () => dispatch(logoutUser());
+
+  const showNotification = (message, type = "success") => {
+    setNotification({ message, type });
+    
+    setTimeout(() => {
+      setNotification({ message: "", type: "" });
+    }, 3000); // Hide after 3 seconds
+  };
+
 
   const fetchEmployees = async () => {
     try {
@@ -28,13 +38,15 @@ const TenantAdminDashboard = () => {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this employee?")) return;
-
+    const confirmed = window.confirm("Are you sure you want to delete this employee?");
+    if (!confirmed) return;
+  
     try {
       await apiClient.delete(`/api/employees/${id}/`);
       setEmployees((prev) => prev.filter((emp) => emp.id !== id));
+      showNotification("Employee deleted successfully.", "success");
     } catch (err) {
-      alert("Failed to delete employee.");
+      showNotification("Failed to delete employee.", "error");
     }
   };
 
@@ -59,6 +71,22 @@ const TenantAdminDashboard = () => {
         Object.values(err?.response?.data || {}).flat()?.[0] ||
         "An unexpected error occurred.";
       setFormError(msg);
+    }
+  };
+  
+  const handleResendInvitation = async (id) => {
+    const confirmed = window.confirm("Resend invitation to this employee?");
+    if (!confirmed) return;
+
+    try {
+      await apiClient.post(`/api/employees/${id}/resend-invitation/`);
+      showNotification("Invitation resent successfully.", "success");
+    } catch (err) {
+      const msg =
+        err?.response?.data?.detail ||
+        Object.values(err?.response?.data || {})?.[0] ||
+        "Failed to resend invitation.";
+      showNotification(msg, "error");
     }
   };
 
@@ -90,6 +118,16 @@ const TenantAdminDashboard = () => {
           <h1 className="text-3xl font-bold">Tenant Admin Dashboard</h1>
           <p className="text-[#2F3A4C]">Manage your employees here.</p>
         </div>
+
+        {notification.message && (
+          <div
+            className={`mb-4 p-4 rounded ${
+              notification.type === "success" ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
+            }`}
+          >
+            {notification.message}
+          </div>
+        )}
 
         <section>
           <div className="flex justify-between items-center mb-4">
@@ -143,6 +181,12 @@ const TenantAdminDashboard = () => {
                           className="text-sm text-red-600 hover:underline"
                         >
                           Delete
+                        </button>
+                        <button
+                          onClick={() => handleResendInvitation(emp.id)}
+                          className="text-sm text-yellow-600 hover:underline"
+                        >
+                          Resend Invite
                         </button>
                       </td>
                     </tr>

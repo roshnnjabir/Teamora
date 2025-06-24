@@ -1,5 +1,5 @@
 // Navigation.jsx
-import logo from '../../../assets/teamora/teamora_logo.png';
+import logo from '../../assets/teamora/teamora_logo.png';
 import { Link } from 'react-router-dom';
 
 export default function Navigation() {

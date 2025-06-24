@@ -3,14 +3,14 @@ import { useNavigate } from 'react-router-dom';
 import { isSubdomain } from '../../utils/domainUtils'
 
 // Component Imports
-import Navigation from './Components/Navigation';
-import HeroSection from './Components/HeroSection';
-import FeaturesSection from './Components/FeaturesSection';
-import RoadmapSection from './Components/RoadmapSection';
-import SocialProofSection from './Components/SocialProofSection';
-import EarlyAdopterSection from './Components/EarlyAdopterSection';
-import CTASection from './Components/CTASection';
-import Footer from './Components/Footer';
+import Navigation from '../../components/LandingPage/Navigation';
+import HeroSection from '../../components/LandingPage/HeroSection';
+import FeaturesSection from '../../components/LandingPage/FeaturesSection';
+import RoadmapSection from '../../components/LandingPage/RoadmapSection';
+import SocialProofSection from '../../components/LandingPage/SocialProofSection';
+import EarlyAdopterSection from '../../components/LandingPage/EarlyAdopterSection';
+import CTASection from '../../components/LandingPage/CTASection';
+import Footer from '../../components/LandingPage/Footer';
 
 export default function LandingPage() {
   const navigate = useNavigate();

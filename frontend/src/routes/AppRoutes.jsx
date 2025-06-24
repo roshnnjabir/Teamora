@@ -1,16 +1,16 @@
 import { Routes, Route } from 'react-router-dom';
-import LoginForm from '../components/auth/LoginForm';
-import TenantSignup from '../components/auth/TenantSignup';
-import SetPasswordPage from '../components/auth/SetPasswordPage';
-import TenantAdminDashboard from '../features/Tenant Admin/TenantAdminDashboard';
-import SuperAdminDashboard from '../features/Super Admin/SuperAdminDashboard';
-import HrDashboard from "../features/HR/HrDashboard";
-import ProjectManagerDashboard from "../features/Project Manager/ProjectManagerDashboard";
+import LoginForm from '../pages/Auth/LoginForm';
+import TenantSignup from '../pages/Auth/TenantSignup';
+import SetPasswordPage from '../pages/Auth/SetPasswordPage';
+import TenantAdminDashboard from '../pages/Tenant Admin/TenantAdminDashboard';
+import SuperAdminDashboard from '../pages/Super Admin/SuperAdminDashboard';
+import HrDashboard from "../pages/HR/HrDashboard";
+import ProjectManagerDashboard from "../pages/Project Manager/ProjectManagerDashboard";
 import ProtectedRoute from '../wrappers/ProtectedRoute';
 import UnprotectedRoute from '../wrappers/UnprotectedRoute';
 import ConditionalLanding from '../wrappers/ConditionalLandingPage';
-import DeveloperDashboard from '../features/Developer/DeveloperDashboard';
-import NotFound from '../components/OtherPages/NotFound';
+import DeveloperDashboard from '../pages/Developer/DeveloperDashboard';
+import NotFound from '../pages/OtherPages/NotFound';
 import AppLayout from '../layouts/AppLayout';
 import DomainWrapper from '../wrappers/DomainWrapper';
 

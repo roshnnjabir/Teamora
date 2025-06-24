@@ -1,5 +1,5 @@
 import { useDispatch } from "react-redux";
-import { logoutUser } from "../Auth/authThunks";
+import { logoutUser } from "../../features/Auth/authThunks";
 import { useState } from "react";
 
 const DeveloperDashboard = () => {
