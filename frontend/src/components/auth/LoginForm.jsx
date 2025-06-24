@@ -1,35 +1,53 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useDispatch } from 'react-redux';
 import { useNavigate, Link } from 'react-router-dom';
-import { loginUser } from '../../api/auth/loginUser';
 import apiClient from '../../contexts/apiClient';
 import { setUser } from '../../features/Auth/authSlice';
 import logo from '../../assets/teamora/teamora.png';
+import { getInputClasses } from '../../styles/formClasses';
+
+function extractErrorMessage(error, fallback = 'Something went wrong') {
+  return (
+    error?.response?.data?.non_field_errors?.[0] ||
+    error?.response?.data?.detail ||
+    Object.values(error?.response?.data || {}).flat()?.[0] ||
+    error?.message ||
+    fallback
+  );
+}
 
 export default function LoginForm() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const hostname = window.location.hostname;
+  const isRootDomain = hostname === 'localhost';
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  const fetchUserInfo = async () => {
-    const response = await apiClient.get('/api/me/');
-    console.log(response.data);
-    return response.data;
-  };
-  
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError(null);
     setLoading(true);
-  
+    setError(null); // Clear previous error
+
+    // Step 1: Try login
     try {
-      await loginUser(email, password);
-      const user = await fetchUserInfo();
-    
+      await apiClient.post('/api/token/', { email, password });
+    } catch (err) {
+      console.error("Login error:", err);
+      const message = extractErrorMessage(err, 'Login failed.');
+      setError(message);
+      setLoading(false);
+      return;
+    }
+
+    // Step 2: Try fetching user info
+    try {
+      const userRes = await apiClient.get('/api/me/');
+      const user = userRes.data;
+
       const roleMap = {
         super_admin: "Super Admin",
         tenant_admin: "Tenant Admin",
@@ -37,10 +55,13 @@ export default function LoginForm() {
         hr: "HR",
         developer: "Developer",
       };
-    
+
       dispatch(setUser({ ...user, displayRole: roleMap[user.role] || user.role }));
-    
+
       switch (user.role) {
+        case 'super_admin':
+          navigate(isRootDomain ? '/super_admin' : '/unauthorized');
+          break;
         case 'tenant_admin':
           navigate('/admin');
           break;
@@ -53,30 +74,25 @@ export default function LoginForm() {
         case 'hr':
           navigate('/hr');
           break;
+        default:
+          navigate('/');
       }
+
     } catch (err) {
-      console.error("Login error:", err);
-    
-      let message = 'Login failed. Please try again.';
-    
-      if (err.response?.data?.detail) {
-        message = err.response.data.detail;
-      } else if (typeof err.response?.data === 'string') {
-        message = err.response.data;
-      } else if (typeof err.message === 'string') {
-        message = err.message;
-      }
-    
+      console.error("User fetch failed:", err);
+      console.log("Error response:", err?.response?.data);
+
+      const message = extractErrorMessage(err, 'User info fetch failed.');
       setError(message);
     } finally {
       setLoading(false);
     }
   };
 
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#F9FAFB] px-4">
       <div className="w-full max-w-4xl grid grid-cols-1 md:grid-cols-2 bg-white rounded-lg shadow-lg overflow-hidden">
-
         {/* Left - Image */}
         <div className="hidden md:block">
           <img
@@ -95,46 +111,48 @@ export default function LoginForm() {
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="text-sm mb-1 block">Email</label>
+              <label className="text-sm mb-1 block text-gray-700">Email</label>
               <input
                 type="email"
                 value={email}
-                onChange={e => setEmail(e.target.value)}
+                onChange={(e) => setEmail(e.target.value)}
                 required
                 placeholder="you@example.com"
-                className="w-full px-3 py-2 rounded-md border border-[#B0B8C5] bg-[#E5E8EC] focus:outline-none focus:ring-1 focus:ring-[#00C4B4]"
+                aria-invalid={!!error}
+                className={getInputClasses(!!error)}
               />
             </div>
-
+              
             <div>
-              <label className="text-sm mb-1 block">Password</label>
+              <label className="text-sm mb-1 block text-gray-700">Password</label>
               <input
                 type="password"
                 value={password}
-                onChange={e => setPassword(e.target.value)}
+                onChange={(e) => setPassword(e.target.value)}
                 required
                 placeholder="Your password"
-                className="w-full px-3 py-2 rounded-md border border-[#B0B8C5] bg-[#E5E8EC] focus:outline-none focus:ring-1 focus:ring-[#00C4B4]"
+                aria-invalid={!!error}
+                className={getInputClasses(!!error)}
               />
             </div>
-
+              
+            {error && (
+              <div className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-md">
+                {error}
+              </div>
+            )}
+          
             <button
               type="submit"
               disabled={loading}
-              className={`w-full py-2 rounded-md font-medium text-white transition ${
+              className={`w-full py-2 rounded-lg font-semibold text-white transition ${
                 loading
-                  ? 'bg-[#B0B8C5] cursor-not-allowed'
+                  ? 'bg-gray-300 cursor-not-allowed'
                   : 'bg-[#00C4B4] hover:bg-teal-600'
               }`}
             >
               {loading ? 'Logging in...' : 'Login'}
             </button>
-
-            {error && (
-              <div className="text-center mt-4 bg-red-100 text-red-700 py-2 px-3 rounded-md">
-                {error}
-              </div>
-            )}
           </form>
         </div>
       </div>

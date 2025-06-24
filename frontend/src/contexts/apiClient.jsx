@@ -1,24 +1,27 @@
 import axios from 'axios';
 
 const hostname = window.location.hostname;
-const tenantSubdomain = hostname.split('.')[0];
+let tenantSubdomain = null;
+
+if (hostname.includes('.') && !hostname.startsWith('localhost')) {
+  tenantSubdomain = hostname.split('.')[0];
+  console.log("Subdomain:", tenantSubdomain);
+}
+
+const baseURL = tenantSubdomain
+  ? `http://${tenantSubdomain}.localhost:8000`
+  : `http://localhost:8000`;
 
 const apiClient = axios.create({
-  baseURL: `http://${tenantSubdomain}.localhost:8000`,
+  baseURL,
   withCredentials: true,
 });
 
 let isRefreshing = false;
 let failedQueue = [];
 
-const processQueue = (error, token = null) => {
-  failedQueue.forEach(prom => {
-    if (error) {
-      prom.reject(error);
-    } else {
-      prom.resolve(token);
-    }
-  });
+const processQueue = (error) => {
+  failedQueue.forEach(({ reject }) => reject(error));
   failedQueue = [];
 };
 
@@ -27,13 +30,14 @@ apiClient.interceptors.response.use(
   async error => {
     const originalRequest = error.config;
 
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    const isUnauthorized = error.response?.status === 401;
+    const isTokenExpired = error.response?.data?.detail?.toLowerCase?.().includes("token") ?? false;
+
+    // Only refresh if token actually expired
+    if (isUnauthorized && isTokenExpired && !originalRequest._retry) {
       if (isRefreshing) {
-        return new Promise((resolve, reject) => {
-          failedQueue.push({ resolve, reject });
-        }).then(token => {
-          originalRequest.headers['Authorization'] = `Bearer ${token}`;
-          return apiClient(originalRequest);
+        return new Promise((_, reject) => {
+          failedQueue.push({ reject });
         });
       }
 
@@ -41,21 +45,19 @@ apiClient.interceptors.response.use(
       isRefreshing = true;
 
       try {
-        const refreshResponse = await apiClient.post('/api/token/refresh/');
-        const newAccessToken = refreshResponse.data.access;
-
-        processQueue(null, newAccessToken);
+        await apiClient.post('/api/token/refresh/');
         isRefreshing = false;
+        failedQueue = [];
 
-        originalRequest.headers['Authorization'] = `Bearer ${newAccessToken}`;
         return apiClient(originalRequest);
-      } catch (err) {
-        processQueue(err, null);
+      } catch (refreshError) {
         isRefreshing = false;
-        return Promise.reject(err);
+        processQueue(refreshError);
+        return Promise.reject(refreshError);
       }
     }
 
+    // ✅ If it's not token-related 401, don't try to refresh — pass it on
     return Promise.reject(error);
   }
 );

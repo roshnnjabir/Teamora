@@ -1,13 +1,23 @@
 // src/routes/UnprotectedRoute.jsx
 import { Navigate } from "react-router-dom";
 import { useSelector } from "react-redux";
+import { isSubdomain } from "../utils/domainUtils";
 
 const UnprotectedRoute = ({ children }) => {
   const user = useSelector((state) => state.auth.user);
+  const hostname = window.location.hostname;
+
+  const isRootDomain = !isSubdomain();
 
   if (user) {
-    // Redirect based on role if needed
-    switch (user.role) {
+    const role = user.role?.toLowerCase();
+
+    
+    switch (role) {
+      case "super_admin":
+        return isRootDomain
+          ? <Navigate to="/super_admin" replace />
+          : <Navigate to="/unauthorized" replace />;
       case "tenant_admin":
         return <Navigate to="/admin" replace />;
       case "project_manager":

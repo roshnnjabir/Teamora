@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { getInputClasses } from "../../styles/formClasses";
 
 const roles = ["project_manager", "hr", "developer"];
 
@@ -57,7 +58,7 @@ export default function EmployeeFormModal({ onClose, onSave, initialData, error 
             placeholder="Full Name"
             value={formData.full_name}
             onChange={handleChange}
-            className="w-full border border-gray-300 px-4 py-2 rounded-lg focus:ring-2 focus:ring-[#00C4B4]"
+            className={getInputClasses(!!error)}
             required
           />
 
@@ -69,7 +70,7 @@ export default function EmployeeFormModal({ onClose, onSave, initialData, error 
                 placeholder="Email"
                 value={formData.email}
                 onChange={handleChange}
-                className="w-full border border-gray-300 px-4 py-2 rounded-lg focus:ring-2 focus:ring-[#00C4B4]"
+                className={getInputClasses(!!error)}
                 required
               />
 
@@ -79,7 +80,7 @@ export default function EmployeeFormModal({ onClose, onSave, initialData, error 
                 placeholder="Confirm Email"
                 value={formData.confirm_email}
                 onChange={handleChange}
-                className="w-full border border-gray-300 px-4 py-2 rounded-lg focus:ring-2 focus:ring-[#00C4B4]"
+                className={getInputClasses(!!error)}
                 required
               />
               {emailError && (
@@ -93,7 +94,7 @@ export default function EmployeeFormModal({ onClose, onSave, initialData, error 
             placeholder="Job Title"
             value={formData.job_title}
             onChange={handleChange}
-            className="w-full border border-gray-300 px-4 py-2 rounded-lg focus:ring-2 focus:ring-[#00C4B4]"
+            className={getInputClasses(!!error)}
             required
           />
 
@@ -101,7 +102,7 @@ export default function EmployeeFormModal({ onClose, onSave, initialData, error 
             name="department"
             value={formData.department}
             onChange={handleChange}
-            className="w-full border border-gray-300 px-4 py-2 rounded-lg focus:ring-2 focus:ring-[#00C4B4]"
+            className={getInputClasses(!!error)}
             required
           >
             <option value="">Select Department</option>
@@ -129,7 +130,7 @@ export default function EmployeeFormModal({ onClose, onSave, initialData, error 
             name="role"
             value={formData.role}
             onChange={handleChange}
-            className="w-full border border-gray-300 px-4 py-2 rounded-lg focus:ring-2 focus:ring-[#00C4B4]"
+            className={getInputClasses(!!error)}
           >
             {roles.map((r) => (
               <option key={r} value={r}>

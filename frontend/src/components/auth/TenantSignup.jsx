@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import logo from '../../assets/teamora/team.png';
+import { getInputClasses } from '../../styles/formClasses';
 
 export default function TenantSignup() {
   const [tenantName, setTenantName] = useState('');
@@ -82,7 +83,7 @@ export default function TenantSignup() {
                 onChange={e => setTenantName(e.target.value)}
                 required
                 placeholder="e.g. Acme Inc"
-                className="w-full px-3 py-2 rounded-md border border-[#B0B8C5] bg-[#E5E8EC] focus:outline-none focus:ring-1 focus:ring-[#00C4B4]"
+                className={getInputClasses(!!error)}
               />
             </div>
 
@@ -95,7 +96,7 @@ export default function TenantSignup() {
                   onChange={e => setSubdomain(e.target.value.replace(/\s+/g, '').toLowerCase())}
                   required
                   placeholder="e.g. brototype"
-                  className="flex-grow px-3 py-2 rounded-md border border-[#B0B8C5] bg-[#E5E8EC] focus:outline-none focus:ring-1 focus:ring-[#00C4B4]"
+                  className={getInputClasses(!!error)}
                 />
                 <span className="ml-2 text-sm text-[#B0B8C5]">.localhost</span>
               </div>
@@ -109,8 +110,7 @@ export default function TenantSignup() {
                 onChange={e => setFullName(e.target.value)}
                 required
                 placeholder="Admin User"
-                className="w-full px-3 py-2 rounded-md border border-[#B0B8C5] bg-[#E5E8EC] focus:outline-none focus:ring-1 focus:ring-[#00C4B4]"
-              />
+                className={getInputClasses(!!error)}              />
             </div>
 
             <div>
@@ -121,8 +121,7 @@ export default function TenantSignup() {
                 onChange={e => setEmail(e.target.value)}
                 required
                 placeholder="admin@acme.com"
-                className="w-full px-3 py-2 rounded-md border border-[#B0B8C5] bg-[#E5E8EC] focus:outline-none focus:ring-1 focus:ring-[#00C4B4]"
-              />
+                className={getInputClasses(!!error)}              />
             </div>
 
             <div>
@@ -133,8 +132,7 @@ export default function TenantSignup() {
                 onChange={e => setPassword(e.target.value)}
                 required
                 placeholder="Your secure password"
-                className="w-full px-3 py-2 rounded-md border border-[#B0B8C5] bg-[#E5E8EC] focus:outline-none focus:ring-1 focus:ring-[#00C4B4]"
-              />
+                className={getInputClasses(!!error)}              />
             </div>
 
             <button

@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import apiClient from "../../contexts/apiClient";
+import { getInputClasses } from "../../styles/formClasses";
 
 export default function SetPasswordPage() {
   const { uid, token } = useParams(); // <-- 🔁 from route
@@ -64,7 +65,7 @@ export default function SetPasswordPage() {
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
                 required
-                className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 focus:outline-none focus:ring-2 focus:ring-[#00C4B4]"
+                className={getInputClasses(!!error)}
               />
             </div>
 
@@ -75,7 +76,7 @@ export default function SetPasswordPage() {
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 required
-                className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 focus:outline-none focus:ring-2 focus:ring-[#00C4B4]"
+                className={getInputClasses(!!error)}
               />
             </div>
 

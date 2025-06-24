@@ -1,10 +1,11 @@
-// ConditionalLanding.tsx
 import { Navigate } from 'react-router-dom';
 import LandingPage from '../components/LandingPage';
+import { isSubdomain } from '../utils/domainUtils';
 
 const ConditionalLanding = () => {
-  const isLocalhost = window.location.hostname === 'localhost';
-  return isLocalhost ? <LandingPage /> : <Navigate to="/login" replace />;
+  const isMainDomain = !isSubdomain();
+
+  return isMainDomain ? <LandingPage /> : <Navigate to="/login" replace />;
 };
 
 export default ConditionalLanding;

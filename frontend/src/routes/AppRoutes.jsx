@@ -2,15 +2,17 @@ import { Routes, Route } from 'react-router-dom';
 import LoginForm from '../components/auth/LoginForm';
 import TenantSignup from '../components/auth/TenantSignup';
 import SetPasswordPage from '../components/auth/SetPasswordPage';
-import AdminDashboard from "../features/Tenant Admin/AdminDashboard";
+import TenantAdminDashboard from '../features/Tenant Admin/TenantAdminDashboard';
+import SuperAdminDashboard from '../features/Super Admin/SuperAdminDashboard';
 import HrDashboard from "../features/HR/HrDashboard";
 import ProjectManagerDashboard from "../features/Project Manager/ProjectManagerDashboard";
-import ProtectedRoute from './ProtectedRoute';
-import UnprotectedRoute from './unProtectedRoute';
-import ConditionalLanding from './ConditionalLandingPage';
+import ProtectedRoute from '../wrappers/ProtectedRoute';
+import UnprotectedRoute from '../wrappers/UnprotectedRoute';
+import ConditionalLanding from '../wrappers/ConditionalLandingPage';
 import DeveloperDashboard from '../features/Developer/DeveloperDashboard';
 import NotFound from '../components/errors/NotFound';
 import AppLayout from '../layouts/AppLayout';
+import DomainWrapper from '../wrappers/DomainWrapper';
 
 const AppRoutes = () => (
   <Routes>
@@ -23,17 +25,26 @@ const AppRoutes = () => (
         </UnprotectedRoute>
       } />
 
-      <Route path="/signup" element={
-        <UnprotectedRoute>
-          <TenantSignup />
-        </UnprotectedRoute>
-      } />
+      <Route
+        path="/signup"
+        element={
+          <DomainWrapper>
+            <TenantSignup />
+          </DomainWrapper>
+        }
+      />
 
       <Route path="/set-password/:uid/:token" element={<SetPasswordPage />} />
 
+      <Route path="super_admin" element={
+        <ProtectedRoute allowedRoles={["super_admin", "Super Admin"]}>
+          <SuperAdminDashboard />
+        </ProtectedRoute>
+      } />
+
       <Route path="admin" element={
         <ProtectedRoute allowedRoles={["Tenant Admin", "tenant_admin", "super_admin", "Super Admin"]}>
-          <AdminDashboard />
+          <TenantAdminDashboard />
         </ProtectedRoute>
       } />
 
