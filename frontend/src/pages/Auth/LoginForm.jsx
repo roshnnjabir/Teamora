@@ -115,7 +115,7 @@ export default function LoginForm() {
               <input
                 type="email"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => setEmail(e.target.value.toLowerCase())}
                 required
                 placeholder="you@example.com"
                 aria-invalid={!!error}

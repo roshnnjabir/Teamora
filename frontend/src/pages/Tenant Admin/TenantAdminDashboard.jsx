@@ -1,12 +1,15 @@
 import { useEffect, useState } from "react";
 import { useDispatch } from "react-redux";
 import { logoutUser } from "../../features/Auth/authThunks";
+import { format } from "date-fns";
 import apiClient from "../../contexts/apiClient";
+import PMDeveloperAssignmentManager from "./PMDeveloperAssignmentManager";
 import EmployeeFormModal from "./EmployeeFormModal";
 
 const TenantAdminDashboard = () => {
   const dispatch = useDispatch();
   const [employees, setEmployees] = useState([]);
+  const [auditLogs, setAuditLogs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [showModal, setShowModal] = useState(false);
@@ -90,10 +93,20 @@ const TenantAdminDashboard = () => {
     }
   };
 
+  const fetchAuditLogs = async () => {
+    try {
+      const res = await apiClient.get("/api/audit-logs/");
+      setAuditLogs(res.data);
+    } catch (err) {
+      console.error("Failed to fetch audit logs", err);
+    }
+  };
 
   useEffect(() => {
     fetchEmployees();
+    fetchAuditLogs();
   }, []);
+
 
   return (
     <div className="flex min-h-screen bg-[#F9FAFB] text-[#1A2A44]">
@@ -209,6 +222,45 @@ const TenantAdminDashboard = () => {
             error={formError}
           />
         )}
+
+        <PMDeveloperAssignmentManager />
+        <section className="mt-10">
+          <h2 className="text-xl font-semibold mb-4">Project Manager Assignment History</h2>
+          {auditLogs.length === 0 ? (
+            <p className="text-gray-600">No assignment activity yet.</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="min-w-full bg-white shadow rounded-lg border border-gray-200">
+                <thead className="bg-gray-100 text-gray-700">
+                  <tr>
+                    <th className="py-2 px-4 text-left">Developer</th>
+                    <th className="py-2 px-4 text-left">Previous PM</th>
+                    <th className="py-2 px-4 text-left">New PM</th>
+                    <th className="py-2 px-4 text-left">Assigned By</th>
+                    <th className="py-2 px-4 text-left">Time</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {auditLogs.map((log) => (
+                    <tr key={log.id} className="border-t">
+                      <td className="py-2 px-4">{log.developer?.full_name}</td>
+                      <td className="py-2 px-4">
+                        {log.previous_manager ? log.previous_manager.full_name : "—"}
+                      </td>
+                      <td className="py-2 px-4">{log.new_manager?.full_name}</td>
+                      <td className="py-2 px-4">{log.assigned_by?.full_name}</td>
+                      <td className="py-2 px-4">
+                        {log.assigned_at
+                          ? format(new Date(log.assigned_at), "dd MMM yyyy p")
+                          : "N/A"}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
       </main>
     </div>
   );
