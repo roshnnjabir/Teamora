@@ -33,9 +33,9 @@ class User(AbstractUser):
 
     def get_tenant_roles(self):
         return {
-            "is_pm": self.role == self.UserRoles.PROJECT_MANAGER,
-            "is_hr": self.role == self.UserRoles.HR,
-            "is_dev": self.role == self.UserRoles.DEVELOPER,
+            "is_pm": self.role == UserRoles.PROJECT_MANAGER,
+            "is_hr": self.role == UserRoles.HR,
+            "is_dev": self.role == UserRoles.DEVELOPER,
         }
 
     def __str__(self):
