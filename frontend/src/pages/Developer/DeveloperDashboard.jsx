@@ -1,14 +1,36 @@
 import { useDispatch } from "react-redux";
+import { useEffect, useState } from "react";
 import { logoutUser } from "../../features/Auth/authThunks";
-import { useState } from "react";
+import apiClient from "../../contexts/apiClient";
+import { useNavigate } from "react-router-dom";
 
 const DeveloperDashboard = () => {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const [showNotification, setShowNotification] = useState(true);
+  const [projects, setProjects] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   const handleLogout = () => {
     dispatch(logoutUser());
   };
+
+  useEffect(() => {
+    const fetchProjects = async () => {
+      try {
+        const response = await apiClient.get("/api/projects/");
+        setProjects(response.data);
+      } catch (err) {
+        const message = err?.response?.data?.detail || "Failed to fetch projects.";
+        setError(message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProjects();
+  }, []);
 
   return (
     <div className="flex min-h-screen bg-[#F9FAFB] text-[#1A2A44]">
@@ -72,11 +94,28 @@ const DeveloperDashboard = () => {
             </div>
           </div>
 
-          {/* Task Feed */}
+          {/* Project List */}
           <section className="mt-10">
-            <h2 className="text-2xl font-semibold text-[#2F3A4C] mb-4">Recent Activity</h2>
-            <div className="bg-[#E5E8EC] p-4 rounded shadow text-[#2F3A4C]">
-              <p className="text-sm text-[#B0B8C5]">You’ve pushed 3 commits to the "auth-refactor" branch.</p>
+            <h2 className="text-2xl font-semibold text-[#2F3A4C] mb-4">Your Projects</h2>
+            <div className="bg-white p-4 rounded shadow text-[#2F3A4C] space-y-4 border border-[#B0B8C5]">
+              {loading ? (
+                <p>Loading projects...</p>
+              ) : error ? (
+                <p className="text-red-500">{error}</p>
+              ) : projects.length === 0 ? (
+                <p className="text-sm text-[#B0B8C5]">No projects assigned.</p>
+              ) : (
+                projects.map((project) => (
+                  <div
+                    key={project.id}
+                    onClick={() => navigate(`/developer/projects/${project.id}`)}
+                    className="p-4 border-b border-[#E5E8EC] cursor-pointer hover:bg-[#F3F4F6] rounded transition"
+                  >
+                    <h3 className="text-lg font-semibold">{project.name}</h3>
+                    <p className="text-sm text-[#6B7280]">{project.description}</p>
+                  </div>
+                ))
+              )}
             </div>
           </section>
         </div>

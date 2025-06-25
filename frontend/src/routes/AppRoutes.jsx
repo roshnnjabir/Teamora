@@ -6,10 +6,12 @@ import TenantAdminDashboard from '../pages/Tenant Admin/TenantAdminDashboard';
 import SuperAdminDashboard from '../pages/Super Admin/SuperAdminDashboard';
 import HrDashboard from "../pages/HR/HrDashboard";
 import ProjectManagerDashboard from "../pages/Project Manager/ProjectManagerDashboard";
+import ProjectManagerProjectDetail from '../pages/Project Manager/ProjectDetail';
 import ProtectedRoute from '../wrappers/ProtectedRoute';
 import UnprotectedRoute from '../wrappers/UnprotectedRoute';
 import ConditionalLanding from '../wrappers/ConditionalLandingPage';
 import DeveloperDashboard from '../pages/Developer/DeveloperDashboard';
+import DeveloperProjectDetail from '../pages/Developer/ProjectDetail';
 import NotFound from '../pages/OtherPages/NotFound';
 import AppLayout from '../layouts/AppLayout';
 import DomainWrapper from '../wrappers/DomainWrapper';
@@ -60,11 +62,24 @@ const AppRoutes = () => (
         </ProtectedRoute>
       } />
 
+      <Route path="project_manager/projects/:projectId" element={
+        <ProtectedRoute allowedRoles={["Project Manager", "project_manager"]}>
+          <ProjectManagerProjectDetail />
+        </ProtectedRoute>
+      } />
+
       <Route path="developer" element={
         <ProtectedRoute allowedRoles={["Developer", "developer"]}>
           <DeveloperDashboard />
         </ProtectedRoute>
       } />
+
+      <Route path="developer/projects/:projectId" element={
+        <ProtectedRoute allowedRoles={["Developer", "developer"]}>
+          <DeveloperProjectDetail />
+        </ProtectedRoute>
+      } />
+
     </Route>
 
     <Route path="*" element={<NotFound />} />
