@@ -1,6 +1,16 @@
-from django.urls import path
-from tenant_apps.project_management import views
+from django.urls import path, include
+from rest_framework.routers import DefaultRouter
+from .views import ProjectViewSet, TaskViewSet, SubtaskViewSet, ProjectMemberViewSet, ProjectManagerAssignmentViewSet, GroupedPMAssignmentView, AssignmentAuditLogList
+
+router = DefaultRouter()
+router.register(r'projects', ProjectViewSet)
+router.register(r'tasks', TaskViewSet)
+router.register(r'subtasks', SubtaskViewSet)
+router.register(r'members', ProjectMemberViewSet)
+router.register(r'pm-assignments', ProjectManagerAssignmentViewSet, basename='pm-assignment')
 
 urlpatterns = [
-    path('project_management', views.ProjectOnlyView.as_view(), name='project_management'),
+    path('api/pm-assignments/grouped/', GroupedPMAssignmentView.as_view(), name='grouped-pm-assignments'),
+    path('api/audit-logs/', AssignmentAuditLogList.as_view(), name='assignment-audit-logs'),
+    path('api/', include(router.urls)),
 ]
