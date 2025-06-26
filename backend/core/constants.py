@@ -17,3 +17,20 @@ class UserRoles(models.TextChoices):
     DEVELOPER = 'developer', 'Developer'
 
 TASK_STATUSES = ['open', 'in_progress', 'closed']
+
+
+class ProjectStatus(models.TextChoices):
+    PLANNING = 'planning', 'Planning'
+    IN_PROGRESS = 'in_progress', 'In Progress'
+    COMPLETED = 'completed', 'Completed'
+    ON_HOLD = 'on_hold', 'On Hold'
+
+class TaskStatus(models.TextChoices):
+    TODO = 'todo', 'To Do'
+    IN_PROGRESS = 'in_progress', 'In Progress'
+    DONE = 'done', 'Done'
+
+class Priority(models.TextChoices):
+    LOW = 'low', 'Low'
+    MEDIUM = 'medium', 'Medium'
+    HIGH = 'high', 'High'

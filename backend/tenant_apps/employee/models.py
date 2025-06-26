@@ -10,6 +10,9 @@ class Employee(models.Model):
     department = models.CharField(max_length=100)
     date_joined = models.DateField()
 
+    def __str__(self):
+        return f"{self.full_name} ({self.user.email})"
+
 
 class ProjectManagerAssignment(models.Model):
     manager = models.ForeignKey(Employee, on_delete=models.CASCADE, related_name='devs_under_pm')

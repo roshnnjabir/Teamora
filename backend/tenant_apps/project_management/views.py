@@ -1,11 +1,14 @@
 from rest_framework import viewsets
 from rest_framework.views import APIView
+from rest_framework.decorators import action
 from rest_framework.response import Response
 from collections import defaultdict
-from rest_framework import generics
+from rest_framework import generics, status
+from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.exceptions import PermissionDenied
-from tenant_apps.employee.models import ProjectManagerAssignment
+from tenant_apps.employee.models import Employee, ProjectManagerAssignment
 from tenant_apps.project_management.models import AssignmentAuditLog
+from core.constants import UserRoles
 from core.permissions import (
     IsTenantAdmin,
     IsProjectManagerOrTenantAdmin,
@@ -34,46 +37,69 @@ class ProjectViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        if user.is_tenant_admin():
-            return Project.objects.all()
-        return Project.objects.filter(members=user.employee)
+        base_qs = Project.objects.all() if user.is_tenant_admin() else Project.objects.filter(members=user.employee)
+
+        return base_qs.filter(is_active=True).prefetch_related('members')
 
 
 class ProjectManagerAssignmentViewSet(viewsets.ModelViewSet):
     queryset = ProjectManagerAssignment.objects.all()
     serializer_class = ProjectManagerAssignmentSerializer
-    permission_classes = [IsAuthenticated, IsTenantAdmin]
+    permission_classes = [IsAuthenticated, IsProjectManagerOrTenantAdmin]
 
     def create(self, request, *args, **kwargs):
         developer_id = request.data.get("developer")
         manager_id = request.data.get("manager")
         assigned_by = request.user.employee
 
-        if not developer_id or not manager_id:
-            return Response({"detail": "Manager and Developer IDs are required."},
+        if not developer_id:
+            return Response({"detail": "Developer ID is required."},
                             status=status.HTTP_400_BAD_REQUEST)
 
         try:
-            existing = ProjectManagerAssignment.objects.get(developer_id=developer_id)
+            developer = Employee.objects.get(id=developer_id)
+        except Employee.DoesNotExist:
+            return Response({"detail": "Invalid developer ID."}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            existing = ProjectManagerAssignment.objects.get(developer=developer)
             previous_manager = existing.manager
 
-            # Update assignment
-            existing.manager_id = manager_id
-            existing.assigned_by = assigned_by
-            existing.save()
+            if manager_id is None:
+                # Unassign: delete the assignment
+                existing.delete()
 
-            # Create audit log for reassignment
-            AssignmentAuditLog.objects.create(
-                developer_id=developer_id,
-                previous_manager=previous_manager,
-                new_manager_id=manager_id,
-                assigned_by=assigned_by
-            )
+                AssignmentAuditLog.objects.create(
+                    developer_id=developer_id,
+                    previous_manager=previous_manager,
+                    new_manager=None,
+                    assigned_by=assigned_by
+                )
 
-            serializer = ProjectManagerAssignmentSerializer(existing)
-            return Response(serializer.data)
+                return Response({"detail": "Developer unassigned."}, status=status.HTTP_204_NO_CONTENT)
+
+            else:
+                # Update assignment
+                existing.manager_id = manager_id
+                existing.assigned_by = assigned_by
+                existing.save()
+
+                # Create audit log for reassignment
+                AssignmentAuditLog.objects.create(
+                    developer_id=developer_id,
+                    previous_manager=previous_manager,
+                    new_manager_id=manager_id,
+                    assigned_by=assigned_by
+                )
+
+                serializer = ProjectManagerAssignmentSerializer(existing)
+                return Response(serializer.data)
 
         except ProjectManagerAssignment.DoesNotExist:
+            if manager_id is None:
+                return Response({"detail": "No assignment to remove."}, status=status.HTTP_400_BAD_REQUEST)
+
+
             # Create new assignment
             assignment = ProjectManagerAssignment.objects.create(
                 manager_id=manager_id,
@@ -93,10 +119,16 @@ class ProjectManagerAssignmentViewSet(viewsets.ModelViewSet):
             return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
+class AssignmentAuditLogPagination(LimitOffsetPagination):
+    default_limit = 10
+    max_limit = 50
+
+
 class AssignmentAuditLogList(generics.ListAPIView):
-    queryset = AssignmentAuditLog.objects.all().select_related('developer', 'previous_manager', 'new_manager', 'assigned_by')
+    queryset = AssignmentAuditLog.objects.all().select_related('developer', 'previous_manager', 'new_manager', 'assigned_by').order_by('-assigned_at')
     serializer_class = AssignmentAuditLogSerializer
     permission_classes = [IsAuthenticated, IsTenantAdmin]
+    pagination_class = AssignmentAuditLogPagination
 
 
 class ProjectMemberViewSet(viewsets.ModelViewSet):
@@ -116,6 +148,54 @@ class ProjectMemberViewSet(viewsets.ModelViewSet):
                 raise PermissionDenied("You can only assign developers who are under your management.")
     
         serializer.save()
+        
+    @action(detail=False, methods=['post'], url_path='bulk-assign')
+    def bulk_assign(self, request):
+        project_id = request.data.get("project")
+        developer_ids = request.data.get("developers", [])
+    
+        if not project_id or not isinstance(developer_ids, list):
+            return Response({"detail": "Project ID and developer list required."}, status=400)
+    
+        try:
+            project = Project.objects.get(id=project_id)
+        except Project.DoesNotExist:
+            return Response({"detail": "Project not found."}, status=404)
+    
+        pm = request.user.employee
+    
+        # Fetch valid developers
+        developers = Employee.objects.filter(id__in=developer_ids)
+        if request.user.role == UserRoles.PROJECT_MANAGER:
+            developers = developers.filter(
+                id__in=ProjectManagerAssignment.objects.filter(manager=pm).values_list("developer_id", flat=True)
+            )
+    
+        valid_dev_ids = set(developers.values_list("id", flat=True))
+        created_memberships = []
+        removed_memberships = []
+    
+        # Add new assignments
+        for dev_id in valid_dev_ids:
+            obj, created = ProjectMember.objects.get_or_create(
+                project=project, employee_id=dev_id,
+                defaults={"role": "Developer"},
+            )
+            if created:
+                created_memberships.append(obj.id)
+    
+        # Remove unselected
+        current_members = ProjectMember.objects.filter(project=project)
+        for member in current_members:
+            if member.employee.id not in valid_dev_ids and member.role == "Developer":
+                removed_memberships.append(member.id)
+                member.delete()
+    
+        return Response({
+            "detail": f"{len(created_memberships)} added, {len(removed_memberships)} removed.",
+            "created_ids": created_memberships,
+            "removed_ids": removed_memberships
+        })
 
 
 class GroupedPMAssignmentView(APIView):
@@ -127,9 +207,14 @@ class GroupedPMAssignmentView(APIView):
         )
 
         grouped = defaultdict(list)
+        assigned_devs = set()
 
         for assignment in assignments:
             grouped[assignment.manager].append(assignment.developer)
+            assigned_devs.add(assignment.developer)
+
+        all_devs = set(Employee.objects.filter(role='developer'))
+        unassigned_devs = all_devs - assigned_devs
 
         result = [
             {
@@ -139,7 +224,28 @@ class GroupedPMAssignmentView(APIView):
             for manager, developers in grouped.items()
         ]
 
+        if unassigned_devs:
+            result.append({
+                "manager": {
+                    "id": 0,
+                    "full_name": "Unassigned",
+                    "email": "—"
+                },
+                "developers": SimpleEmployeeSerializer(unassigned_devs, many=True).data
+            })
+
+
         return Response(result)
+
+
+class ProjectManagerMyDevelopersView(APIView):
+    permission_classes = [IsAuthenticated, IsProjectManagerOrTenantAdmin]
+
+    def get(self, request):
+        current_pm = request.user.employee
+        assigned_devs = ProjectManagerAssignment.objects.filter(manager=current_pm).select_related('developer', 'developer__user')
+        developers = [a.developer for a in assigned_devs]
+        return Response(SimpleEmployeeSerializer(developers, many=True).data)
 
 
 class TaskViewSet(viewsets.ModelViewSet):

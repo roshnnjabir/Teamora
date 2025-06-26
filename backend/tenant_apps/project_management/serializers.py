@@ -57,11 +57,14 @@ class ProjectManagerAssignmentSerializer(serializers.ModelSerializer):
 
 
 class ProjectSerializer(serializers.ModelSerializer):
-    members = serializers.PrimaryKeyRelatedField(queryset=Employee.objects.all(), many=True, required=False)
+    members = SimpleEmployeeSerializer(many=True, read_only=True)
 
     class Meta:
         model = Project
-        fields = ['id', 'name', 'description', 'start_date', 'end_date', 'created_by', 'members']
+        fields = [
+            'id', 'name', 'description', 'start_date', 'end_date',
+            'created_by', 'members', 'status', 'is_active', 'priority'
+        ]
         read_only_fields = ['id', 'created_by']
 
     def validate_name(self, value):
@@ -75,8 +78,8 @@ class ProjectSerializer(serializers.ModelSerializer):
         return value
 
     def validate(self, data):
-        start = data.get('start_date')
-        end = data.get('end_date')
+        start = data.get('start_date') or getattr(self.instance, 'start_date', None)
+        end = data.get('end_date') or getattr(self.instance, 'end_date', None)
 
         if start and end and end < start:
             raise serializers.ValidationError({
@@ -104,12 +107,12 @@ class ProjectSerializer(serializers.ModelSerializer):
         )
 
         return project
-    
+
 
 class TaskSerializer(serializers.ModelSerializer):
     class Meta:
         model = Task
-        fields = ['id', 'project', 'title', 'description', 'assigned_to', 'due_date', 'status', 'priority', 'created_at']
+        fields = ['id', 'project', 'title', 'description', 'assigned_to', 'due_date', 'status', 'priority', 'created_at', 'updated_at']
         read_only_fields = ['id', 'created_at', 'updated_at']
 
 
