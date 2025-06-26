@@ -148,6 +148,15 @@ class ProjectMemberViewSet(viewsets.ModelViewSet):
                 raise PermissionDenied("You can only assign developers who are under your management.")
 
         serializer.save()
+    
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        if instance.role == "Project Manager":
+            raise PermissionDenied("You cannot delete a Project Manager from the project.")
+
+        instance.is_active = False
+        instance.save()
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
     @action(detail=False, methods=['post'], url_path='bulk-assign')
     def bulk_assign(self, request):
