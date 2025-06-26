@@ -4,6 +4,7 @@ from shared_apps.custom_auth.serializers import MyTokenObtainPairSerializer, Use
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
+from rest_framework_simplejwt.tokens import RefreshToken, TokenError
 from rest_framework.views import APIView
 from rest_framework import status
 from django.conf import settings
@@ -68,7 +69,6 @@ class MyTokenRefreshView(APIView):
 
     def post(self, request):
         refresh_token = request.COOKIES.get("refresh_token")
-
         if not refresh_token:
             return Response({"detail": "Refresh token not found."}, status=status.HTTP_401_UNAUTHORIZED)
 
@@ -76,21 +76,21 @@ class MyTokenRefreshView(APIView):
             token = RefreshToken(refresh_token)
             new_access_token = str(token.access_token)
 
-            # Optionally rotate refresh token here with token.blacklist() if you use blacklist app
+            response = Response(status=status.HTTP_200_OK)
 
-            response = Response({"access": new_access_token}, status=status.HTTP_200_OK)
-            # Set new access token in HttpOnly cookie
             response.set_cookie(
                 key="access_token",
                 value=new_access_token,
                 httponly=True,
-                secure=True,  # Set True in production (HTTPS)
+                secure=True,
                 samesite='Lax',
-                max_age=15*60,  # 15 minutes or your access token lifetime
+                max_age=15 * 60,  # 15 minutes
+                path='/api/',
             )
+
             return response
 
-        except Exception:
+        except TokenError:
             return Response({"detail": "Invalid refresh token."}, status=status.HTTP_401_UNAUTHORIZED)
 
 

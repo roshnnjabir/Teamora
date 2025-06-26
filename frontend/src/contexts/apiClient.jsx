@@ -21,12 +21,12 @@ const apiClient = axios.create({
 let isRefreshing = false;
 let failedQueue = [];
 
-const processQueue = (error, token = null) => {
+const processQueue = (error, response) => {
   failedQueue.forEach(({ resolve, reject }) => {
     if (error) {
       reject(error);
     } else {
-      resolve(apiClient(token));
+      resolve(response);
     }
   });
   failedQueue = [];
@@ -38,27 +38,27 @@ apiClient.interceptors.response.use(
     const originalRequest = error.config;
 
     const isUnauthorized = error.response?.status === 401;
-    const isTokenExpired =
-      error.response?.data?.detail?.toLowerCase?.().includes("token") ?? false;
+    const alreadyRetried = originalRequest._retry;
 
-    if (isUnauthorized && isTokenExpired && !originalRequest._retry) {
+    if (isUnauthorized && !alreadyRetried) {
+      originalRequest._retry = true;
+
       if (isRefreshing) {
         return new Promise((resolve, reject) => {
           failedQueue.push({ resolve, reject });
         });
       }
 
-      originalRequest._retry = true;
       isRefreshing = true;
 
       try {
         await apiClient.post("/api/token/refresh/");
         isRefreshing = false;
-        processQueue(null, originalRequest);
+        processQueue(null, apiClient(originalRequest));
         return apiClient(originalRequest);
       } catch (refreshError) {
         isRefreshing = false;
-        processQueue(refreshError);
+        processQueue(refreshError, null);
         return Promise.reject(refreshError);
       }
     }

@@ -86,7 +86,6 @@ const EditProjectModal = ({ project, onClose, onUpdate }) => {
       };
 
       const res = await apiClient.patch(`/api/projects/${project.id}/`, payload);
-      alert("Project updated successfully!");
       if (onUpdate) onUpdate(res.data);
       onClose();
     } catch (error) {

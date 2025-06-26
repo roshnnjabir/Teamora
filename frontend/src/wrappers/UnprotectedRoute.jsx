@@ -4,10 +4,12 @@ import { useSelector } from "react-redux";
 import { isSubdomain } from "../utils/domainUtils";
 
 const UnprotectedRoute = ({ children }) => {
-  const user = useSelector((state) => state.auth.user);
+  const { user, isAuthReady } = useSelector((state) => state.auth) || {};
   const hostname = window.location.hostname;
 
   const isRootDomain = !isSubdomain();
+
+  if (!isAuthReady) return null;
 
   if (user) {
     const role = user.role?.toLowerCase();
