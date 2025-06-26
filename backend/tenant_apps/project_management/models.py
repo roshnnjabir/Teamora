@@ -36,7 +36,7 @@ class ProjectMember(models.Model):
         ]
 
 
-class AssignmentAuditLog(models.Model):
+class DeveloperAssignmentAuditLog(models.Model):
     developer = models.ForeignKey(Employee, on_delete=models.CASCADE, related_name="assignment_audits")
     previous_manager = models.ForeignKey(Employee, on_delete=models.SET_NULL, null=True, blank=True, related_name="+")
     new_manager = models.ForeignKey(Employee, on_delete=models.SET_NULL, null=True, blank=True, related_name="+")

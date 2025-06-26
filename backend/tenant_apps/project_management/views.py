@@ -7,7 +7,7 @@ from rest_framework import generics, status
 from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.exceptions import PermissionDenied
 from tenant_apps.employee.models import Employee, ProjectManagerAssignment
-from tenant_apps.project_management.models import AssignmentAuditLog
+from tenant_apps.project_management.models import DeveloperAssignmentAuditLog
 from core.constants import UserRoles
 from core.permissions import (
     IsTenantAdmin,
@@ -23,7 +23,7 @@ from .serializers import (
     SubtaskSerializer,
     ProjectManagerAssignmentSerializer,
     SimpleEmployeeSerializer,
-    AssignmentAuditLogSerializer
+    DeveloperAssignmentAuditLogSerializer
 )
 
 
@@ -69,7 +69,7 @@ class ProjectManagerAssignmentViewSet(viewsets.ModelViewSet):
                 # Unassign: delete the assignment
                 existing.delete()
 
-                AssignmentAuditLog.objects.create(
+                DeveloperAssignmentAuditLog.objects.create(
                     developer_id=developer_id,
                     previous_manager=previous_manager,
                     new_manager=None,
@@ -85,7 +85,7 @@ class ProjectManagerAssignmentViewSet(viewsets.ModelViewSet):
                 existing.save()
 
                 # Create audit log for reassignment
-                AssignmentAuditLog.objects.create(
+                DeveloperAssignmentAuditLog.objects.create(
                     developer_id=developer_id,
                     previous_manager=previous_manager,
                     new_manager_id=manager_id,
@@ -108,7 +108,7 @@ class ProjectManagerAssignmentViewSet(viewsets.ModelViewSet):
             )
 
             # Log new assignment
-            AssignmentAuditLog.objects.create(
+            DeveloperAssignmentAuditLog.objects.create(
                 developer_id=developer_id,
                 previous_manager=None,
                 new_manager_id=manager_id,
@@ -119,16 +119,16 @@ class ProjectManagerAssignmentViewSet(viewsets.ModelViewSet):
             return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
-class AssignmentAuditLogPagination(LimitOffsetPagination):
+class DeveloperAssignmentAuditLogPagination(LimitOffsetPagination):
     default_limit = 10
     max_limit = 50
 
 
-class AssignmentAuditLogList(generics.ListAPIView):
-    queryset = AssignmentAuditLog.objects.all().select_related('developer', 'previous_manager', 'new_manager', 'assigned_by').order_by('-assigned_at')
-    serializer_class = AssignmentAuditLogSerializer
+class DeveloperAssignmentAuditLogList(generics.ListAPIView):
+    queryset = DeveloperAssignmentAuditLog.objects.all().select_related('developer', 'previous_manager', 'new_manager', 'assigned_by').order_by('-assigned_at')
+    serializer_class = DeveloperAssignmentAuditLogSerializer
     permission_classes = [IsAuthenticated, IsTenantAdmin]
-    pagination_class = AssignmentAuditLogPagination
+    pagination_class = DeveloperAssignmentAuditLogPagination
 
 
 class ProjectMemberViewSet(viewsets.ModelViewSet):

@@ -1,7 +1,7 @@
 # project_management/serializers.py
 from rest_framework import serializers
 from rest_framework import generics
-from tenant_apps.project_management.models import Project, ProjectMember, Task, Subtask, AssignmentAuditLog
+from tenant_apps.project_management.models import Project, ProjectMember, Task, Subtask, DeveloperAssignmentAuditLog
 from tenant_apps.employee.models import Employee, ProjectManagerAssignment
 from core.constants import UserRoles
 import datetime
@@ -135,12 +135,12 @@ class SubtaskSerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'created_at']
 
 
-class AssignmentAuditLogSerializer(serializers.ModelSerializer):
+class DeveloperAssignmentAuditLogSerializer(serializers.ModelSerializer):
     developer = SimpleEmployeeSerializer(read_only=True)
     previous_manager = SimpleEmployeeSerializer(read_only=True)
     new_manager = SimpleEmployeeSerializer(read_only=True)
     assigned_by = SimpleEmployeeSerializer(read_only=True)
 
     class Meta:
-        model = AssignmentAuditLog
+        model = DeveloperAssignmentAuditLog
         fields = ['id', 'developer', 'previous_manager', 'new_manager', 'assigned_by', 'assigned_at']
