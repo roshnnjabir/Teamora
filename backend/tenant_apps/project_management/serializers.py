@@ -56,8 +56,20 @@ class ProjectManagerAssignmentSerializer(serializers.ModelSerializer):
         )
 
 
+class ProjectMemberDetailSerializer(serializers.ModelSerializer):
+    employee = SimpleEmployeeSerializer()
+
+    class Meta:
+        model = ProjectMember
+        fields = ['id', 'employee', 'role', 'joined_at']
+
+
 class ProjectSerializer(serializers.ModelSerializer):
-    members = SimpleEmployeeSerializer(many=True, read_only=True)
+    members = serializers.SerializerMethodField()
+
+    def get_members(self, obj):
+        members = ProjectMember.objects.filter(project=obj)
+        return ProjectMemberDetailSerializer(members, many=True).data
 
     class Meta:
         model = Project

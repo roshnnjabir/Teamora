@@ -1,6 +1,7 @@
 # project_management/models.py
 from django.db import models
 from tenant_apps.employee.models import Employee
+from django.conf import settings
 from core.constants import TaskStatus, Priority, ProjectStatus
 
 class Project(models.Model):
@@ -25,6 +26,7 @@ class Project(models.Model):
 class ProjectMember(models.Model):
     project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name="project_members")
     employee = models.ForeignKey(Employee, on_delete=models.CASCADE, related_name="project_memberships")
+    is_active = models.BooleanField(default=True)
     role = models.CharField(max_length=50)  # e.g. "Developer", "Project Manager", "Tech Lead", "QA Engineer"
     joined_at = models.DateField(auto_now_add=True)
 
@@ -71,3 +73,14 @@ class Subtask(models.Model):
 
     def __str__(self):
         return self.title
+
+
+class TaskAssignmentAudit(models.Model):
+    task = models.ForeignKey(Task, on_delete=models.CASCADE, related_name='assignment_audits')
+    previous_assignee = models.ForeignKey(Employee, null=True, blank=True, on_delete=models.SET_NULL, related_name='previous_tasks')
+    new_assignee = models.ForeignKey(Employee, null=True, blank=True, on_delete=models.SET_NULL, related_name='new_tasks')
+    changed_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True)
+    timestamp = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Task {self.task_id} reassigned by {self.changed_by}"

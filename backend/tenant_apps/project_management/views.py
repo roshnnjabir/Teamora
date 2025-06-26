@@ -15,7 +15,7 @@ from core.permissions import (
     IsProjectReadOnlyOrManager,
 )
 from rest_framework.permissions import IsAuthenticated
-from .models import Project, ProjectMember, Task, Subtask
+from .models import Project, ProjectMember, Task, Subtask, TaskAssignmentAudit
 from .serializers import (
     ProjectSerializer,
     ProjectMemberSerializer,
@@ -132,69 +132,63 @@ class AssignmentAuditLogList(generics.ListAPIView):
 
 
 class ProjectMemberViewSet(viewsets.ModelViewSet):
-    queryset = ProjectMember.objects.all()
+    queryset = ProjectMember.objects.filter(is_active=True)
     serializer_class = ProjectMemberSerializer
     permission_classes = [IsAuthenticated, IsTenantAdmin | IsProjectManagerOrTenantAdmin]
 
     def get_queryset(self):
-        return ProjectMember.objects.all()
+        return ProjectMember.objects.filter(is_active=True)
 
     def perform_create(self, serializer):
         pm = self.request.user.employee
         employee = serializer.validated_data['employee']
-    
+
         if self.request.user.role == UserRoles.PROJECT_MANAGER:
             if not ProjectManagerAssignment.objects.filter(manager=pm, developer=employee).exists():
                 raise PermissionDenied("You can only assign developers who are under your management.")
-    
+
         serializer.save()
-        
+
     @action(detail=False, methods=['post'], url_path='bulk-assign')
     def bulk_assign(self, request):
         project_id = request.data.get("project")
         developer_ids = request.data.get("developers", [])
-    
+
         if not project_id or not isinstance(developer_ids, list):
             return Response({"detail": "Project ID and developer list required."}, status=400)
-    
+
         try:
             project = Project.objects.get(id=project_id)
         except Project.DoesNotExist:
             return Response({"detail": "Project not found."}, status=404)
-    
+
         pm = request.user.employee
-    
-        # Fetch valid developers
+
         developers = Employee.objects.filter(id__in=developer_ids)
         if request.user.role == UserRoles.PROJECT_MANAGER:
             developers = developers.filter(
                 id__in=ProjectManagerAssignment.objects.filter(manager=pm).values_list("developer_id", flat=True)
             )
-    
+
         valid_dev_ids = set(developers.values_list("id", flat=True))
         created_memberships = []
-        removed_memberships = []
-    
-        # Add new assignments
+
         for dev_id in valid_dev_ids:
-            obj, created = ProjectMember.objects.get_or_create(
-                project=project, employee_id=dev_id,
-                defaults={"role": "Developer"},
+            member, created = ProjectMember.objects.get_or_create(
+                project=project,
+                employee_id=dev_id,
+                defaults={"role": "Developer", "is_active": True}
             )
-            if created:
-                created_memberships.append(obj.id)
-    
-        # Remove unselected
-        current_members = ProjectMember.objects.filter(project=project)
-        for member in current_members:
-            if member.employee.id not in valid_dev_ids and member.role == "Developer":
-                removed_memberships.append(member.id)
-                member.delete()
-    
+            if not created and not member.is_active:
+                member.is_active = True
+                member.save()
+                created_memberships.append(member.id)
+            elif created:
+                created_memberships.append(member.id)
+
         return Response({
-            "detail": f"{len(created_memberships)} added, {len(removed_memberships)} removed.",
+            "detail": f"{len(created_memberships)} new member(s) added or reactivated.",
             "created_ids": created_memberships,
-            "removed_ids": removed_memberships
         })
 
 
@@ -265,11 +259,36 @@ class TaskViewSet(viewsets.ModelViewSet):
         task = serializer.save(created_by=employee)
 
         if employee.role == UserRoles.PROJECT_MANAGER:
-            if not ProjectMember.objects.filter(project=task.project, employee=employee).exists():
+            if not ProjectMember.objects.filter(is_active=True, project=task.project, employee=employee).exists():
                 raise PermissionDenied("You're not a member of this project.")
 
-            if task.assigned_to and not ProjectMember.objects.filter(project=task.project, employee=task.assigned_to).exists():
+            if task.assigned_to and not ProjectMember.objects.filter(is_active=True, project=task.project, employee=task.assigned_to).exists():
                 raise PermissionDenied("Assigned user is not in this project.")
+
+    def partial_update(self, request, *args, **kwargs):
+        task = self.get_object()
+        previous_assignee = task.assigned_to
+
+        response = super().partial_update(request, *args, **kwargs)
+
+        new_assignee_id = request.data.get('assigned_to')
+        if 'assigned_to' in request.data:
+            new_assignee = None
+            if new_assignee_id:
+                try:
+                    new_assignee = Employee.objects.get(id=new_assignee_id)
+                except Employee.DoesNotExist:
+                    pass
+
+            if previous_assignee != new_assignee:
+                TaskAssignmentAudit.objects.create(
+                    task=task,
+                    previous_assignee=previous_assignee,
+                    new_assignee=new_assignee,
+                    changed_by=request.user,
+                )
+
+        return response
 
 
 class SubtaskViewSet(viewsets.ModelViewSet):
