@@ -261,13 +261,14 @@ class TaskViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         user = self.request.user
-        task = serializer.save()
+        employee = user.employee
+        task = serializer.save(created_by=employee)
 
-        if user.role == UserRoles.PROJECT_MANAGER:
-            if not ProjectMember.objects.filter(project=task.project, employee=user.employee).exists():
+        if employee.role == UserRoles.PROJECT_MANAGER:
+            if not ProjectMember.objects.filter(project=task.project, employee=employee).exists():
                 raise PermissionDenied("You're not a member of this project.")
 
-            if not ProjectMember.objects.filter(project=task.project, employee=task.assigned_to).exists():
+            if task.assigned_to and not ProjectMember.objects.filter(project=task.project, employee=task.assigned_to).exists():
                 raise PermissionDenied("Assigned user is not in this project.")
 
 
