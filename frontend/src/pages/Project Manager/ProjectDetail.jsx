@@ -92,6 +92,20 @@ const ProjectManagerProjectDetail = () => {
     }
   };
 
+  const handleRemoveMember = async (member) => {
+    const confirmed = window.confirm(`Are you sure you want to remove ${member.full_name} from the project?`);
+    if (!confirmed) return;
+
+    try {
+      await apiClient.delete(`/api/members/${member.id}/`);
+      const res = await apiClient.get(`/api/projects/${projectId}/`);
+      setProject(res.data);
+    } catch (error) {
+      console.error("Failed to remove member:", error);
+      alert("Error removing member. Please try again.");
+    }
+  };
+
   const handleTaskDragEnd = async ({ destination, draggableId }) => {
     if (!destination) return;
     const taskId = parseInt(draggableId);
@@ -266,14 +280,22 @@ const ProjectManagerProjectDetail = () => {
           {project.members?.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {project.members.map((member) => (
-                <div key={member.id} className="flex items-center space-x-3 p-3 bg-[#F9FAFB] rounded-lg">
+                <div key={member.id} className="group relative flex items-center space-x-3 p-3 bg-[#F9FAFB] rounded-lg hover:bg-gray-100 transition" >
                   <div className="w-10 h-10 rounded-full bg-[#00C4B4] text-white text-sm font-medium flex items-center justify-center">
-                    {getInitials(member.full_name)}
+                    {getInitials(member.employee.full_name)}
                   </div>
                   <div>
-                    <p className="font-medium text-[#1A2A44]">{member.full_name}</p>
-                    <p className="text-sm text-[#6B7280]">{member.email}</p>
+                    <p className="font-medium text-[#1A2A44]">{member.employee.full_name}</p>
+                    <p className="text-sm text-[#6B7280]">{member.employee.email}</p>
                   </div>
+
+                  <button
+                    title="Remove Member"
+                    onClick={() => handleRemoveMember(member)}
+                    className="absolute top-2 right-2 hidden group-hover:block text-red-500 hover:text-red-700"
+                  >
+                    🗑️
+                  </button>
                 </div>
               ))}
             </div>

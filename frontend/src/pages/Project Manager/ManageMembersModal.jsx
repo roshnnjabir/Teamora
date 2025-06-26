@@ -3,20 +3,20 @@ import apiClient from "../../contexts/apiClient";
 
 const ManageMembersModal = ({ projectId, developers = [], currentMembers = [], onClose, onSuccess }) => {
   const [selectedDevIds, setSelectedDevIds] = useState([]);
-  // const [role, setRole] = useState("Developer");
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
+
+  // Filter out already assigned developers
+  const availableDevelopers = developers.filter(
+    (dev) => !currentMembers.some((member) => member.employee.id === dev.id)
+  );
+  
 
   const handleCheckboxChange = (id) => {
     setSelectedDevIds((prev) =>
       prev.includes(id) ? prev.filter((devId) => devId !== id) : [...prev, id]
     );
   };
-
-  useEffect(() => {
-    const assignedIds = currentMembers.map((member) => member.id);
-    setSelectedDevIds(assignedIds);
-  }, [currentMembers]);
 
   const handleSubmit = async () => {
     if (selectedDevIds.length === 0) {
@@ -26,10 +26,9 @@ const ManageMembersModal = ({ projectId, developers = [], currentMembers = [], o
 
     setLoading(true);
     try {
-      const res = await apiClient.post("/api/members/bulk-assign/", {
+      await apiClient.post("/api/members/bulk-assign/", {
         project: projectId,
         developers: selectedDevIds,
-        // role: role
       });
 
       onSuccess?.();
@@ -43,15 +42,15 @@ const ManageMembersModal = ({ projectId, developers = [], currentMembers = [], o
   return (
     <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center">
       <div className="bg-white p-6 rounded-xl w-full max-w-lg">
-        <h2 className="text-xl font-bold mb-4">Assign Developers to Project</h2>
+        <h2 className="text-xl font-bold mb-4">Add Members</h2>
 
         {error && <p className="text-red-600 text-sm mb-2">{error}</p>}
 
         <div className="max-h-64 overflow-y-auto mb-4 border p-2 rounded">
-          {developers.length === 0 ? (
-            <p className="text-sm text-gray-500">No developers available.</p>
+          {availableDevelopers.length === 0 ? (
+            <p className="text-sm text-gray-500">All developers are already assigned.</p>
           ) : (
-            developers.map((dev) => (
+            availableDevelopers.map((dev) => (
               <label key={dev.id} className="flex items-center gap-2 py-1">
                 <input
                   type="checkbox"
@@ -65,16 +64,6 @@ const ManageMembersModal = ({ projectId, developers = [], currentMembers = [], o
           )}
         </div>
 
-        {/* <div className="mb-4">
-          <label className="block text-sm font-medium mb-1">Role</label>
-          <input
-            type="text"
-            value={role}
-            onChange={(e) => setRole(e.target.value)}
-            className="w-full border px-3 py-2 rounded"
-          />
-        </div> */}
-
         <div className="flex justify-end gap-2">
           <button
             onClick={onClose}
@@ -87,7 +76,7 @@ const ManageMembersModal = ({ projectId, developers = [], currentMembers = [], o
             className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
             disabled={loading}
           >
-            {loading ? "Assigning..." : "Assign Selected"}
+            {loading ? "Adding..." : "Add Selected"}
           </button>
         </div>
       </div>
