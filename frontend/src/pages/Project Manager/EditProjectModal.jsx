@@ -1,20 +1,37 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import apiClient from "../../contexts/apiClient";
 
-const CreateProjectModal = ({ onClose, onSuccess }) => {
+const EditProjectModal = ({ project, onClose, onUpdate }) => {
   const [formData, setFormData] = useState({
     name: "",
     description: "",
     start_date: "",
     end_date: "",
+    status: "planning",
     priority: "medium",
+    is_active: true,
   });
 
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  useEffect(() => {
+    if (project) {
+      setFormData({
+        name: project.name || "",
+        description: project.description || "",
+        start_date: project.start_date || "",
+        end_date: project.end_date || "",
+        status: project.status || "planning",
+        priority: project.priority || "medium",
+        is_active: project.is_active ?? true,
+      });
+    }
+  }, [project]);
+
   const validateForm = () => {
     const newErrors = {};
+    const today = new Date().toISOString().split("T")[0];
 
     if (!formData.name.trim()) {
       newErrors.name = ["Project name is required."];
@@ -23,8 +40,6 @@ const CreateProjectModal = ({ onClose, onSuccess }) => {
     if (formData.description && formData.description.trim().length < 10) {
       newErrors.description = ["Description must be at least 10 characters."];
     }
-
-    const today = new Date().toISOString().split("T")[0];
 
     if (formData.start_date && formData.start_date < today) {
       newErrors.start_date = ["Start date cannot be in the past."];
@@ -38,14 +53,24 @@ const CreateProjectModal = ({ onClose, onSuccess }) => {
   };
 
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-    setErrors({ ...errors, [e.target.name]: null });
+    const { name, value, type, checked } = e.target;
+    setFormData({
+      ...formData,
+      [name]: type === "checkbox" ? checked : value,
+    });
+    setErrors({ ...errors, [name]: null });
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
     setErrors({});
+
+    if (!project?.id) {
+      setErrors({ general: "Invalid project ID." });
+      setIsSubmitting(false);
+      return;
+    }
 
     const validationErrors = validateForm();
     if (Object.keys(validationErrors).length > 0) {
@@ -55,61 +80,54 @@ const CreateProjectModal = ({ onClose, onSuccess }) => {
     }
 
     try {
-      await apiClient.post("/api/projects/", formData);
-      alert("Project created successfully!");
-      if (onSuccess) onSuccess();
+      const payload = {
+        ...formData,
+        is_active: Boolean(formData.is_active),
+      };
+
+      const res = await apiClient.patch(`/api/projects/${project.id}/`, payload);
+      alert("Project updated successfully!");
+      if (onUpdate) onUpdate(res.data);
       onClose();
     } catch (error) {
       const response = error?.response?.data;
+      console.error("Update failed:", error); // ✅ Useful for debugging
       setErrors(response || { general: "Something went wrong." });
     } finally {
       setIsSubmitting(false);
     }
   };
 
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
       <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-lg mx-4">
-        <h2 className="text-xl font-semibold text-[#2F3A4C] mb-4">Create New Project</h2>
+        <h2 className="text-xl font-semibold mb-4">Edit Project</h2>
 
-        {errors.general && (
-          <p className="mb-4 text-sm text-red-600">{errors.general}</p>
-        )}
+        {errors.general && <div className="mb-4 text-red-600 text-sm">{errors.general}</div>}
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Name */}
           <div>
             <label className="block text-sm font-medium text-gray-700">Project Name</label>
             <input
               type="text"
               name="name"
-              required
               value={formData.name}
               onChange={handleChange}
-              className={`mt-1 w-full px-3 py-2 border-2 rounded-lg ${
-                errors.name ? "border-red-500" : "border-gray-200"
-              } focus:outline-none focus:ring-2 focus:ring-blue-400`}
+              className="w-full px-3 py-2 border rounded-lg border-gray-300"
             />
-            {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name[0]}</p>}
           </div>
 
-          {/* Description */}
           <div>
             <label className="block text-sm font-medium text-gray-700">Description</label>
             <textarea
               name="description"
               value={formData.description}
               onChange={handleChange}
-              className={`mt-1 w-full px-3 py-2 border-2 rounded-lg ${
-                errors.description ? "border-red-500" : "border-gray-200"
-              } focus:outline-none focus:ring-2 focus:ring-blue-400`}
+              className="w-full px-3 py-2 border rounded-lg border-gray-300"
             />
-            {errors.description && (
-              <p className="text-red-500 text-sm mt-1">{errors.description[0]}</p>
-            )}
           </div>
 
-          {/* Dates */}
           <div className="flex gap-4">
             <div className="flex-1">
               <label className="block text-sm font-medium text-gray-700">Start Date</label>
@@ -118,13 +136,8 @@ const CreateProjectModal = ({ onClose, onSuccess }) => {
                 name="start_date"
                 value={formData.start_date}
                 onChange={handleChange}
-                className={`mt-1 w-full px-3 py-2 border-2 rounded-lg ${
-                  errors.start_date ? "border-red-500" : "border-gray-200"
-                } focus:outline-none focus:ring-2 focus:ring-blue-400`}
+                className="w-full px-3 py-2 border rounded-lg border-gray-300"
               />
-              {errors.start_date && (
-                <p className="text-red-500 text-sm mt-1">{errors.start_date[0]}</p>
-              )}
             </div>
 
             <div className="flex-1">
@@ -134,36 +147,54 @@ const CreateProjectModal = ({ onClose, onSuccess }) => {
                 name="end_date"
                 value={formData.end_date}
                 onChange={handleChange}
-                className={`mt-1 w-full px-3 py-2 border-2 rounded-lg ${
-                  errors.end_date ? "border-red-500" : "border-gray-200"
-                } focus:outline-none focus:ring-2 focus:ring-blue-400`}
+                className="w-full px-3 py-2 border rounded-lg border-gray-300"
               />
-              {errors.end_date && (
-                <p className="text-red-500 text-sm mt-1">{errors.end_date[0]}</p>
-              )}
             </div>
           </div>
 
-          {/* Priority */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Priority</label>
-            <select
-              name="priority"
-              value={formData.priority}
-              onChange={handleChange}
-              className="mt-1 w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
-            >
-              <option value="low">Low</option>
-              <option value="medium">Medium</option>
-              <option value="high">High</option>
-            </select>
-            {errors.priority && (
-              <p className="text-red-500 text-sm mt-1">{errors.priority[0]}</p>
-            )}
+          <div className="flex gap-4">
+            <div className="flex-1">
+              <label className="block text-sm font-medium text-gray-700">Priority</label>
+              <select
+                name="priority"
+                value={formData.priority}
+                onChange={handleChange}
+                className="w-full px-3 py-2 border rounded-lg border-gray-300"
+              >
+                <option value="low">Low</option>
+                <option value="medium">Medium</option>
+                <option value="high">High</option>
+              </select>
+            </div>
+
+            <div className="flex-1">
+              <label className="block text-sm font-medium text-gray-700">Status</label>
+              <select
+                name="status"
+                value={formData.status}
+                onChange={handleChange}
+                className="w-full px-3 py-2 border rounded-lg border-gray-300"
+              >
+                <option value="planning">Planning</option>
+                <option value="in_progress">In Progress</option>
+                <option value="completed">Completed</option>
+                <option value="on_hold">On Hold</option>
+              </select>
+            </div>
           </div>
 
-          {/* Buttons */}
-          <div className="flex justify-end gap-3 pt-4">
+          <div className="flex items-center">
+            <input
+              type="checkbox"
+              name="is_active"
+              checked={formData.is_active}
+              onChange={handleChange}
+              className="mr-2"
+            />
+            <label className="text-sm text-gray-700">Active Project</label>
+          </div>
+
+          <div className="flex justify-end gap-2 mt-4">
             <button
               type="button"
               onClick={onClose}
@@ -174,10 +205,10 @@ const CreateProjectModal = ({ onClose, onSuccess }) => {
             </button>
             <button
               type="submit"
-              className="px-4 py-2 bg-[#00C4B4] text-white rounded-lg hover:bg-teal-600 disabled:opacity-50"
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
               disabled={isSubmitting}
             >
-              {isSubmitting ? "Creating..." : "Create"}
+              {isSubmitting ? "Updating..." : "Update"}
             </button>
           </div>
         </form>
@@ -186,4 +217,4 @@ const CreateProjectModal = ({ onClose, onSuccess }) => {
   );
 };
 
-export default CreateProjectModal;
+export default EditProjectModal;

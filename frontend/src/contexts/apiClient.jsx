@@ -1,6 +1,7 @@
 import axios from 'axios';
 
 const hostname = window.location.hostname;
+const protocol = window.location.protocol;
 let tenantSubdomain = null;
 
 if (hostname.includes('.') && !hostname.startsWith('localhost')) {
@@ -9,8 +10,8 @@ if (hostname.includes('.') && !hostname.startsWith('localhost')) {
 }
 
 const baseURL = tenantSubdomain
-  ? `http://${tenantSubdomain}.localhost:8000`
-  : `http://localhost:8000`;
+  ? `${protocol}//${tenantSubdomain}.localhost:8000`
+  : `${protocol}//localhost:8000`;
 
 const apiClient = axios.create({
   baseURL,
@@ -20,8 +21,14 @@ const apiClient = axios.create({
 let isRefreshing = false;
 let failedQueue = [];
 
-const processQueue = (error) => {
-  failedQueue.forEach(({ reject }) => reject(error));
+const processQueue = (error, token = null) => {
+  failedQueue.forEach(({ resolve, reject }) => {
+    if (error) {
+      reject(error);
+    } else {
+      resolve(apiClient(token));
+    }
+  });
   failedQueue = [];
 };
 
@@ -31,13 +38,13 @@ apiClient.interceptors.response.use(
     const originalRequest = error.config;
 
     const isUnauthorized = error.response?.status === 401;
-    const isTokenExpired = error.response?.data?.detail?.toLowerCase?.().includes("token") ?? false;
+    const isTokenExpired =
+      error.response?.data?.detail?.toLowerCase?.().includes("token") ?? false;
 
-    // Only refresh if token actually expired
     if (isUnauthorized && isTokenExpired && !originalRequest._retry) {
       if (isRefreshing) {
-        return new Promise((_, reject) => {
-          failedQueue.push({ reject });
+        return new Promise((resolve, reject) => {
+          failedQueue.push({ resolve, reject });
         });
       }
 
@@ -45,10 +52,9 @@ apiClient.interceptors.response.use(
       isRefreshing = true;
 
       try {
-        await apiClient.post('/api/token/refresh/');
+        await apiClient.post("/api/token/refresh/");
         isRefreshing = false;
-        failedQueue = [];
-
+        processQueue(null, originalRequest);
         return apiClient(originalRequest);
       } catch (refreshError) {
         isRefreshing = false;
@@ -57,7 +63,6 @@ apiClient.interceptors.response.use(
       }
     }
 
-    // ✅ If it's not token-related 401, don't try to refresh — pass it on
     return Promise.reject(error);
   }
 );

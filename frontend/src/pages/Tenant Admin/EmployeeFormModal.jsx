@@ -3,7 +3,7 @@ import { getInputClasses } from "../../styles/formClasses";
 
 const roles = ["project_manager", "hr", "developer"];
 
-export default function EmployeeFormModal({ onClose, onSave, initialData, error }) {
+export default function EmployeeFormModal({ onClose, onSave, initialData, error, onSuccess }) {
   const [formData, setFormData] = useState({
     full_name: initialData?.full_name || "",
     email: initialData?.email || "",
@@ -39,7 +39,12 @@ export default function EmployeeFormModal({ onClose, onSave, initialData, error 
     delete dataToSend.confirm_email;
 
     dataToSend.role = dataToSend.role.toLowerCase();
-    onSave(dataToSend);
+    onSave(dataToSend)
+      .then(() => {
+        if (typeof onSuccess === "function") {
+          onSuccess();
+        }
+    });
   };
 
   return (

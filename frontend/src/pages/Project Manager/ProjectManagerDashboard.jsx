@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { logoutUser } from "../../features/Auth/authThunks";
 import CreateProjectModal from "./CreateProjectModal";
 import apiClient from "../../contexts/apiClient";
+import ManageMembersModal from "./ManageMembersModal";
 
 const PmDashboard = () => {
   const dispatch = useDispatch();
@@ -12,27 +13,55 @@ const PmDashboard = () => {
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [myDevelopers, setMyDevelopers] = useState([]);
+  const [selectedProject, setSelectedProject] = useState(null);
+
+  const fetchProjects = async () => {
+    try {
+      const response = await apiClient.get("/api/projects/");
+      setProjects(response.data);
+    } catch (err) {
+      const message = err?.response?.data?.detail || "Failed to fetch projects.";
+      setError(message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchDevelopers = async () => {
+    try {
+      const res = await apiClient.get("/api/my-developers/");
+      setMyDevelopers(res.data);
+    } catch (err) {
+      console.error("Failed to fetch developers", err);
+    }
+  };
 
   useEffect(() => {
-    const fetchProjects = async () => {
-      try {
-        const response = await apiClient.get("/api/projects/");
-        setProjects(response.data);
-      } catch (err) {
-        const message = err?.response?.data?.detail || "Failed to fetch projects.";
-        setError(message);
-      } finally {
-        setLoading(false);
-      }
-    };
+    const controller = new AbortController();
 
     fetchProjects();
-  }, []);
+    fetchDevelopers();
 
+    return () => controller.abort();
+  }, []);
 
   const handleLogout = () => {
     dispatch(logoutUser());
   };
+
+  const getInitials = (name) => {
+    if (!name) return "";
+    return name
+      .split(" ")
+      .map((part) => part[0])
+      .join("")
+      .toUpperCase();
+  };
+
+  const activeProjects = projects.filter((p) => p.is_active).length;
+  const teamMembers = new Set(projects.flatMap((p) => (p.members || []).map((m) => m.id))).size;
+  const pendingApprovals = 0;
 
   return (
     <div className="flex min-h-screen bg-[#F9FAFB] text-[#1A2A44]">
@@ -58,7 +87,7 @@ const PmDashboard = () => {
         <h1 className="text-3xl font-bold text-[#2F3A4C] mb-2">Project Manager Dashboard</h1>
         <p className="text-[#2F3A4C] mb-6">Welcome, Project Manager! Here's your overview.</p>
 
-        {/* Button to open modal */}
+        {/* Create Button */}
         <div className="mb-4 flex justify-end">
           <button
             onClick={() => setShowCreateModal(true)}
@@ -68,33 +97,33 @@ const PmDashboard = () => {
           </button>
         </div>
 
-        {/* Modal */}
         {showCreateModal && (
           <CreateProjectModal
             onClose={() => setShowCreateModal(false)}
+            onSuccess={fetchProjects}
           />
         )}
 
-        {/* Overview Cards */}
+        {/* Dynamic Overview Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="bg-white p-6 rounded-lg shadow border border-[#B0B8C5]">
             <h3 className="text-lg font-semibold text-[#2F3A4C] mb-2">Active Projects</h3>
-            <p className="text-2xl font-bold text-[#00C4B4]">12</p>
+            <p className="text-2xl font-bold text-[#00C4B4]">{activeProjects}</p>
           </div>
           <div className="bg-white p-6 rounded-lg shadow border border-[#B0B8C5]">
             <h3 className="text-lg font-semibold text-[#2F3A4C] mb-2">Pending Approvals</h3>
-            <p className="text-2xl font-bold text-[#FBBF24]">4</p>
+            <p className="text-2xl font-bold text-[#FBBF24]">{pendingApprovals}</p>
           </div>
           <div className="bg-white p-6 rounded-lg shadow border border-[#B0B8C5]">
             <h3 className="text-lg font-semibold text-[#2F3A4C] mb-2">Team Members</h3>
-            <p className="text-2xl font-bold text-[#34D399]">23</p>
+            <p className="text-2xl font-bold text-[#34D399]">{teamMembers}</p>
           </div>
         </div>
 
         {/* Project List Section */}
         <section className="mt-10">
           <h2 className="text-2xl font-semibold text-[#2F3A4C] mb-4">Current Projects</h2>
-          <div className="bg-white p-4 rounded shadow text-[#2F3A4C] space-y-4 border border-[#B0B8C5]">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {loading ? (
               <p>Loading projects...</p>
             ) : error ? (
@@ -106,14 +135,78 @@ const PmDashboard = () => {
                 <div
                   key={project.id}
                   onClick={() => navigate(`/project_manager/projects/${project.id}`)}
-                  className="p-4 border-b border-[#E5E8EC] cursor-pointer hover:bg-[#F3F4F6] rounded transition"
+                  className="bg-white p-4 rounded shadow border border-[#E5E8EC] hover:bg-[#F3F4F6] cursor-pointer transition"
                 >
-                  <h3 className="text-lg font-semibold">{project.name}</h3>
-                  <p className="text-sm text-[#6B7280]">{project.description}</p>
+                  <div className="flex justify-between items-center mb-2">
+                    <h3 className="text-lg font-bold">{project.name}</h3>
+                    <span className="text-sm px-2 py-1 rounded-full bg-blue-100 text-blue-600 capitalize">
+                      {project.status || 'planning'}
+                    </span>
+                  </div>
+                  <p className="text-sm text-gray-600 mb-2">{project.description}</p>
+                  <p className="text-sm text-gray-500">📅 {project.start_date} - {project.end_date || 'N/A'}</p>
+                  <p className="text-sm mt-1">🔥 Priority: <strong>{project.priority || 'medium'}</strong></p>
+                  <div className="flex mt-3 -space-x-2">
+                    {(project.members || []).slice(0, 4).map((member) => (
+                      <div
+                        key={member.id}
+                        title={member.full_name}
+                        className="w-8 h-8 rounded-full bg-[#00C4B4] text-white text-xs flex items-center justify-center border-2 border-white"
+                      >
+                        {getInitials(member.full_name)}
+                      </div>
+                    ))}
+                    {project.members?.length > 4 && (
+                      <div className="w-8 h-8 rounded-full bg-gray-300 text-xs flex items-center justify-center border-2 border-white">
+                        +{project.members.length - 4}
+                      </div>
+                    )}
+                    {project.members?.length === 0 && (
+                      <p className="text-xs text-gray-400 mt-2">No members yet.</p>
+                    )}
+                  </div>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation(); // Prevent card click
+                      setSelectedProject(project);
+                    }}
+                    className="text-sm text-blue-600 hover:underline mt-2"
+                  >
+                    Manage Members
+                  </button>
                 </div>
               ))
             )}
           </div>
+        </section>
+
+        {selectedProject && (
+          <ManageMembersModal
+            projectId={selectedProject.id}
+            currentMembers={selectedProject.members || []}
+            developers={myDevelopers}
+            onClose={() => setSelectedProject(null)}
+            onSuccess={() => {
+              fetchProjects();
+              fetchDevelopers();
+            }}
+          />
+        )}
+
+        <section className="mt-10">
+          <h2 className="text-2xl font-semibold text-[#2F3A4C] mb-4">Your Developers</h2>
+          {myDevelopers.length === 0 ? (
+            <p className="text-gray-500">No developers assigned to you.</p>
+          ) : (
+            <div className="flex flex-wrap gap-4">
+              {myDevelopers.map((dev) => (
+                <div key={dev.id} className="bg-white p-3 rounded shadow border w-60">
+                  <h4 className="font-semibold">{dev.full_name}</h4>
+                  <p className="text-sm text-gray-500">{dev.email}</p>
+                </div>
+              ))}
+            </div>
+          )}
         </section>
       </main>
     </div>

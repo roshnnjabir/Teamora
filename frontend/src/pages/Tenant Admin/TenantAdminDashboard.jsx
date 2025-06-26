@@ -8,6 +8,7 @@ import EmployeeFormModal from "./EmployeeFormModal";
 
 const TenantAdminDashboard = () => {
   const dispatch = useDispatch();
+  const [refreshAssignments, setRefreshAssignments] = useState(false);
   const [employees, setEmployees] = useState([]);
   const [auditLogs, setAuditLogs] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -16,6 +17,7 @@ const TenantAdminDashboard = () => {
   const [editingEmployee, setEditingEmployee] = useState(null);
   const [formError, setFormError] = useState("");
   const [notification, setNotification] = useState({ message: "", type: "" });
+  const [limit, setLimit] = useState(10);
 
   const handleLogout = () => dispatch(logoutUser());
 
@@ -66,7 +68,9 @@ const TenantAdminDashboard = () => {
         setEmployees((prev) => [...prev, response.data]);
       }
       setShowModal(false);
+      setRefreshAssignments(prev => !prev);
       setEditingEmployee(null);
+      return response;
     } catch (err) {
       const msg =
         err?.response?.data?.non_field_errors?.[0] ||
@@ -74,6 +78,7 @@ const TenantAdminDashboard = () => {
         Object.values(err?.response?.data || {}).flat()?.[0] ||
         "An unexpected error occurred.";
       setFormError(msg);
+      throw err;
     }
   };
   
@@ -95,8 +100,8 @@ const TenantAdminDashboard = () => {
 
   const fetchAuditLogs = async () => {
     try {
-      const res = await apiClient.get("/api/audit-logs/");
-      setAuditLogs(res.data);
+      const res = await apiClient.get(`/api/audit-logs/?limit=${limit}`);
+      setAuditLogs(res.data.results || res.data);
     } catch (err) {
       console.error("Failed to fetch audit logs", err);
     }
@@ -105,7 +110,7 @@ const TenantAdminDashboard = () => {
   useEffect(() => {
     fetchEmployees();
     fetchAuditLogs();
-  }, []);
+  }, [limit]);
 
 
   return (
@@ -215,15 +220,17 @@ const TenantAdminDashboard = () => {
             onClose={() => {
               setShowModal(false);
               setEditingEmployee(null);
-              setFormError(""); // clear error on modal close
+              setFormError("");
             }}
             onSave={handleSave}
+            onSuccess={fetchEmployees}
             initialData={editingEmployee}
             error={formError}
           />
         )}
 
-        <PMDeveloperAssignmentManager />
+
+        <PMDeveloperAssignmentManager onAssignmentChange={fetchAuditLogs} refreshTrigger={refreshAssignments}/>
         <section className="mt-10">
           <h2 className="text-xl font-semibold mb-4">Project Manager Assignment History</h2>
           {auditLogs.length === 0 ? (
@@ -241,8 +248,8 @@ const TenantAdminDashboard = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {auditLogs.map((log) => (
-                    <tr key={log.id} className="border-t">
+                  {auditLogs.slice(0, 10).map((log) => (
+                    <tr key={log.id}>
                       <td className="py-2 px-4">{log.developer?.full_name}</td>
                       <td className="py-2 px-4">
                         {log.previous_manager ? log.previous_manager.full_name : "—"}
@@ -250,14 +257,20 @@ const TenantAdminDashboard = () => {
                       <td className="py-2 px-4">{log.new_manager?.full_name}</td>
                       <td className="py-2 px-4">{log.assigned_by?.full_name}</td>
                       <td className="py-2 px-4">
-                        {log.assigned_at
-                          ? format(new Date(log.assigned_at), "dd MMM yyyy p")
-                          : "N/A"}
+                        {log.assigned_at ? format(new Date(log.assigned_at), "dd MMM yyyy p") : "N/A"}
                       </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
+              {auditLogs.length >= limit && (
+                <button
+                  onClick={() => setLimit((prev) => prev + 10)}
+                  className="mt-4 text-blue-600 hover:underline"
+                >
+                  Show More
+                </button>
+              )}
             </div>
           )}
         </section>
