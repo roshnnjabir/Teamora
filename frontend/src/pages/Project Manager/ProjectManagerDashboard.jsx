@@ -4,7 +4,6 @@ import { useNavigate } from "react-router-dom";
 import { logoutUser } from "../../features/Auth/authThunks";
 import CreateProjectModal from "./CreateProjectModal";
 import apiClient from "../../contexts/apiClient";
-import ManageMembersModal from "./ManageMembersModal";
 
 const PmDashboard = () => {
   const dispatch = useDispatch();
@@ -14,7 +13,6 @@ const PmDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [myDevelopers, setMyDevelopers] = useState([]);
-  const [selectedProject, setSelectedProject] = useState(null);
 
   const fetchProjects = async () => {
     try {
@@ -165,33 +163,11 @@ const PmDashboard = () => {
                       <p className="text-xs text-gray-400 mt-2">No members yet.</p>
                     )}
                   </div>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation(); // Prevent card click
-                      setSelectedProject(project);
-                    }}
-                    className="text-sm text-blue-600 hover:underline mt-2"
-                  >
-                    Manage Members
-                  </button>
                 </div>
               ))
             )}
           </div>
         </section>
-
-        {selectedProject && (
-          <ManageMembersModal
-            projectId={selectedProject.id}
-            currentMembers={selectedProject.members || []}
-            developers={myDevelopers}
-            onClose={() => setSelectedProject(null)}
-            onSuccess={() => {
-              fetchProjects();
-              fetchDevelopers();
-            }}
-          />
-        )}
 
         <section className="mt-10">
           <h2 className="text-2xl font-semibold text-[#2F3A4C] mb-4">Your Developers</h2>
