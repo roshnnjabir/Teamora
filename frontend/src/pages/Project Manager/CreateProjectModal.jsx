@@ -56,7 +56,6 @@ const CreateProjectModal = ({ onClose, onSuccess }) => {
 
     try {
       await apiClient.post("/api/projects/", formData);
-      alert("Project created successfully!");
       if (onSuccess) onSuccess();
       onClose();
     } catch (error) {

@@ -21,7 +21,8 @@ CORS_ALLOWED_ORIGINS = [
     "http://britco.localhost:5173",
     "http://luminar.localhost:5173",
     "http://openai.localhost:5173",
-    "http://microsoft.localhost:5173"
+    "http://microsoft.localhost:5173",
+    "http://greenpeace.localhost:5173"
 ]
 
 CORS_ALLOW_CREDENTIALS = True

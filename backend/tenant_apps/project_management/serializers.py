@@ -68,7 +68,7 @@ class ProjectSerializer(serializers.ModelSerializer):
     members = serializers.SerializerMethodField()
 
     def get_members(self, obj):
-        members = ProjectMember.objects.filter(project=obj)
+        members = ProjectMember.objects.filter(project=obj, is_active=True)
         return ProjectMemberDetailSerializer(members, many=True).data
 
     class Meta:
@@ -115,7 +115,8 @@ class ProjectSerializer(serializers.ModelSerializer):
         ProjectMember.objects.create(
             project=project,
             employee=creator,
-            role="Project Manager"
+            role="Project Manager",
+            is_active=True
         )
 
         return project
@@ -124,8 +125,39 @@ class ProjectSerializer(serializers.ModelSerializer):
 class TaskSerializer(serializers.ModelSerializer):
     class Meta:
         model = Task
-        fields = ['id', 'project', 'title', 'description', 'assigned_to', 'due_date', 'status', 'priority', 'created_at', 'created_by', 'updated_at']
+        fields = [
+            'id', 'project', 'title', 'description', 'assigned_to',
+            'due_date', 'status', 'priority', 'created_at',
+            'created_by', 'updated_at'
+        ]
         read_only_fields = ['id', 'created_at', 'updated_at', 'created_by']
+
+    def validate_assigned_to(self, value):
+        """
+        Ensure that the assigned developer is an active member of the project.
+        """
+        if not value:
+            return value
+
+        project = self.initial_data.get("project")
+        if not project:
+            project = getattr(self.instance, "project", None)
+
+        if not project:
+            raise serializers.ValidationError("Project context is required.")
+
+        from tenant_apps.project_management.models import ProjectMember
+
+        is_member = ProjectMember.objects.filter(
+            employee=value,
+            project_id=project,
+            is_active=True
+        ).exists()
+
+        if not is_member:
+            raise serializers.ValidationError("This employee is not an active member of the project.")
+
+        return value
 
 
 class SubtaskSerializer(serializers.ModelSerializer):

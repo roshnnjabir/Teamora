@@ -82,7 +82,7 @@ class MyTokenRefreshView(APIView):
                 key="access_token",
                 value=new_access_token,
                 httponly=True,
-                secure=True,
+                secure=False,
                 samesite='Lax',
                 max_age=15 * 60,  # 15 minutes
                 path='/api/',

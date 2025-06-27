@@ -151,11 +151,20 @@ class ProjectMemberViewSet(viewsets.ModelViewSet):
     
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
+
         if instance.role == "Project Manager":
             raise PermissionDenied("You cannot delete a Project Manager from the project.")
 
+        from tenant_apps.project_management.models import Task
+
+        Task.objects.filter(
+            project=instance.project,
+            assigned_to=instance.employee
+        ).update(assigned_to=None)
+
         instance.is_active = False
         instance.save()
+
         return Response(status=status.HTTP_204_NO_CONTENT)
 
     @action(detail=False, methods=['post'], url_path='bulk-assign')
@@ -205,6 +214,9 @@ class GroupedPMAssignmentView(APIView):
     permission_classes = [IsAuthenticated, IsTenantAdmin]
 
     def get(self, request):
+        all_pms = Employee.objects.filter(role='project_manager')
+        all_devs = set(Employee.objects.filter(role='developer'))
+
         assignments = ProjectManagerAssignment.objects.select_related(
             "manager", "developer", "manager__user", "developer__user"
         )
@@ -213,19 +225,19 @@ class GroupedPMAssignmentView(APIView):
         assigned_devs = set()
 
         for assignment in assignments:
-            grouped[assignment.manager].append(assignment.developer)
+            grouped[assignment.manager.id].append(assignment.developer)
             assigned_devs.add(assignment.developer)
 
-        all_devs = set(Employee.objects.filter(role='developer'))
         unassigned_devs = all_devs - assigned_devs
 
-        result = [
-            {
-                "manager": SimpleEmployeeSerializer(manager).data,
-                "developers": SimpleEmployeeSerializer(developers, many=True).data
-            }
-            for manager, developers in grouped.items()
-        ]
+        result = []
+
+        for pm in all_pms:
+            devs = grouped.get(pm.id, [])
+            result.append({
+                "manager": SimpleEmployeeSerializer(pm).data,
+                "developers": SimpleEmployeeSerializer(devs, many=True).data
+            })
 
         if unassigned_devs:
             result.append({

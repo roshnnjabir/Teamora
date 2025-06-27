@@ -4,6 +4,7 @@ from rest_framework.permissions import IsAuthenticated
 from tenant_apps.employee.serializers import EmployeeSerializer, SetPasswordSerializer
 from tenant_apps.employee.models import Employee
 from core.permissions import IsTenantAdmin
+from core.constants import UserRoles
 from shared_apps.custom_auth.models import User
 from django.contrib.auth.tokens import default_token_generator
 from tenant_apps.employee.utils.email import send_set_password_email
@@ -18,7 +19,7 @@ class EmployeeViewSet(viewsets.ModelViewSet):
     lookup_field = 'id'
 
     def get_queryset(self):
-        return Employee.objects.filter(user__tenant=self.request.user.tenant)
+        return Employee.objects.filter(user__tenant=self.request.user.tenant).exclude(role=UserRoles.TENANT_ADMIN)
 
     def perform_create(self, serializer):
         serializer.save(tenant=self.request.user.tenant)

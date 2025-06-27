@@ -1,5 +1,4 @@
 import axios from 'axios';
-
 const hostname = window.location.hostname;
 const protocol = window.location.protocol;
 let tenantSubdomain = null;
@@ -21,12 +20,12 @@ const apiClient = axios.create({
 let isRefreshing = false;
 let failedQueue = [];
 
-const processQueue = (error, response) => {
+const processQueue = (error, token = null) => {
   failedQueue.forEach(({ resolve, reject }) => {
     if (error) {
       reject(error);
     } else {
-      resolve(response);
+      resolve(apiClient(token));
     }
   });
   failedQueue = [];
@@ -38,27 +37,29 @@ apiClient.interceptors.response.use(
     const originalRequest = error.config;
 
     const isUnauthorized = error.response?.status === 401;
-    const alreadyRetried = originalRequest._retry;
+    const isTokenExpired =
+      error.response?.data?.detail?.toLowerCase?.().includes("token") ?? false;
 
-    if (isUnauthorized && !alreadyRetried) {
-      originalRequest._retry = true;
 
+
+    if (isUnauthorized && isTokenExpired && !originalRequest._retry) {
       if (isRefreshing) {
         return new Promise((resolve, reject) => {
           failedQueue.push({ resolve, reject });
         });
       }
 
+      originalRequest._retry = true;
       isRefreshing = true;
 
       try {
         await apiClient.post("/api/token/refresh/");
         isRefreshing = false;
-        processQueue(null, apiClient(originalRequest));
+        processQueue(null, originalRequest);
         return apiClient(originalRequest);
       } catch (refreshError) {
         isRefreshing = false;
-        processQueue(refreshError, null);
+        processQueue(refreshError);
         return Promise.reject(refreshError);
       }
     }

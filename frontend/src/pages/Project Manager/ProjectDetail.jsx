@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from "react-router-dom";
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useEffect, useState, useRef, useCallback, useMemo } from "react";
 import apiClient from "../../contexts/apiClient";
 
 import EditProjectModal from "./EditProjectModal";
@@ -31,6 +31,45 @@ const getPriorityColor = (priority) => {
 const getInitials = (name) =>
   name?.split(' ').map(n => n[0]).join('').toUpperCase() || '?';
 
+const ScrollContainer = ({ children }) => {
+  const containerRef = useRef(null);
+  const [isDown, setIsDown] = useState(false);
+  const [startX, setStartX] = useState(0);
+  const [scrollLeft, setScrollLeft] = useState(0);
+
+  const handleMouseDown = (e) => {
+    setIsDown(true);
+    setStartX(e.pageX - containerRef.current.offsetLeft);
+    setScrollLeft(containerRef.current.scrollLeft);
+  };
+
+  const handleMouseLeave = () => setIsDown(false);
+  const handleMouseUp = () => setIsDown(false);
+
+  const handleMouseMove = (e) => {
+    if (!isDown) return;
+    e.preventDefault();
+    const x = e.pageX - containerRef.current.offsetLeft;
+    const walk = (x - startX) * 1.5; // sensitivity
+    containerRef.current.scrollLeft = scrollLeft - walk;
+  };
+
+  return (
+    <div
+      ref={containerRef}
+      onMouseDown={handleMouseDown}
+      onMouseLeave={handleMouseLeave}
+      onMouseUp={handleMouseUp}
+      onMouseMove={handleMouseMove}
+      className="overflow-x-auto cursor-grab active:cursor-grabbing select-none scrollbar-hidden"
+      style={{ whiteSpace: "nowrap" }}
+    >
+      {children}
+    </div>
+  );
+};
+
+
 const ProjectManagerProjectDetail = () => {
   const { projectId } = useParams();
   const navigate = useNavigate();
@@ -39,6 +78,7 @@ const ProjectManagerProjectDetail = () => {
   const [tasks, setTasks] = useState([]);
   const [developers, setDevelopers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [isDragging, setIsDragging] = useState(false);
 
   const [showEditModal, setShowEditModal] = useState(false);
   const [showMembersModal, setShowMembersModal] = useState(false);
@@ -108,9 +148,25 @@ const ProjectManagerProjectDetail = () => {
 
   const handleTaskDragEnd = async ({ destination, draggableId }) => {
     if (!destination) return;
+  
     const taskId = parseInt(draggableId);
+  
+    if (destination.droppableId === "delete-zone") {
+      const confirmed = window.confirm("Are you sure you want to delete this task?");
+      if (!confirmed) return;
+    
+      try {
+        await apiClient.delete(`/api/tasks/${taskId}/`);
+        await fetchTasks();
+      } catch (error) {
+        console.error("Failed to delete task:", error);
+        alert("Error deleting task.");
+      }
+      return;
+    }
+  
     const newAssigneeId = parseInt(destination.droppableId);
-
+  
     try {
       await apiClient.patch(`/api/tasks/${taskId}/`, {
         assigned_to: newAssigneeId === 0 ? null : newAssigneeId,
@@ -121,7 +177,6 @@ const ProjectManagerProjectDetail = () => {
     }
   };
 
-  // Memoize columns to avoid rebuilds
   const columns = useMemo(() => {
     const grouped = {
       0: {
@@ -131,19 +186,26 @@ const ProjectManagerProjectDetail = () => {
       },
     };
 
+    // Create a map of developer ids for fast lookup
+    const currentDeveloperIds = new Set(developers.map(dev => dev.id));
+
+    // Include current developers
     developers.forEach((dev) => {
       grouped[dev.id] = {
         id: dev.id,
         title: dev.full_name,
         subtitle: dev.email,
+        isFormer: false,
         tasks: tasks.filter(t => t.assigned_to === dev.id),
       };
     });
 
+
+
     return grouped;
   }, [tasks, developers]);
 
-  const columnOrder = useMemo(() => [0, ...developers.map(dev => dev.id)], [developers]);
+  const columnOrder = [0, ...developers.map(dev => dev.id)];
 
   // Render Loading State
   if (loading) {
@@ -334,18 +396,23 @@ const ProjectManagerProjectDetail = () => {
             </button>
           </div>
 
-          <DragDropContext onDragEnd={handleTaskDragEnd}>
-            <div className="overflow-x-auto pb-4">
+          <DragDropContext onDragStart={() => setIsDragging(true)}   onDragEnd={(result) => {
+              setIsDragging(false);
+              handleTaskDragEnd(result);
+            }}>
+            <ScrollContainer>
               <div className="flex space-x-6 min-w-max">
                 {columnOrder.map((colId) => (
-                  <Droppable key={colId} droppableId={colId.toString()}>
+                  <Droppable key={colId} droppableId={colId.toString()} isDropDisabled={columns[colId].isFormer}>
                     {(provided, snapshot) => (
                       <div
                         ref={provided.innerRef}
                         {...provided.droppableProps}
-                        className={`min-w-[320px] w-80 bg-[#F9FAFB] rounded-lg p-4 border-2 transition-colors ${
-                          snapshot.isDraggingOver ? 'border-[#00C4B4] bg-teal-50' : 'border-transparent'
-                        }`}
+                        className={`min-w-[320px] w-80 rounded-lg p-4 border-2 transition-colors
+                          ${columns[colId].isFormer ? 'bg-gray-100 border-gray-300 opacity-60 cursor-not-allowed' :
+                            snapshot.isDraggingOver ? 'border-[#00C4B4] bg-teal-50' : 'bg-[#F9FAFB] border-transparent'
+                          }
+                        `}
                       >
                         <div className="flex items-center justify-between mb-4">
                           <div>
@@ -407,7 +474,25 @@ const ProjectManagerProjectDetail = () => {
                   </Droppable>
                 ))}
               </div>
-            </div>
+            </ScrollContainer>
+            <Droppable droppableId="delete-zone">
+              {(provided, snapshot) => (
+                <div
+                  ref={provided.innerRef}
+                  {...provided.droppableProps}
+                  className={`
+                    mt-8 flex justify-center items-center h-32 rounded-lg border-2 border-dashed transition-all duration-300
+                    ${isDragging ? 'opacity-100' : 'opacity-0 pointer-events-none'}
+                    ${snapshot.isDraggingOver ? 'bg-red-100 border-red-500' : 'border-gray-300 bg-gray-50'}
+                  `}
+                >
+                  <div className="text-red-600 text-lg flex items-center space-x-2">
+                    🗑️ <span>Drag here to delete task</span>
+                  </div>
+                  {provided.placeholder}
+                </div>
+              )}
+            </Droppable>
           </DragDropContext>
         </div>
 

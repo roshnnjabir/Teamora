@@ -141,17 +141,21 @@ const PmDashboard = () => {
                       {project.status || 'planning'}
                     </span>
                   </div>
-                  <p className="text-sm text-gray-600 mb-2">{project.description}</p>
+                  <p className="text-sm text-gray-600 mb-4">
+                    {project.description?.length > 100
+                      ? `${project.description.slice(0, 100)}...`
+                      : project.description}
+                  </p>
                   <p className="text-sm text-gray-500">📅 {project.start_date} - {project.end_date || 'N/A'}</p>
                   <p className="text-sm mt-1">🔥 Priority: <strong>{project.priority || 'medium'}</strong></p>
-                  <div className="flex mt-3 -space-x-2">
+                  <div className="flex mt-4 -space-x-2">
                     {(project.members || []).slice(0, 4).map((member) => (
                       <div
-                        key={member.id}
-                        title={member.full_name}
+                        key={member.employee.id}
+                        title={member.employee.full_name}
                         className="w-8 h-8 rounded-full bg-[#00C4B4] text-white text-xs flex items-center justify-center border-2 border-white"
                       >
-                        {getInitials(member.full_name)}
+                        {getInitials(member.employee.full_name)}
                       </div>
                     ))}
                     {project.members?.length > 4 && (

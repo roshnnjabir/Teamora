@@ -11,6 +11,7 @@ from shared_apps.custom_auth.models import User
 from django.utils.crypto import get_random_string
 from shared_apps.tenants.serializers import TenantSignupSerializer
 from shared_apps.tenants.models import Client, Domain
+from django.core.management import call_command
 from shared_apps.custom_auth.models import User
 from core.permissions import IsTenantAdmin
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -26,6 +27,14 @@ class TenantSignupView(APIView):
         serializer = TenantSignupSerializer(data=request.data)
         if serializer.is_valid():
             tenant = serializer.save()
+
+            # 🛠️ Migrate the tenant schema so it has all tables
+            call_command(
+                'migrate_schemas',
+                schema_name=tenant.schema_name,
+                interactive=False,
+                verbosity=0
+            )
 
             # Get tenant admin user based on direct tenant relationship
             tenant_admin_user = User.objects.filter(

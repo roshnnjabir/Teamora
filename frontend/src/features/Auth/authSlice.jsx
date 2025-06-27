@@ -4,7 +4,6 @@ import apiClient from '../../contexts/apiClient';
 const initialState = {
   user: null,   // load this after verifying the session via API
   isAuthenticated: false,
-  isAuthReady: false,
 };
 
 const authSlice = createSlice({
@@ -14,12 +13,10 @@ const authSlice = createSlice({
     setUser: (state, action) => {
       state.user = action.payload;
       state.isAuthenticated = true;
-      state.isAuthReady = true;
     },
     clearUser: (state) => {
       state.user = null;
       state.isAuthenticated = false;
-      state.isAuthReady = true;
     },
   },
 });
