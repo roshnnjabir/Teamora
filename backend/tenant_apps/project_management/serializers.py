@@ -159,6 +159,22 @@ class TaskSerializer(serializers.ModelSerializer):
 
         return value
 
+    def get_project(self, obj):
+        return {
+            "id": obj.project.id,
+            "name": obj.project.name,
+        } if obj.project else None
+
+    def update(self, instance, validated_data):
+        user = self.context['request'].user
+    
+        # Only allow developers to change status/priority/description
+        if user.role == 'developer':
+            allowed_fields = ['status']
+            validated_data = {k: v for k, v in validated_data.items() if k in allowed_fields}
+    
+        return super().update(instance, validated_data)
+
 
 class SubtaskSerializer(serializers.ModelSerializer):
     class Meta:

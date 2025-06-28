@@ -13,6 +13,7 @@ from core.permissions import (
     IsTenantAdmin,
     IsProjectManagerOrTenantAdmin,
     IsProjectReadOnlyOrManager,
+    IsAssigneeOrManager
 )
 from rest_framework.permissions import IsAuthenticated
 from .models import Project, ProjectMember, Task, Subtask, TaskAssignmentAudit
@@ -257,16 +258,36 @@ class ProjectManagerMyDevelopersView(APIView):
     permission_classes = [IsAuthenticated, IsProjectManagerOrTenantAdmin]
 
     def get(self, request):
+        project_id = request.query_params.get('project_id')
         current_pm = request.user.employee
-        assigned_devs = ProjectManagerAssignment.objects.filter(manager=current_pm).select_related('developer', 'developer__user')
-        developers = [a.developer for a in assigned_devs]
+
+        # All developers assigned to this PM
+        assigned_qs = ProjectManagerAssignment.objects.filter(
+            manager=current_pm
+        ).select_related('developer', 'developer__user')
+
+        if project_id:
+            # If project filter is present, only return devs who are also project members
+            developer_ids = assigned_qs.values_list('developer_id', flat=True)
+
+            project_member_qs = ProjectMember.objects.filter(
+                project_id=project_id,
+                employee_id__in=developer_ids,
+                is_active=True
+            ).select_related('employee__user')
+
+            developers = [pm.employee for pm in project_member_qs]
+        else:
+            # Return all devs under the PM
+            developers = [a.developer for a in assigned_qs]
+
         return Response(SimpleEmployeeSerializer(developers, many=True).data)
 
 
 class TaskViewSet(viewsets.ModelViewSet):
     queryset = Task.objects.all()
     serializer_class = TaskSerializer
-    permission_classes = [IsAuthenticated, IsProjectManagerOrTenantAdmin]
+    permission_classes = [IsAuthenticated, IsAssigneeOrManager]
 
     def get_queryset(self):
         user = self.request.user
@@ -288,10 +309,24 @@ class TaskViewSet(viewsets.ModelViewSet):
 
     def partial_update(self, request, *args, **kwargs):
         task = self.get_object()
+        user = request.user
+        employee = user.employee
         previous_assignee = task.assigned_to
-
+    
+        # Developer-specific permission check
+        if user.role == UserRoles.DEVELOPER:
+            if task.assigned_to != employee:
+                raise PermissionDenied("You can only update tasks assigned to you.")
+    
+            # Restrict what fields a developer can update
+            allowed_fields = {'status', 'due_date'}
+            if not all(field in allowed_fields for field in request.data.keys()):
+                raise PermissionDenied("You can only update status or due date.")
+    
+        # Call super to handle the update
         response = super().partial_update(request, *args, **kwargs)
-
+    
+        # Audit log if reassignment happened
         new_assignee_id = request.data.get('assigned_to')
         if 'assigned_to' in request.data:
             new_assignee = None
@@ -300,15 +335,16 @@ class TaskViewSet(viewsets.ModelViewSet):
                     new_assignee = Employee.objects.get(id=new_assignee_id)
                 except Employee.DoesNotExist:
                     pass
-
+    
             if previous_assignee != new_assignee:
+                from tenant_apps.project_management.models import TaskAssignmentAudit
                 TaskAssignmentAudit.objects.create(
                     task=task,
                     previous_assignee=previous_assignee,
                     new_assignee=new_assignee,
-                    changed_by=request.user,
+                    changed_by=user,
                 )
-
+    
         return response
 
 
@@ -322,3 +358,11 @@ class SubtaskViewSet(viewsets.ModelViewSet):
         if user.is_tenant_admin():
             return Subtask.objects.all()
         return Subtask.objects.filter(task__assigned_to=user.employee)
+
+
+class MyAssignedTasksList(generics.ListAPIView):
+    serializer_class = TaskSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return Task.objects.filter(assigned_to=self.request.user.employee)
