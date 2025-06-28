@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from "react-router-dom";
-import { useEffect, useState, useRef, useCallback, useMemo } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import apiClient from "../../contexts/apiClient";
 
 import EditProjectModal from "./EditProjectModal";
@@ -8,28 +8,7 @@ import ManageMembersModal from "./ManageMembersModal";
 import CreateTaskModal from "./CreateTaskModal";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 
-// Utility Functions
-const getStatusColor = (status) => {
-  const map = {
-    completed: 'bg-green-100 text-green-800',
-    in_progress: 'bg-blue-100 text-blue-800',
-    on_hold: 'bg-yellow-100 text-yellow-800',
-    planning: 'bg-gray-100 text-gray-800',
-  };
-  return map[status] || 'bg-gray-100 text-gray-800';
-};
-
-const getPriorityColor = (priority) => {
-  const map = {
-    high: 'text-red-600',
-    medium: 'text-yellow-600',
-    low: 'text-green-600',
-  };
-  return map[priority] || 'text-gray-600';
-};
-
-const getInitials = (name) =>
-  name?.split(' ').map(n => n[0]).join('').toUpperCase() || '?';
+import { getStatusColor, getPriorityColor, getInitials, generateColumns } from "../../utils/projectUtils";
 
 const ScrollContainer = ({ children }) => {
   const containerRef = useRef(null);
@@ -50,7 +29,7 @@ const ScrollContainer = ({ children }) => {
     if (!isDown) return;
     e.preventDefault();
     const x = e.pageX - containerRef.current.offsetLeft;
-    const walk = (x - startX) * 1.5; // sensitivity
+    const walk = (x - startX) * 1.5;
     containerRef.current.scrollLeft = scrollLeft - walk;
   };
 
@@ -69,7 +48,6 @@ const ScrollContainer = ({ children }) => {
   );
 };
 
-
 const ProjectManagerProjectDetail = () => {
   const { projectId } = useParams();
   const navigate = useNavigate();
@@ -77,12 +55,17 @@ const ProjectManagerProjectDetail = () => {
   const [project, setProject] = useState(null);
   const [tasks, setTasks] = useState([]);
   const [developers, setDevelopers] = useState([]);
+  const [allDevelopers, setAllDevelopers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isDragging, setIsDragging] = useState(false);
 
   const [showEditModal, setShowEditModal] = useState(false);
   const [showMembersModal, setShowMembersModal] = useState(false);
   const [showCreateTaskModal, setShowCreateTaskModal] = useState(false);
+
+  // Generate columns dynamically
+  const columns = generateColumns(tasks, developers);
+  const columnOrder = [0, ...developers.map(dev => dev.id)];
 
   // Fetch tasks for current project
   const fetchTasks = useCallback(async () => {
@@ -94,27 +77,45 @@ const ProjectManagerProjectDetail = () => {
     }
   }, [projectId]);
 
-  // Fetch project and developer info
+  const fetchDevelopers = useCallback(async () => {
+    try {
+      const res = await apiClient.get(`/api/my-developers/?project_id=${projectId}`);
+      setDevelopers(res.data);
+      return res.data;
+    } catch (err) {
+      console.error("Failed to fetch developers", err);
+      return [];
+    }
+  }, [projectId]);
+
   useEffect(() => {
     const fetchAll = async () => {
       try {
-        const [projRes, devRes] = await Promise.all([
+        const [projRes, allDevsRes] = await Promise.all([
           apiClient.get(`/api/projects/${projectId}/`),
-          apiClient.get("/api/my-developers/"),
+          apiClient.get(`/api/my-developers/`),
         ]);
         setProject(projRes.data);
-        setDevelopers(devRes.data);
+        setAllDevelopers(allDevsRes.data);
         await fetchTasks();
+        await fetchDevelopers();
       } catch (err) {
         console.error("Error loading project data:", err);
       } finally {
         setLoading(false);
       }
     };
-    fetchAll();
-  }, [projectId, fetchTasks]);
 
+    fetchAll();
+  }, [projectId, fetchTasks, fetchDevelopers]);
+
+  // Optimistic UI for field updates
   const handleFieldUpdate = async (field, newValue) => {
+    const previousValue = project[field];
+    
+    // Optimistic update
+    setProject(prev => ({ ...prev, [field]: newValue }));
+
     try {
       const res = await apiClient.patch(`/api/projects/${projectId}/`, {
         [field]: newValue,
@@ -122,90 +123,102 @@ const ProjectManagerProjectDetail = () => {
       setProject(res.data);
       return null;
     } catch (err) {
+      // Rollback on error
+      setProject(prev => ({ ...prev, [field]: previousValue }));
+      
       const apiErrors = err?.response?.data;
-
       if (apiErrors && typeof apiErrors === 'object') {
         return apiErrors;
       }
-
       return { general: ["An unexpected error occurred."] };
     }
   };
 
+  // Optimistic UI for member removal
   const handleRemoveMember = async (member) => {
     const confirmed = window.confirm(`Are you sure you want to remove ${member.full_name} from the project?`);
     if (!confirmed) return;
 
+    const previousMembers = [...project.members];
+    const previousDevelopers = [...developers];
+
+    // Optimistic update - remove member immediately
+    setProject(prev => ({
+      ...prev,
+      members: prev.members.filter(m => m.id !== member.id)
+    }));
+    
+    setDevelopers(prev => prev.filter(d => d.id !== member.employee.id));
+
     try {
       await apiClient.delete(`/api/members/${member.id}/`);
-      const res = await apiClient.get(`/api/projects/${projectId}/`);
-      setProject(res.data);
+      
+      // Fetch fresh data to ensure consistency
+      const [projRes, newDevs] = await Promise.all([
+        apiClient.get(`/api/projects/${projectId}/`),
+        fetchDevelopers()
+      ]);
+      
+      setProject(projRes.data);
+      setDevelopers([...newDevs]);
     } catch (error) {
       console.error("Failed to remove member:", error);
+      
+      // Rollback on error
+      setProject(prev => ({ ...prev, members: previousMembers }));
+      setDevelopers(previousDevelopers);
+      
       alert("Error removing member. Please try again.");
     }
   };
 
-  const handleTaskDragEnd = async ({ destination, draggableId }) => {
+  // Optimistic UI for task drag & drop
+  const handleTaskDragEnd = async ({ destination, source, draggableId }) => {
     if (!destination) return;
-  
+    if (destination.droppableId === source.droppableId) return;
+
     const taskId = parseInt(draggableId);
-  
+    const newAssigneeId = parseInt(destination.droppableId);
+    const previousTasks = [...tasks];
+
+    // Handle delete zone
     if (destination.droppableId === "delete-zone") {
       const confirmed = window.confirm("Are you sure you want to delete this task?");
       if (!confirmed) return;
-    
+
+      // Optimistic update - remove task immediately
+      setTasks(prev => prev.filter(task => task.id !== taskId));
+
       try {
         await apiClient.delete(`/api/tasks/${taskId}/`);
-        await fetchTasks();
       } catch (error) {
         console.error("Failed to delete task:", error);
-        alert("Error deleting task.");
+        // Rollback on error
+        setTasks(previousTasks);
+        alert("Error deleting task. Changes reverted.");
       }
       return;
     }
-  
-    const newAssigneeId = parseInt(destination.droppableId);
-  
+
+    // Optimistic update - update task assignment immediately
+    const updatedTasks = tasks.map(task => 
+      task.id === taskId 
+        ? { ...task, assigned_to: newAssigneeId === 0 ? null : newAssigneeId } 
+        : task
+    );
+    setTasks(updatedTasks);
+
     try {
       await apiClient.patch(`/api/tasks/${taskId}/`, {
         assigned_to: newAssigneeId === 0 ? null : newAssigneeId,
       });
-      await fetchTasks();
     } catch (error) {
       console.error("Failed to update task assignment:", error);
+      // Rollback on error
+      setTasks(previousTasks);
+      alert("Assignment failed. Changes reverted.");
     }
   };
-
-  const columns = useMemo(() => {
-    const grouped = {
-      0: {
-        id: 0,
-        title: "Unassigned",
-        tasks: tasks.filter(t => !t.assigned_to),
-      },
-    };
-
-    // Create a map of developer ids for fast lookup
-    const currentDeveloperIds = new Set(developers.map(dev => dev.id));
-
-    // Include current developers
-    developers.forEach((dev) => {
-      grouped[dev.id] = {
-        id: dev.id,
-        title: dev.full_name,
-        subtitle: dev.email,
-        isFormer: false,
-        tasks: tasks.filter(t => t.assigned_to === dev.id),
-      };
-    });
-
-
-
-    return grouped;
-  }, [tasks, developers]);
-
-  const columnOrder = [0, ...developers.map(dev => dev.id)];
 
   // Render Loading State
   if (loading) {
@@ -392,14 +405,17 @@ const ProjectManagerProjectDetail = () => {
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
               </svg>
-              <span>New Task</span>
+              <span>New Task</span> 
             </button>
           </div>
 
-          <DragDropContext onDragStart={() => setIsDragging(true)}   onDragEnd={(result) => {
+          <DragDropContext 
+            onDragStart={() => setIsDragging(true)}   
+            onDragEnd={(result) => {
               setIsDragging(false);
               handleTaskDragEnd(result);
-            }}>
+            }}
+          >
             <ScrollContainer>
               <div className="flex space-x-6 min-w-max">
                 {columnOrder.map((colId) => (
@@ -438,8 +454,8 @@ const ProjectManagerProjectDetail = () => {
                                   ref={provided.innerRef}
                                   {...provided.draggableProps}
                                   {...provided.dragHandleProps}
-                                  className={`bg-white p-4 rounded-lg border shadow-sm cursor-grab active:cursor-grabbing transition-shadow ${
-                                    snapshot.isDragging ? 'shadow-lg ring-2 ring-[#00C4B4] ring-opacity-50' : 'hover:shadow-md'
+                                  className={`bg-white p-4 rounded-lg border shadow-sm cursor-grab active:cursor-grabbing transition-all duration-200 ${
+                                    snapshot.isDragging ? 'shadow-xl ring-2 ring-[#00C4B4] ring-opacity-50 transform rotate-2 scale-105' : 'hover:shadow-md'
                                   }`}
                                 >
                                   <h5 className="font-medium text-[#1A2A44] mb-2">{task.title}</h5>
@@ -475,19 +491,24 @@ const ProjectManagerProjectDetail = () => {
                 ))}
               </div>
             </ScrollContainer>
+            
+            {/* Enhanced Delete Zone with Better Animation */}
             <Droppable droppableId="delete-zone">
               {(provided, snapshot) => (
                 <div
                   ref={provided.innerRef}
                   {...provided.droppableProps}
                   className={`
-                    mt-8 flex justify-center items-center h-32 rounded-lg border-2 border-dashed transition-all duration-300
-                    ${isDragging ? 'opacity-100' : 'opacity-0 pointer-events-none'}
-                    ${snapshot.isDraggingOver ? 'bg-red-100 border-red-500' : 'border-gray-300 bg-gray-50'}
+                    mt-8 flex justify-center items-center h-32 rounded-lg border-2 border-dashed transition-all duration-300 ease-in-out
+                    ${isDragging ? 'opacity-100 transform scale-100' : 'opacity-0 transform scale-95 pointer-events-none'}
+                    ${snapshot.isDraggingOver ? 'bg-red-100 border-red-500 shadow-lg' : 'border-gray-300 bg-gray-50'}
                   `}
                 >
-                  <div className="text-red-600 text-lg flex items-center space-x-2">
-                    🗑️ <span>Drag here to delete task</span>
+                  <div className={`text-lg flex items-center space-x-2 transition-colors duration-200 ${
+                    snapshot.isDraggingOver ? 'text-red-700' : 'text-red-600'
+                  }`}>
+                    <span className="text-2xl">🗑️</span>
+                    <span className="font-medium">Drag here to delete task</span>
                   </div>
                   {provided.placeholder}
                 </div>
@@ -523,12 +544,13 @@ const ProjectManagerProjectDetail = () => {
       {showMembersModal && (
         <ManageMembersModal
           projectId={project.id}
-          developers={developers}
+          developers={allDevelopers}
           currentMembers={project.members || []}
           onClose={() => setShowMembersModal(false)}
           onSuccess={async () => {
             const res = await apiClient.get(`/api/projects/${projectId}/`);
             setProject(res.data);
+            await fetchDevelopers();
             setShowMembersModal(false);
           }}
         />
