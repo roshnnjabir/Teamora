@@ -19,6 +19,7 @@
     "date-fns": "^4.1.0",
     "framer-motion": "^12.19.1",
     "jwt-decode": "^4.0.0",
+    "lucide-react": "^0.525.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-hook-form": "^7.56.4",
