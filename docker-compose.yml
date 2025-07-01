@@ -1,0 +1,48 @@
+services:
+  backend:
+    build:
+      context: ./backend
+    container_name: teamora-backend
+    env_file:
+      - ./backend/.env
+    command: >
+      sh -c "
+        python manage.py migrate_schemas &&
+        daphne -b 0.0.0.0 -p 8000 backend.asgi:application
+      "
+    volumes:
+      - ./backend:/app
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+      - redis
+    environment:
+      - POSTGRES_DB=teamora
+      - POSTGRES_USER=teamora
+      - POSTGRES_PASSWORD=teamora
+      - DB_HOST=db
+      - DB_PORT=5432
+      - REDIS_URL=redis://redis:6379
+      - DJANGO_SETTINGS_MODULE=backend.settings.local
+
+  db:
+    image: postgres:15
+    container_name: teamora-db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    environment:
+      POSTGRES_DB: teamora
+      POSTGRES_USER: teamora
+      POSTGRES_PASSWORD: teamora
+    ports:
+      - "5432:5432"
+
+  redis:
+    image: redis:7
+    container_name: teamora-redis
+    ports:
+      - "6379:6379"
+
+volumes:
+  postgres_data:
