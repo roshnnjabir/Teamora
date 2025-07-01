@@ -4,11 +4,17 @@ from rest_framework.permissions import BasePermission, SAFE_METHODS
 from core.constants import UserRoles
 
 class IsSuperAdmin(BasePermission):
+    """
+    Allows access only to users with role 'super_admin(site-admin)'.
+    """
     def has_permission(self, request, view):
         return request.user.is_authenticated and request.user.is_super_admin()
 
 
 class IsTenantAdmin(BasePermission):
+    """
+    Allows access only to users with role 'tenant_admin'.
+    """
     def has_permission(self, request, view):
         return request.user.is_authenticated and request.user.is_tenant_admin()
 
