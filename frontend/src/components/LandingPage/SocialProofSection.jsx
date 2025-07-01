@@ -37,27 +37,23 @@ const stats = [
 export default function SocialProofSection() {
   const [current, setCurrent] = useState(0);
   const [isPlaying, setIsPlaying] = useState(true);
-  const [direction, setDirection] = useState(1);
 
   const nextSlide = useCallback(() => {
-    setDirection(1);
     setCurrent((prev) => (prev + 1) % testimonials.length);
   }, []);
 
   const prevSlide = useCallback(() => {
-    setDirection(-1);
     setCurrent((prev) => (prev - 1 + testimonials.length) % testimonials.length);
   }, []);
 
   const goToSlide = useCallback((index) => {
-    setDirection(index > current ? 1 : -1);
     setCurrent(index);
-  }, [current]);
+  }, []);
 
   useEffect(() => {
     if (!isPlaying) return;
     
-    const interval = setInterval(nextSlide, 4000);
+    const interval = setInterval(nextSlide, 5000);
     return () => clearInterval(interval);
   }, [isPlaying, nextSlide]);
 
@@ -65,18 +61,17 @@ export default function SocialProofSection() {
 
   return (
     <section className="py-20 px-6 bg-[#F9FAFB] relative overflow-hidden">
-      {/* Background decoration */}
-      <div className="absolute inset-0 opacity-30">
-        <div className="absolute top-20 left-10 w-32 h-32 bg-[#00C4B4] rounded-full blur-3xl opacity-10"></div>
-        <div className="absolute bottom-20 right-10 w-40 h-40 bg-[#FF6F61] rounded-full blur-3xl opacity-10"></div>
-        <div className="absolute top-1/2 left-1/2 w-20 h-20 bg-[#50C6E9] rounded-full blur-2xl opacity-10"></div>
+      {/* Subtle background decoration */}
+      <div className="absolute inset-0 opacity-20">
+        <div className="absolute top-20 left-10 w-32 h-32 bg-[#00C4B4] rounded-full blur-3xl opacity-5"></div>
+        <div className="absolute bottom-20 right-10 w-40 h-40 bg-[#FF6F61] rounded-full blur-3xl opacity-5"></div>
       </div>
 
       <div className="max-w-6xl mx-auto relative">
         {/* Header */}
         <div className="text-center mb-16">
           <div className="inline-flex items-center gap-2 bg-[#00C4B4]/10 text-[#00C4B4] px-4 py-2 rounded-full text-sm font-medium mb-4 border border-[#00C4B4]/20">
-            <span className="w-2 h-2 bg-[#00C4B4] rounded-full animate-pulse"></span>
+            <span className="w-2 h-2 bg-[#00C4B4] rounded-full"></span>
             Trusted by Industry Leaders
           </div>
           <h2 className="text-4xl md:text-5xl font-bold text-[#1A2A44] mb-4">
@@ -92,18 +87,13 @@ export default function SocialProofSection() {
           {stats.map((stat, index) => (
             <div
               key={stat.label}
-              className="group relative bg-white p-8 rounded-2xl border border-[#E5E8EC] shadow-sm hover:shadow-lg transition-all duration-300 hover:-translate-y-1 hover:border-[#00C4B4]/30"
-              style={{
-                animationDelay: `${index * 200}ms`,
-                animation: 'fadeInUp 0.6s ease-out forwards'
-              }}
+              className="bg-white p-8 rounded-2xl border border-[#E5E8EC] shadow-sm hover:shadow-md transition-shadow duration-300"
             >
               <div className="text-4xl mb-3">{stat.icon}</div>
-              <div className="text-4xl font-bold text-[#00C4B4] mb-2 group-hover:scale-110 transition-transform duration-300">
+              <div className="text-4xl font-bold text-[#00C4B4] mb-2">
                 {stat.value}
               </div>
               <div className="text-[#2F3A4C] font-medium">{stat.label}</div>
-              <div className="absolute inset-0 bg-gradient-to-br from-[#00C4B4]/5 to-transparent rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
             </div>
           ))}
         </div>
@@ -115,7 +105,7 @@ export default function SocialProofSection() {
             <div className="flex items-center gap-4">
               <button
                 onClick={() => setIsPlaying(!isPlaying)}
-                className="flex items-center gap-2 px-4 py-2 bg-white rounded-full border border-[#E5E8EC] shadow-sm hover:shadow-md hover:border-[#00C4B4]/30 transition-all duration-200 text-[#2F3A4C] hover:text-[#1A2A44]"
+                className="flex items-center gap-2 px-4 py-2 bg-white rounded-full border border-[#E5E8EC] shadow-sm hover:shadow-md transition-shadow duration-200 text-[#2F3A4C] hover:text-[#1A2A44]"
               >
                 {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
                 <span className="text-sm font-medium">
@@ -127,13 +117,13 @@ export default function SocialProofSection() {
             <div className="flex items-center gap-2">
               <button
                 onClick={prevSlide}
-                className="w-10 h-10 bg-white rounded-full border border-[#E5E8EC] shadow-sm hover:shadow-md hover:border-[#00C4B4]/30 transition-all duration-200 flex items-center justify-center text-[#2F3A4C] hover:text-[#1A2A44] hover:scale-105"
+                className="w-10 h-10 bg-white rounded-full border border-[#E5E8EC] shadow-sm hover:shadow-md transition-shadow duration-200 flex items-center justify-center text-[#2F3A4C] hover:text-[#1A2A44]"
               >
                 <ChevronLeft className="w-5 h-5" />
               </button>
               <button
                 onClick={nextSlide}
-                className="w-10 h-10 bg-white rounded-full border border-[#E5E8EC] shadow-sm hover:shadow-md hover:border-[#00C4B4]/30 transition-all duration-200 flex items-center justify-center text-[#2F3A4C] hover:text-[#1A2A44] hover:scale-105"
+                className="w-10 h-10 bg-white rounded-full border border-[#E5E8EC] shadow-sm hover:shadow-md transition-shadow duration-200 flex items-center justify-center text-[#2F3A4C] hover:text-[#1A2A44]"
               >
                 <ChevronRight className="w-5 h-5" />
               </button>
@@ -143,25 +133,22 @@ export default function SocialProofSection() {
           {/* Testimonial Card */}
           <div className="relative overflow-hidden">
             <div
-              className="flex transition-transform duration-700 ease-out"
+              className="flex transition-all duration-500 ease-out"
               style={{ transform: `translateX(-${current * 100}%)` }}
             >
               {testimonials.map((testimonial, index) => (
                 <div key={testimonial.name} className="w-full flex-shrink-0 px-2">
-                  <div className="bg-white p-10 rounded-3xl border border-[#E5E8EC] shadow-lg hover:shadow-xl transition-all duration-300 relative overflow-hidden group hover:border-[#00C4B4]/20">
-                    {/* Background accent */}
-                    <div className="absolute inset-0 bg-gradient-to-br from-[#00C4B4]/3 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                    
+                  <div className="bg-white p-10 rounded-3xl border border-[#E5E8EC] shadow-lg hover:shadow-xl transition-shadow duration-300 relative">
                     {/* Quote marks */}
-                    <div className="absolute top-6 left-8 text-6xl text-[#00C4B4]/20 font-serif">"</div>
+                    <div className="absolute top-6 left-8 text-6xl text-[#00C4B4]/15 font-serif">"</div>
                     
                     <div className="relative z-10">
-                      <blockquote className="text-xl leading-relaxed text-[#2F3A4C] mb-8 relative z-10 pl-8">
+                      <blockquote className="text-xl leading-relaxed text-[#2F3A4C] mb-8 pl-8">
                         {testimonial.quote}
                       </blockquote>
                       
                       <div className="flex items-center pl-8">
-                        <div className="w-16 h-16 bg-[#00C4B4] rounded-2xl flex items-center justify-center text-white font-bold text-lg mr-4 shadow-lg group-hover:scale-110 transition-transform duration-300 group-hover:bg-[#1A2A44]">
+                        <div className="w-16 h-16 bg-[#00C4B4] rounded-2xl flex items-center justify-center text-white font-bold text-lg mr-4 shadow-lg">
                           {testimonial.initials}
                         </div>
                         <div>
@@ -183,7 +170,7 @@ export default function SocialProofSection() {
               <button
                 key={index}
                 onClick={() => goToSlide(index)}
-                className={`h-3 rounded-full transition-all duration-300 ${
+                className={`h-3 rounded-full transition-all duration-200 ${
                   current === index
                     ? 'bg-[#00C4B4] w-8'
                     : 'bg-[#B0B8C5] w-3 hover:bg-[#00C4B4]/50'
@@ -192,18 +179,19 @@ export default function SocialProofSection() {
             ))}
           </div>
 
-          {/* Progress bar */}
-          <div className="mt-6 mx-auto max-w-md">
-            <div className="h-1 bg-[#E5E8EC] rounded-full overflow-hidden">
-              <div
-                className="h-full bg-[#00C4B4] rounded-full transition-all duration-100 ease-linear"
-                style={{
-                  width: isPlaying ? '100%' : '0%',
-                  animation: isPlaying ? 'progress 4s linear infinite' : 'none'
-                }}
-              />
+          {/* Simple progress indicator */}
+          {isPlaying && (
+            <div className="mt-6 mx-auto max-w-md">
+              <div className="h-1 bg-[#E5E8EC] rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-[#00C4B4] rounded-full"
+                  style={{
+                    animation: 'progress 5s linear infinite'
+                  }}
+                />
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
         {/* Call to Action */}
@@ -213,7 +201,7 @@ export default function SocialProofSection() {
               <span className="font-medium">Ready to join them?</span>
             </div>
             <a href="/signup">
-              <button className="bg-[#00C4B4] hover:bg-[#1A2A44] text-white px-6 py-3 rounded-xl font-medium transition-all duration-200 hover:scale-105 shadow-lg hover:shadow-xl">
+              <button className="bg-[#00C4B4] hover:bg-[#1A2A44] text-white px-6 py-3 rounded-xl font-medium transition-colors duration-200 shadow-lg">
                 Start Free Trial
               </button>
             </a>
@@ -222,17 +210,6 @@ export default function SocialProofSection() {
       </div>
 
       <style jsx>{`
-        @keyframes fadeInUp {
-          from {
-            opacity: 0;
-            transform: translateY(30px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-
         @keyframes progress {
           from { width: 0% }
           to { width: 100% }

@@ -55,7 +55,7 @@ const TenantAdminDashboard = () => {
     }
   };
 
-  const handleSave = async (formData) => {
+  const handleSave = async (formData, response) => {
     try {
       setFormError(""); // reset error before request
       if (editingEmployee) {
