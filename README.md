@@ -55,12 +55,12 @@ teamora/
 
 ## ⚙️ Setup Instructions (Local Dev)
 
-### 📦 Backend
+### 📦 Backend (non-Docker)
 
 ```bash
 cd backend
 python -m venv env
-source env/bin/activate
+source env/bin/activate  # or .\env\Scripts\activate on Windows
 pip install -r requirements.txt
 ```
 
@@ -97,13 +97,42 @@ python manage.py runserver
 
 ---
 
-### 🌐 Frontend
+## 🐳 Docker Setup (Recommended for consistent dev)
+
+### Prerequisites
+
+- Docker + Docker Compose installed
+
+### Build and Start
 
 ```bash
-cd frontend
-npm install
-npm start
+docker compose up --build
 ```
+
+Backend will be available at:  
+`http://localhost:8000/`
+
+### Common Docker Commands
+
+- Restart:  
+  ```bash
+  docker compose restart
+  ```
+
+- Shut down:  
+  ```bash
+  docker compose down
+  ```
+
+- Access backend container:  
+  ```bash
+  docker compose exec teamora-backend bash
+  ```
+
+- Django shell inside container:  
+  ```bash
+  docker compose exec teamora-backend python manage.py shell
+  ```
 
 ---
 
@@ -135,7 +164,23 @@ domain.is_primary = True
 domain.save()
 ```
 
-> 🔁 Visit your tenant at `http://acme.localhost:8000/`
+> 🔁 Visit your tenant at `http://acme.localhost:8000/`  
+> Make sure you have proper DNS or local hosts entry.
+
+---
+
+## 🌱 Environment Variables
+
+Create a `.env` file (or use `.env.example`) in your `backend/` folder for things like:
+
+```dotenv
+POSTGRES_DB=postgres
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=postgres
+DJANGO_SECRET_KEY=your-secret-key
+DJANGO_DEBUG=True
+ALLOWED_HOSTS=localhost,127.0.0.1
+```
 
 ---
 
