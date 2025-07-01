@@ -11,7 +11,6 @@ import ProtectedRoute from '../wrappers/ProtectedRoute';
 import UnprotectedRoute from '../wrappers/UnprotectedRoute';
 import ConditionalLanding from '../wrappers/ConditionalLandingPage';
 import DeveloperDashboard from '../pages/Developer/DeveloperDashboard';
-import DeveloperProjectDetail from '../pages/Developer/ProjectDetail';
 import NotFound from '../pages/OtherPages/NotFound';
 import AppLayout from '../layouts/AppLayout';
 import DomainWrapper from '../wrappers/DomainWrapper';
@@ -71,12 +70,6 @@ const AppRoutes = () => (
       <Route path="developer" element={
         <ProtectedRoute allowedRoles={["Developer", "developer"]}>
           <DeveloperDashboard />
-        </ProtectedRoute>
-      } />
-
-      <Route path="developer/projects/:projectId" element={
-        <ProtectedRoute allowedRoles={["Developer", "developer"]}>
-          <DeveloperProjectDetail />
         </ProtectedRoute>
       } />
 

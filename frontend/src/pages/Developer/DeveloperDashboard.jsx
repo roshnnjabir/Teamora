@@ -1,124 +1,116 @@
-import { useDispatch } from "react-redux";
 import { useEffect, useState } from "react";
-import { logoutUser } from "../../features/Auth/authThunks";
+import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import apiClient from "../../contexts/apiClient";
-import { useNavigate } from "react-router-dom";
+import { useDispatch } from "react-redux";
+import { logoutUser } from "../../features/Auth/authThunks";
+
+const statusOrder = ["todo", "in_progress", "done"];
+const statusLabels = {
+  todo: "To Do",
+  in_progress: "In Progress",
+  done: "Done",
+};
 
 const DeveloperDashboard = () => {
   const dispatch = useDispatch();
-  const navigate = useNavigate();
-  const [showNotification, setShowNotification] = useState(true);
-  const [projects, setProjects] = useState([]);
+  const [tasksByStatus, setTasksByStatus] = useState({
+    todo: [],
+    in_progress: [],
+    done: [],
+  });
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
 
-  const handleLogout = () => {
-    dispatch(logoutUser());
+  const fetchTasks = async () => {
+    try {
+      const response = await apiClient.get("/api/my-tasks/");
+      const grouped = { todo: [], in_progress: [], done: [] };
+      response.data.forEach((task) => grouped[task.status].push(task));
+      setTasksByStatus(grouped);
+    } catch (err) {
+      console.error("Failed to load tasks.", err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
-    const fetchProjects = async () => {
-      try {
-        const response = await apiClient.get("/api/projects/");
-        setProjects(response.data);
-      } catch (err) {
-        const message = err?.response?.data?.detail || "Failed to fetch projects.";
-        setError(message);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchProjects();
+    fetchTasks();
   }, []);
 
+  const onDragEnd = async (result) => {
+    const { source, destination, draggableId } = result;
+    if (!destination || destination.droppableId === source.droppableId) return;
+
+    const task = tasksByStatus[source.droppableId].find((t) => t.id.toString() === draggableId);
+    const updatedTask = { ...task, status: destination.droppableId };
+
+    try {
+      await apiClient.patch(`/api/tasks/${task.id}/`, { status: destination.droppableId });
+      fetchTasks();
+    } catch (err) {
+      console.error("Failed to update task.", err);
+    }
+  };
+
+  const handleLogout = () => dispatch(logoutUser());
+
   return (
-    <div className="flex min-h-screen bg-[#F9FAFB] text-[#1A2A44]">
-      {/* Sidebar */}
+    <div className="flex min-h-screen bg-[#F9FAFB]">
       <aside className="w-64 bg-[#1A2A44] text-white p-6 space-y-6">
-        <h2 className="text-2xl font-bold">Dev Console</h2>
+        <h2 className="text-2xl font-bold">Developer Panel</h2>
         <nav className="space-y-4">
-          <a href="/" className="block hover:text-[#00C4B4]">Dashboard</a>
+          <a href="#" className="block hover:text-[#00C4B4]">Dashboard</a>
           <a href="#" className="block hover:text-[#00C4B4]">My Tasks</a>
-          <a href="#" className="block hover:text-[#00C4B4]">Code Reviews</a>
-          <a href="#" className="block hover:text-[#00C4B4]">Commits</a>
         </nav>
         <button
           onClick={handleLogout}
-          className="mt-auto w-full bg-[#00C4B4] hover:bg-teal-600 text-white py-2 rounded transition"
+          className="mt-auto w-full bg-[#00C4B4] hover:bg-teal-600 text-white py-2 rounded"
         >
           Logout
         </button>
       </aside>
 
-      {/* Main Content */}
-      <main className="flex-1 p-0 md:p-10 relative">
-        {/* Notification Bar */}
-        {showNotification && (
-          <div className="bg-[#FF6F61] text-white px-6 py-3 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2"
-                viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round"
-                  d="M13 16h-1v-4h-1m1-4h.01M12 6a9 9 0 11-9 9 9 9 0 019-9z" />
-              </svg>
-              <p className="text-sm font-medium">⚠️ Scheduled maintenance at 8 PM today.</p>
+      <main className="flex-1 p-10">
+        <h1 className="text-3xl font-bold text-[#2F3A4C] mb-6">Developer Dashboard</h1>
+
+        {loading ? (
+          <p className="text-gray-500">Loading tasks...</p>
+        ) : (
+          <DragDropContext onDragEnd={onDragEnd}>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {statusOrder.map((status) => (
+                <Droppable droppableId={status} key={status}>
+                  {(provided) => (
+                    <div
+                      ref={provided.innerRef}
+                      {...provided.droppableProps}
+                      className="bg-white p-4 rounded-lg shadow min-h-[300px] border border-gray-200"
+                    >
+                      <h2 className="text-lg font-semibold mb-3 text-[#2F3A4C]">{statusLabels[status]}</h2>
+                      {tasksByStatus[status].map((task, index) => (
+                        <Draggable draggableId={task.id.toString()} index={index} key={task.id}>
+                          {(provided) => (
+                            <div
+                              ref={provided.innerRef}
+                              {...provided.draggableProps}
+                              {...provided.dragHandleProps}
+                              className="bg-[#F9FAFB] mb-3 p-3 rounded border border-gray-300 shadow-sm hover:bg-[#F3F4F6]"
+                            >
+                              <h3 className="text-sm font-bold">{task.title}</h3>
+                              <p className="text-xs text-gray-500 mb-1">📌 Project: {task.project?.name || "N/A"}</p>
+                              <p className="text-xs text-gray-500">📅 Due: {task.due_date || "Not set"}</p>
+                            </div>
+                          )}
+                        </Draggable>
+                      ))}
+                      {provided.placeholder}
+                    </div>
+                  )}
+                </Droppable>
+              ))}
             </div>
-            <button
-              onClick={() => setShowNotification(false)}
-              className="text-white hover:text-gray-200 text-sm"
-            >
-              Dismiss
-            </button>
-          </div>
+          </DragDropContext>
         )}
-
-        {/* Page Content */}
-        <div className="p-6 md:p-0">
-          <h1 className="text-3xl font-bold text-[#2F3A4C] mb-2">Developer Dashboard</h1>
-          <p className="text-[#2F3A4C] mb-6">Welcome, Developer! Here's your overview.</p>
-
-          {/* Developer Metrics */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="bg-white p-6 rounded-lg shadow border border-[#B0B8C5]">
-              <h3 className="text-lg font-semibold text-[#2F3A4C] mb-2">Open Tasks</h3>
-              <p className="text-2xl font-bold text-[#FF6F61]">8</p>
-            </div>
-            <div className="bg-white p-6 rounded-lg shadow border border-[#B0B8C5]">
-              <h3 className="text-lg font-semibold text-[#2F3A4C] mb-2">Pending Reviews</h3>
-              <p className="text-2xl font-bold text-[#FBBF24]">3</p>
-            </div>
-            <div className="bg-white p-6 rounded-lg shadow border border-[#B0B8C5]">
-              <h3 className="text-lg font-semibold text-[#2F3A4C] mb-2">Commits Today</h3>
-              <p className="text-2xl font-bold text-[#34D399]">17</p>
-            </div>
-          </div>
-
-          {/* Project List */}
-          <section className="mt-10">
-            <h2 className="text-2xl font-semibold text-[#2F3A4C] mb-4">Your Projects</h2>
-            <div className="bg-white p-4 rounded shadow text-[#2F3A4C] space-y-4 border border-[#B0B8C5]">
-              {loading ? (
-                <p>Loading projects...</p>
-              ) : error ? (
-                <p className="text-red-500">{error}</p>
-              ) : projects.length === 0 ? (
-                <p className="text-sm text-[#B0B8C5]">No projects assigned.</p>
-              ) : (
-                projects.map((project) => (
-                  <div
-                    key={project.id}
-                    onClick={() => navigate(`/developer/projects/${project.id}`)}
-                    className="p-4 border-b border-[#E5E8EC] cursor-pointer hover:bg-[#F3F4F6] rounded transition"
-                  >
-                    <h3 className="text-lg font-semibold">{project.name}</h3>
-                    <p className="text-sm text-[#6B7280]">{project.description}</p>
-                  </div>
-                ))
-              )}
-            </div>
-          </section>
-        </div>
       </main>
     </div>
   );
