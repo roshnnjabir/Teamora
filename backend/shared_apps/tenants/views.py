@@ -3,7 +3,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from django.core.cache import cache
 from rest_framework import generics
-from django.core.mail import send_mail
+from shared_apps.tenants.tasks.email_tasks import send_otp_email_task
 from django_tenants.utils import schema_context
 from rest_framework.permissions import AllowAny
 from rest_framework.authentication import SessionAuthentication, BasicAuthentication
@@ -78,10 +78,9 @@ class SendOTPView(APIView):
 
         subject = 'Your OTP for Workspace Signup'
         message = f'Your OTP is {otp}. It expires in 5 minutes.'
-        from_email = settings.DEFAULT_FROM_EMAIL
-        recipient_list = [email]
 
-        send_mail(subject, message, from_email, recipient_list)
+        # Call Celery task asynchronously
+        send_otp_email_task.delay(subject, message, [email])
 
         return Response({'detail': 'OTP sent successfully.'}, status=status.HTTP_200_OK)
 

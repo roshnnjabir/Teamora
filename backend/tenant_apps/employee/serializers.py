@@ -5,7 +5,7 @@ from core.constants import UserRoles
 from django.utils import timezone
 from django_tenants.utils import schema_context
 from django.db import transaction
-from tenant_apps.employee.utils.email import send_set_password_email
+from tenant_apps.employee.tasks.email_tasks import send_set_password_email_task
 from django.contrib.auth.tokens import default_token_generator
 from django.utils.http import urlsafe_base64_decode
 
@@ -77,7 +77,7 @@ class EmployeeSerializer(serializers.ModelSerializer):
                     )
 
             # Send email with password reset link
-            send_set_password_email(user)
+            send_set_password_email_task.delay(user.id)
 
         return employee
 

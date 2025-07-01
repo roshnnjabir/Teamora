@@ -7,7 +7,7 @@ from core.permissions import IsTenantAdmin
 from core.constants import UserRoles
 from shared_apps.custom_auth.models import User
 from django.contrib.auth.tokens import default_token_generator
-from tenant_apps.employee.utils.email import send_set_password_email
+from tenant_apps.employee.tasks.email_tasks import send_set_password_email_task
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework import status
@@ -45,7 +45,7 @@ class EmployeeViewSet(viewsets.ModelViewSet):
         user.set_unusable_password()
         user.save()
 
-        send_set_password_email(user)
+        send_set_password_email_task.delay(user)
 
         return Response({"detail": "Invitation resent."}, status=status.HTTP_200_OK)
 

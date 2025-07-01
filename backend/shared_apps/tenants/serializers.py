@@ -8,7 +8,7 @@ from datetime import date
 from core.constants import UserRoles
 from django.utils import timezone
 from rest_framework.exceptions import ValidationError
-from shared_apps.tenants.utils.email import send_tenant_created_email
+from shared_apps.tenants.tasks.email_tasks import send_tenant_created_email_task
 
 
 class TenantSignupSerializer(serializers.Serializer):
@@ -67,6 +67,6 @@ class TenantSignupSerializer(serializers.Serializer):
             )
 
         # Step 6: Send email
-        send_tenant_created_email(to_email=user.email, tenant_domain=domain_url)
+        send_tenant_created_email_task.delay(to_email=user.email, tenant_domain=domain_url)
 
         return tenant

@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>Tenant Created</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        background-color: #f9fafb;
+        padding: 20px;
+      }
+      .container {
+        background: white;
+        border-radius: 10px;
+        padding: 40px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+      }
+      a.button {
+        display: inline-block;
+        background-color: #00C4B4;
+        color: white;
+        padding: 15px 25px;
+        border-radius: 5px;
+        text-decoration: none;
+        font-weight: bold;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h2>🎉 Your Teamora Tenant is Ready!</h2>
+      <p>Hello there 👋,</p>
+      <p>We're excited to have you on board. Your tenant has been created successfully!</p>
+
+      <p><strong>Tenant Domain:</strong> {{ tenant_domain }}</p>
+      <p>
+        <a href="{{ login_url }}" class="button">🔐 Access Your Dashboard</a>
+      </p>
+
+      <hr>
+      <p style="font-size: 12px; color: #666;">This email was sent because a new tenant was created for your account.</p>
+    </div>
+  </body>
+</html>
