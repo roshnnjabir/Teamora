@@ -34,6 +34,7 @@ SHARED_APPS = [
     'shared_apps.custom_auth',
 
     'rest_framework',
+    'django_filters',
     'corsheaders',
 
     'channels',
@@ -122,7 +123,10 @@ REST_FRAMEWORK = {
         'rest_framework.renderers.JSONRenderer',
         'rest_framework.renderers.BrowsableAPIRenderer',
     ),
+    'DEFAULT_PAGINATION_CLASS': 'core.pagination.StandardLimitOffsetPagination',
+    'PAGE_SIZE': 10,
     'EXCEPTION_HANDLER': 'core.exceptions.custom_exception_handler',
+    'DEFAULT_FILTER_BACKENDS': ['django_filters.rest_framework.DjangoFilterBackend'],
 }
 
 SIMPLE_JWT = {

@@ -11,6 +11,7 @@ const TenantAdminDashboard = () => {
   const [refreshAssignments, setRefreshAssignments] = useState(false);
   const [employees, setEmployees] = useState([]);
   const [auditLogs, setAuditLogs] = useState([]);
+  const [filters, setFilters] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [showModal, setShowModal] = useState(false);
@@ -98,10 +99,19 @@ const TenantAdminDashboard = () => {
     }
   };
 
-  const fetchAuditLogs = async () => {
+  const fetchAuditLogs = async (customFilters = {}, reset = false) => {
+    const merged = reset ? customFilters : { ...filters, ...customFilters };
+
+    const cleanedFilters = Object.fromEntries(
+      Object.entries(merged).filter(([_, v]) => v !== "" && v !== undefined && v !== null)
+    );
+  
+    const params = new URLSearchParams({ limit, ...cleanedFilters });
+
     try {
-      const res = await apiClient.get(`/api/audit-logs/?limit=${limit}`);
+      const res = await apiClient.get(`/api/audit-logs/?${params.toString()}`);
       setAuditLogs(res.data.results || res.data);
+      setFilters(cleanedFilters);
     } catch (err) {
       console.error("Failed to fetch audit logs", err);
     }
@@ -231,6 +241,54 @@ const TenantAdminDashboard = () => {
 
 
         <PMDeveloperAssignmentManager onAssignmentChange={fetchAuditLogs} refreshTrigger={refreshAssignments}/>
+
+        <section className="mb-6">
+          <h3 className="text-lg font-medium mb-2">Filter Logs</h3>
+          <div className="flex flex-wrap gap-4">
+            <select
+              onChange={(e) => fetchAuditLogs({ developer: e.target.value || undefined })}
+              className="border p-2 rounded"
+              defaultValue=""
+            >
+              <option value="">All Developers</option>
+              {employees.map((emp) =>
+                emp.role === "developer" ? (
+                  <option key={emp.id} value={emp.id}>
+                    {emp.full_name}
+                  </option>
+                ) : null
+              )}
+            </select>
+            
+            <select
+              onChange={(e) => fetchAuditLogs({ assigned_by: e.target.value || undefined })}
+              className="border p-2 rounded"
+              defaultValue=""
+            >
+              <option value="">All Assigners</option>
+              {employees
+                .filter(emp => emp.role === "tenant_admin")
+                .map(emp => (
+                  <option key={emp.id} value={emp.id}>
+                    {emp.full_name}
+                  </option>
+              ))}
+            </select>
+            
+            <input
+              type="date"
+              className="border p-2 rounded"
+              onChange={(e) => fetchAuditLogs({ from_date: e.target.value })}
+            />
+
+            <input
+              type="date"
+              className="border p-2 rounded"
+              onChange={(e) => fetchAuditLogs({ to_date: e.target.value })}
+            />
+          </div>
+        </section>
+
         <section className="mt-10">
           <h2 className="text-xl font-semibold mb-4">Project Manager Assignment History</h2>
           {auditLogs.length === 0 ? (

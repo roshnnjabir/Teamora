@@ -51,3 +51,4 @@ wcwidth==0.2.13
 zope.interface==7.2
 uvicorn[standard]
 premailer
+django-filter
