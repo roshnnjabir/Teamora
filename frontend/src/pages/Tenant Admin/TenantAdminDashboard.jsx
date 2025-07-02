@@ -11,6 +11,8 @@ const TenantAdminDashboard = () => {
   const [refreshAssignments, setRefreshAssignments] = useState(false);
   const [employees, setEmployees] = useState([]);
   const [auditLogs, setAuditLogs] = useState([]);
+  const [nextPage, setNextPage] = useState(null);
+  const [prevPage, setPrevPage] = useState(null);
   const [filters, setFilters] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -34,7 +36,11 @@ const TenantAdminDashboard = () => {
   const fetchEmployees = async () => {
     try {
       const response = await apiClient.get("/api/employees/");
-      setEmployees(response.data);
+      const employeeList = Array.isArray(response.data)
+        ? response.data
+        : response.data.results || [];
+
+      setEmployees(employeeList);
     } catch (err) {
       setError("Failed to load employees.");
       console.error(err);
@@ -99,18 +105,21 @@ const TenantAdminDashboard = () => {
     }
   };
 
-  const fetchAuditLogs = async (customFilters = {}, reset = false) => {
-    const merged = reset ? customFilters : { ...filters, ...customFilters };
-
-    const cleanedFilters = Object.fromEntries(
-      Object.entries(merged).filter(([_, v]) => v !== "" && v !== undefined && v !== null)
-    );
-  
-    const params = new URLSearchParams({ limit, ...cleanedFilters });
-
+  const fetchAuditLogs = async (customFilters = {}, reset = false, url = null) => {
     try {
-      const res = await apiClient.get(`/api/audit-logs/?${params.toString()}`);
+      const merged = reset ? customFilters : { ...filters, ...customFilters };
+
+      const cleanedFilters = Object.fromEntries(
+        Object.entries(merged).filter(([_, v]) => v !== "" && v !== undefined && v !== null)
+      );
+
+      const fullUrl = url || `/api/audit-logs/?${new URLSearchParams({ limit, ...cleanedFilters })}`;
+
+      const res = await apiClient.get(fullUrl);
+
       setAuditLogs(res.data.results || res.data);
+      setNextPage(res.data.next || null);
+      setPrevPage(res.data.previous || null);
       setFilters(cleanedFilters);
     } catch (err) {
       console.error("Failed to fetch audit logs", err);
@@ -189,7 +198,7 @@ const TenantAdminDashboard = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {employees.map((emp) => (
+                  {Array.isArray(employees) ? employees.map((emp) => (
                     <tr key={emp.id} className="border-t border-[#B0B8C5] hover:bg-[#F4F5F7]">
                       <td className="py-3 px-4">{emp.full_name}</td>
                       <td className="py-3 px-4">{emp.email}</td>
@@ -218,7 +227,11 @@ const TenantAdminDashboard = () => {
                         </button>
                       </td>
                     </tr>
-                  ))}
+                  )) : (
+                    <tr>
+                      <td colSpan="4">No employee data available.</td>
+                    </tr>
+                  )}
                 </tbody>
               </table>
             </div>
@@ -251,30 +264,19 @@ const TenantAdminDashboard = () => {
               defaultValue=""
             >
               <option value="">All Developers</option>
-              {employees.map((emp) =>
+              {Array.isArray(employees) ?  employees.map((emp) =>
                 emp.role === "developer" ? (
                   <option key={emp.id} value={emp.id}>
                     {emp.full_name}
                   </option>
                 ) : null
+              ) : (
+                <tr>
+                  <td colSpan="4">No employee data available.</td>
+                </tr>
               )}
             </select>
-            
-            <select
-              onChange={(e) => fetchAuditLogs({ assigned_by: e.target.value || undefined })}
-              className="border p-2 rounded"
-              defaultValue=""
-            >
-              <option value="">All Assigners</option>
-              {employees
-                .filter(emp => emp.role === "tenant_admin")
-                .map(emp => (
-                  <option key={emp.id} value={emp.id}>
-                    {emp.full_name}
-                  </option>
-              ))}
-            </select>
-            
+
             <input
               type="date"
               className="border p-2 rounded"
@@ -321,14 +323,24 @@ const TenantAdminDashboard = () => {
                   ))}
                 </tbody>
               </table>
-              {auditLogs.length >= limit && (
-                <button
-                  onClick={() => setLimit((prev) => prev + 10)}
-                  className="mt-4 text-blue-600 hover:underline"
-                >
-                  Show More
-                </button>
-              )}
+              <div className="flex justify-end mt-4 space-x-2">
+                {prevPage && (
+                  <button
+                    onClick={() => fetchAuditLogs({}, false, prevPage)}
+                    className="text-blue-600 hover:underline"
+                  >
+                    ← Previous
+                  </button>
+                )}
+                {nextPage && (
+                  <button
+                    onClick={() => fetchAuditLogs({}, false, nextPage)}
+                    className="text-blue-600 hover:underline"
+                  >
+                    Next →
+                  </button>
+                )}
+              </div>
             </div>
           )}
         </section>
