@@ -77,10 +77,9 @@ class SendOTPView(APIView):
         cache.set(cache_key, otp, timeout=300)  # 5 minutes
 
         subject = 'Your OTP for Workspace Signup'
-        message = f'Your OTP is {otp}. It expires in 5 minutes.'
 
-        # Call Celery task asynchronously
-        send_otp_email_task.delay(subject, message, [email])
+        # Send the OTP via Celery (with HTML template support)
+        send_otp_email_task.delay(subject, otp, [email])
 
         return Response({'detail': 'OTP sent successfully.'}, status=status.HTTP_200_OK)
 

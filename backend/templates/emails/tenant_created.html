@@ -1,44 +1,289 @@
 <!DOCTYPE html>
-<html>
-  <head>
-    <meta charset="UTF-8">
-    <title>Tenant Created</title>
-    <style>
-      body {
-        font-family: Arial, sans-serif;
-        background-color: #f9fafb;
-        padding: 20px;
-      }
-      .container {
-        background: white;
-        border-radius: 10px;
-        padding: 40px;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-      }
-      a.button {
-        display: inline-block;
-        background-color: #00C4B4;
-        color: white;
-        padding: 15px 25px;
-        border-radius: 5px;
-        text-decoration: none;
-        font-weight: bold;
-      }
-    </style>
-  </head>
-  <body>
-    <div class="container">
-      <h2>🎉 Your Teamora Tenant is Ready!</h2>
-      <p>Hello there 👋,</p>
-      <p>We're excited to have you on board. Your tenant has been created successfully!</p>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Welcome to Teamora</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@400;600;700;800&display=swap');
 
-      <p><strong>Tenant Domain:</strong> {{ tenant_domain }}</p>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background-color: #F9FAFB;
+      font-family: 'Nunito Sans', sans-serif;
+      color: #2F3A4C;
+      padding: 24px;
+    }
+
+    .email-wrapper {
+      max-width: 600px;
+      margin: 0 auto;
+      background: #ffffff;
+      border-radius: 16px;
+      box-shadow: 0 6px 24px rgba(0, 0, 0, 0.06);
+      overflow: hidden;
+      border: 1px solid #E5E8EC;
+    }
+
+    .header {
+      background: linear-gradient(135deg, #1A2A44, #2F3A4C);
+      color: #ffffff;
+      text-align: center;
+      padding: 40px 30px 30px;
+    }
+
+    .logo {
+      background: #00C4B4;
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-weight: 800;
+      font-size: 20px;
+      color: white;
+      margin: 0 auto 12px;
+      box-shadow: 0 4px 12px rgba(0, 196, 180, 0.3);
+    }
+
+    .brand-name {
+      font-size: 28px;
+      font-weight: 800;
+      margin-bottom: 12px;
+    }
+
+    .subtitle {
+      font-size: 16px;
+      opacity: 0.9;
+    }
+
+    .section {
+      padding: 32px 30px;
+    }
+
+    .section h2 {
+      font-size: 20px;
+      font-weight: 700;
+      margin-bottom: 12px;
+    }
+
+    .section p {
+      font-size: 15px;
+      line-height: 1.7;
+      margin-bottom: 24px;
+    }
+
+    .tenant-info {
+      background: #F9FAFB;
+      border-left: 4px solid #00C4B4;
+      padding: 20px;
+      border-radius: 12px;
+      margin-bottom: 24px;
+    }
+
+    .tenant-info strong {
+      display: block;
+      font-size: 14px;
+      text-transform: uppercase;
+      color: #1A2A44;
+      margin-bottom: 8px;
+      letter-spacing: 0.5px;
+    }
+
+    .tenant-domain {
+      font-family: monospace;
+      background: white;
+      border: 1px solid #E5E8EC;
+      border-radius: 8px;
+      padding: 12px;
+      color: #00C4B4;
+      font-weight: bold;
+      display: inline-block;
+      margin-bottom: 12px;
+    }
+
+    .features {
+      background: linear-gradient(135deg, #00C4B4, #34D399);
+      padding: 24px;
+      color: white;
+      border-radius: 12px;
+      margin-bottom: 32px;
+      text-align: center;
+    }
+
+    .features h3 {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 16px;
+    }
+
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+      gap: 12px;
+    }
+
+    .feature-item {
+      background: rgba(255, 255, 255, 0.15);
+      padding: 16px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 500;
+      backdrop-filter: blur(8px);
+    }
+
+    .cta {
+      text-align: center;
+      margin: 32px 0;
+    }
+
+    .cta a {
+      background: #00C4B4;
+      color: white;
+      padding: 14px 28px;
+      border-radius: 10px;
+      font-weight: 700;
+      text-decoration: none;
+      display: inline-block;
+      transition: background 0.3s ease;
+      box-shadow: 0 8px 16px rgba(0, 196, 180, 0.3);
+    }
+
+    .cta a:hover {
+      background: #009a98;
+    }
+
+    .benefits {
+      background: #F9FAFB;
+      padding: 24px;
+      border-radius: 12px;
+      border: 1px solid #E5E8EC;
+    }
+
+    .benefits h3 {
+      font-size: 16px;
+      text-align: center;
+      color: #1A2A44;
+      margin-bottom: 16px;
+    }
+
+    .benefits ul {
+      list-style: none;
+      padding: 0;
+    }
+
+    .benefits li {
+      display: flex;
+      align-items: center;
+      margin-bottom: 10px;
+      font-size: 14px;
+    }
+
+    .benefits li::before {
+      content: "✓";
+      background-color: #34D399;
+      color: white;
+      border-radius: 50%;
+      width: 20px;
+      height: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: bold;
+      margin-right: 12px;
+    }
+
+    .footer {
+      background: #1A2A44;
+      color: #F9FAFB;
+      text-align: center;
+      padding: 24px 20px;
+      font-size: 13px;
+    }
+
+    .footer a {
+      color: #00C4B4;
+      text-decoration: none;
+      margin: 0 8px;
+      font-weight: 500;
+    }
+
+    .footer a:hover {
+      color: #34D399;
+    }
+
+    @media (max-width: 600px) {
+      .features-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="email-wrapper">
+
+    <!-- Header -->
+    <div class="header">
+      <div class="logo">T</div>
+      <div class="brand-name">Teamora</div>
+      <p class="subtitle">Your new workspace is ready</p>
+    </div>
+
+    <!-- Intro -->
+    <div class="section">
+      <h2>🎉 Welcome!</h2>
       <p>
-        <a href="{{ login_url }}" class="button">🔐 Access Your Dashboard</a>
+        We're excited to have you onboard! Your secure Teamora workspace is now live and ready to use.
+        Manage projects, collaborate with your team, and explore the platform.
       </p>
 
-      <hr>
-      <p style="font-size: 12px; color: #666;">This email was sent because a new tenant was created for your account.</p>
+      <div class="tenant-info">
+        <strong>Your Workspace</strong>
+        <div class="tenant-domain">{{ tenant_domain }}</div>
+        <p>Fully isolated subdomain with customizable branding and enterprise-grade security.</p>
+      </div>
     </div>
-  </body>
+
+    <!-- Features -->
+    <div class="features">
+      <h3>Available Features</h3>
+      <div class="features-grid">
+        <div class="feature-item">📋 Project Management</div>
+        <div class="feature-item">👥 HR & People</div>
+        <div class="feature-item">🔒 Secure Multi-Tenant</div>
+        <div class="feature-item">📊 Analytics & Reports</div>
+      </div>
+    </div>
+
+    <!-- Call to Action -->
+    <div class="cta">
+      <a href="{{ login_url }}">🚀 Access Your Dashboard</a>
+    </div>
+
+    <!-- Benefits -->
+    <div class="benefits">
+      <h3>🌟 Early Adopter Benefits</h3>
+      <ul>
+        <li>30-day free trial with all features</li>
+        <li>Locked-in pricing as we grow</li>
+        <li>Priority access to updates</li>
+        <li>Influence our roadmap</li>
+      </ul>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+      <p>Need help? <a href="#">Support</a> | <a href="#">Docs</a> | <a href="#">Contact Us</a></p>
+      <p style="margin-top: 12px; font-size: 12px; opacity: 0.6;">© 2025 Teamora Inc. All rights reserved.</p>
+    </div>
+
+  </div>
+</body>
 </html>

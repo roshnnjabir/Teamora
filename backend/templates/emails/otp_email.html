@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Your OTP Code</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@400;600;700;800&display=swap');
+        body {
+          background-color: #F9FAFB;
+          font-family: 'Nunito Sans', sans-serif;
+          padding: 24px;
+          color: #2F3A4C;
+        }
+
+        .email-wrapper {
+          max-width: 600px;
+          margin: 0 auto;
+          background: #ffffff;
+          border-radius: 16px;
+          box-shadow: 0 6px 24px rgba(0, 0, 0, 0.06);
+          overflow: hidden;
+          border: 1px solid #E5E8EC;
+        }
+
+        .header {
+          background: linear-gradient(135deg, #1A2A44, #2F3A4C);
+          color: #ffffff;
+          text-align: center;
+          padding: 40px 30px 30px;
+        }
+
+        .logo {
+          background: #00C4B4;
+          width: 48px;
+          height: 48px;
+          border-radius: 12px;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          font-weight: 800;
+          font-size: 20px;
+          color: white;
+          margin: 0 auto 12px;
+          box-shadow: 0 4px 12px rgba(0, 196, 180, 0.3);
+        }
+
+        .brand-name {
+          font-size: 28px;
+          font-weight: 800;
+          margin-bottom: 12px;
+        }
+
+        .subtitle {
+          font-size: 16px;
+          opacity: 0.9;
+        }
+
+        .section {
+          padding: 32px 30px;
+        }
+
+        .section h2 {
+          font-size: 20px;
+          font-weight: 700;
+          margin-bottom: 12px;
+        }
+
+        .section p {
+          font-size: 15px;
+          line-height: 1.7;
+          margin-bottom: 24px;
+        }
+
+        .otp-box {
+          background: #F3F4F6;
+          padding: 20px;
+          border-radius: 12px;
+          text-align: center;
+          margin: 24px 0;
+        }
+
+        .otp-label {
+          font-size: 14px;
+          color: #6B7280;
+          margin-bottom: 8px;
+        }
+
+        .otp-code {
+          font-size: 28px;
+          font-weight: bold;
+          letter-spacing: 6px;
+          font-family: monospace;
+          background: #00C4B4;
+          color: white;
+          padding: 14px 20px;
+          border-radius: 10px;
+          display: inline-block;
+        }
+
+        .copy-note {
+          font-size: 13px;
+          color: #4B5563;
+          margin-top: 12px;
+        }
+
+        .footer {
+          background: #1A2A44;
+          color: #F9FAFB;
+          text-align: center;
+          padding: 24px 20px;
+          font-size: 13px;
+        }
+
+        .footer a {
+          color: #00C4B4;
+          text-decoration: none;
+          margin: 0 8px;
+          font-weight: 500;
+        }
+
+        .footer a:hover {
+          color: #34D399;
+        }
+  </style>
+</head>
+<body>
+  <div class="email-wrapper">
+    <div class="header">
+      <div class="logo">T</div>
+      <div class="brand-name">Teamora</div>
+      <p class="subtitle">Verify your signup</p>
+    </div>
+
+    <div class="section">
+      <h2>🔐 Your OTP Code</h2>
+      <p>Please use the following One-Time Password (OTP) to continue. It will expire in 5 minutes.</p>
+
+      <div class="otp-box">
+        <div class="otp-label">Your OTP:</div>
+        <div class="otp-code">{{ otp_code }}</div>
+        <div class="copy-note">📋 Copy this code to complete your signup.</div>
+      </div>
+
+      <p>If you didn’t request this email, you can safely ignore it.</p>
+    </div>
+
+    <div class="footer">
+      <p>Need help? <a href="#">Support</a> | <a href="#">Docs</a> | <a href="#">Contact Us</a></p>
+      <p style="margin-top: 12px; font-size: 12px; opacity: 0.6;">© 2025 Teamora Inc. All rights reserved.</p>
+    </div>
+  </div>
+</body>
+</html>

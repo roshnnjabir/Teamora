@@ -22,7 +22,8 @@ CORS_ALLOWED_ORIGINS = [
     "http://luminar.localhost:5173",
     "http://openai.localhost:5173",
     "http://microsoft.localhost:5173",
-    "http://greenpeace.localhost:5173"
+    "http://greenpeace.localhost:5173",
+    "http://amazon.localhost:5173",
 ]
 
 CORS_ALLOW_CREDENTIALS = True
@@ -96,7 +97,9 @@ ROOT_URLCONF = 'backend.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [
+            os.path.join(BASE_DIR, 'templates'),
+        ],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -142,7 +145,7 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_BACKEND = env("EMAIL_BACKEND")
 EMAIL_HOST = env("EMAIL_HOST")
 EMAIL_PORT = env.int("EMAIL_PORT")
 EMAIL_USE_TLS = env.bool("EMAIL_USE_TLS")

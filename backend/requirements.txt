@@ -50,3 +50,4 @@ vine==5.1.0
 wcwidth==0.2.13
 zope.interface==7.2
 uvicorn[standard]
+premailer
