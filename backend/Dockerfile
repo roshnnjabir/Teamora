@@ -14,12 +14,3 @@ COPY requirements.txt .
 RUN pip install -r requirements.txt
 
 COPY . .
-
-# Create non-root user
-RUN adduser --disabled-password teamorauser
-
-# 👇 FIX: give ownership of the entire app directory to the user
-RUN chown -R teamorauser:teamorauser /app
-
-# Switch to non-root user
-USER teamorauser
