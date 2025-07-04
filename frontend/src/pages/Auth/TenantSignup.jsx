@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 
+const BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
 // Simplified error extraction
 function getErrorMessage(error) {
   return error?.response?.data?.detail || 
@@ -26,7 +28,7 @@ function OtpModal({ visible, onClose, email, onVerified }) {
     setError('');
     
     try {
-      const res = await fetch('http://localhost:8000/api/tenants/verify-otp/', {
+      const res = await fetch(`${BASE_URL}/api/tenants/verify-otp/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, otp })
@@ -193,7 +195,7 @@ export default function TenantSignup() {
     setError('');
 
     try {
-      const res = await fetch('http://localhost:8000/api/tenants/send-otp/', {
+      const res = await fetch(`${BASE_URL}/api/tenants/send-otp/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: formData.email })
@@ -233,7 +235,7 @@ export default function TenantSignup() {
         full_name: formData.fullName,
       };
 
-      const res = await fetch('http://localhost:8000/api/tenants/signup/', {
+      const res = await fetch(`${BASE_URL}/api/tenants/signup/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
