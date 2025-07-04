@@ -13,6 +13,7 @@ services:
       "
     volumes:
       - ./backend:/app
+      - static_volume:/app/staticfiles
     ports:
       - "8000:8000"
     depends_on:
@@ -24,6 +25,8 @@ services:
       context: ./backend
     container_name: teamora-celery
     command: celery -A backend worker --loglevel=info
+    env_file:
+      - ./backend/.env.production
     volumes:
       - ./backend:/app
       - static_volume:/app/staticfiles
@@ -38,13 +41,16 @@ services:
       context: ./backend
     container_name: teamora-celery-beat
     command: celery -A backend beat --loglevel=info
+    env_file:
+      - ./backend/.env.production
     volumes:
       - ./backend:/app
+      - static_volume:/app/staticfiles
     depends_on:
       - backend
       - redis
     environment:
-      - DJANGO_SETTINGS_MODULE=backend.settings.local
+      - DJANGO_SETTINGS_MODULE=backend.settings.production
 
   db:
     image: postgres:17
