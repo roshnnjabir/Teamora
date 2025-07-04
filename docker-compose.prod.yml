@@ -8,6 +8,7 @@ services:
     command: >
       sh -c "
         python manage.py migrate_schemas --shared &&
+        python manage.py collectstatic --noinput &&
         gunicorn backend.asgi:application -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:8000
       "
     volumes:
@@ -25,11 +26,12 @@ services:
     command: celery -A backend worker --loglevel=info
     volumes:
       - ./backend:/app
+      - static_volume:/app/staticfiles
     depends_on:
       - backend
       - redis
     environment:
-      - DJANGO_SETTINGS_MODULE=backend.settings.local
+      - DJANGO_SETTINGS_MODULE=backend.settings.production
 
   celery-beat:
     build:
@@ -64,3 +66,4 @@ services:
 
 volumes:
   postgres_data:
+  static_volume:

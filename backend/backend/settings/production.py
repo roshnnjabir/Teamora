@@ -11,9 +11,9 @@ DATABASES = {
     }
 }
 
-DEBUG = env.bool("DEBUG", default=True)
+DEBUG = env.bool("DEBUG", default=False)
 
 CORS_ALLOWED_ORIGINS = env.list("CORS_ALLOWED_ORIGINS", default=[
-    "https://yourdomain.com",
-    "https://*.yourdomain.com"
+    "https://chronocrust.shop",
+    "https://*.chronocrust.shop",
 ])

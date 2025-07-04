@@ -13,6 +13,8 @@ DJANGO_ENV = env("DJANGO_ENV", default="development")
 IS_PRODUCTION = DJANGO_ENV == "production"
 ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", default=['localhost'])
 
+CSRF_TRUSTED_ORIGINS = [f"https://{host}" for host in ALLOWED_HOSTS]
+
 CORS_ALLOW_CREDENTIALS = True
 
 SHARED_APPS = [
@@ -148,5 +150,6 @@ TIME_ZONE = 'UTC'
 USE_I18N = True
 USE_TZ = True
 
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
