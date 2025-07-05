@@ -15,5 +15,10 @@ DEBUG = env.bool("DEBUG", default=False)
 
 CORS_ALLOWED_ORIGINS = env.list("CORS_ALLOWED_ORIGINS", default=[
     "https://chronocrust.shop",
-    "https://*.chronocrust.shop",
+    "https://teamora.vercel.app",
 ])
+
+CORS_ALLOWED_ORIGIN_REGEXES = [
+    r"^https:\/\/([a-z0-9-]+\.)?chronocrust\.shop$",
+    r"^https:\/\/([a-z0-9-]+\.)?teamora\.vercel\.app$",
+]
