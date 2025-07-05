@@ -6,7 +6,7 @@ const getSubdomain = () => {
   return parts.length > 2 ? parts[0] : null;
 };
 
-const BASE_URL = `https://api.chronocrust.shop/api`;
+const BASE_URL = `https://chronocrust.shop/api`;
 const subdomain = getSubdomain();
 
 const apiClient = axios.create({
