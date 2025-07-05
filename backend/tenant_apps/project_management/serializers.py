@@ -4,7 +4,7 @@ from rest_framework import generics
 from tenant_apps.project_management.models import Project, ProjectMember, Task, Subtask, DeveloperAssignmentAuditLog
 from tenant_apps.employee.models import Employee, ProjectManagerAssignment
 from core.constants import UserRoles
-import datetime
+from datetime import date
 
 
 class ProjectMemberSerializer(serializers.ModelSerializer):
@@ -98,7 +98,7 @@ class ProjectSerializer(serializers.ModelSerializer):
                 "end_date": "End date cannot be before start date."
             })
 
-        if start and start < datetime.date.today():
+        if start and start < date.today():
             raise serializers.ValidationError({
                 "start_date": "Start date cannot be in the past."
             })
@@ -131,6 +131,19 @@ class TaskSerializer(serializers.ModelSerializer):
             'created_by', 'updated_at'
         ]
         read_only_fields = ['id', 'created_at', 'updated_at', 'created_by']
+
+    def validate_due_date(self, value):
+        if value < date.today():
+            raise serializers.ValidationError("Due date cannot be in the past.")
+
+        project_id = self.initial_data.get("project") or self.instance.project_id
+        if project_id:
+            project = Project.objects.get(id=project_id)
+            if project.start_date and value < project.start_date:
+                raise serializers.ValidationError("Due date cannot be before project start date.")
+            if project.end_date and value > project.end_date:
+                raise serializers.ValidationError("Due date cannot be after project end date.")
+        return value
 
     def validate_assigned_to(self, value):
         """

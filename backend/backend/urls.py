@@ -18,7 +18,7 @@ from django.contrib import admin
 from django.urls import path, include
 
 urlpatterns = [
-    path("", include("tenant_apps.project_management.urls")),
-    path("", include("tenant_apps.employee.urls")),
-    path("", include("shared_apps.custom_auth.urls")),
+    path("api/", include("tenant_apps.project_management.urls")),
+    path("api/", include("tenant_apps.employee.urls")),
+    path("api/", include("shared_apps.custom_auth.urls")),
 ]

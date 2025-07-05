@@ -8,6 +8,7 @@ from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.exceptions import PermissionDenied
 from django_filters.rest_framework import DjangoFilterBackend
 import django_filters
+from django.shortcuts import get_object_or_404
 from tenant_apps.employee.models import Employee, ProjectManagerAssignment
 from tenant_apps.project_management.models import DeveloperAssignmentAuditLog
 from core.constants import UserRoles
@@ -194,20 +195,25 @@ class ProjectMemberViewSet(viewsets.ModelViewSet):
         developer_ids = request.data.get("developers", [])
 
         if not project_id or not isinstance(developer_ids, list):
-            return Response({"detail": "Project ID and developer list required."}, status=400)
+            return Response({"detail": "Project ID and developer list are required."}, status=400)
 
         project = get_object_or_404(Project, id=project_id)
-
         pm = request.user.employee
 
         developers = Employee.objects.filter(id__in=developer_ids)
+
+        # Restrict to PM's developers if user is a Project Manager
         if request.user.role == UserRoles.PROJECT_MANAGER:
-            developers = developers.filter(
-                id__in=ProjectManagerAssignment.objects.filter(manager=pm).values_list("developer_id", flat=True)
-            )
+            allowed_ids = ProjectManagerAssignment.objects.filter(
+                manager=pm
+            ).values_list("developer_id", flat=True)
+            developers = developers.filter(id__in=allowed_ids)
 
         valid_dev_ids = set(developers.values_list("id", flat=True))
-        created_memberships = []
+
+        newly_created = []
+        reactivated = []
+        already_active = []
 
         for dev_id in valid_dev_ids:
             member, created = ProjectMember.objects.get_or_create(
@@ -215,17 +221,23 @@ class ProjectMemberViewSet(viewsets.ModelViewSet):
                 employee_id=dev_id,
                 defaults={"role": "Developer", "is_active": True}
             )
-            if not created and not member.is_active:
+
+            if created:
+                newly_created.append(dev_id)
+            elif not member.is_active:
                 member.is_active = True
                 member.save()
-                created_memberships.append(member.id)
-            elif created:
-                created_memberships.append(member.id)
+                reactivated.append(dev_id)
+            else:
+                already_active.append(dev_id)
 
         return Response({
-            "detail": f"{len(created_memberships)} new member(s) added or reactivated.",
-            "created_ids": created_memberships,
-        })
+            "detail": "Bulk assignment completed.",
+            "newly_created": newly_created,
+            "reactivated": reactivated,
+            "already_active": already_active,
+            "total_processed": len(newly_created) + len(reactivated) + len(already_active),
+        }, status=status.HTTP_200_OK)
 
 
 class GroupedPMAssignmentView(APIView):
