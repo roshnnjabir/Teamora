@@ -45,7 +45,7 @@ class EmployeeViewSet(viewsets.ModelViewSet):
         user.set_unusable_password()
         user.save()
 
-        send_set_password_email_task.delay(user)
+        send_set_password_email_task.delay(user.pk)
 
         return Response({"detail": "Invitation resent."}, status=status.HTTP_200_OK)
 

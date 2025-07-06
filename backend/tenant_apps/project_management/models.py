@@ -71,7 +71,7 @@ class Subtask(models.Model):
     description = models.TextField(blank=True)
     due_date = models.DateField(null=True, blank=True)
     assigned_to = models.ForeignKey(Employee, null=True, blank=True, on_delete=models.SET_NULL)
-    status = models.CharField(max_length=20, choices=[...])
+    status = models.CharField(max_length=20, choices=TaskStatus.choices)
 
     def __str__(self):
         return self.title

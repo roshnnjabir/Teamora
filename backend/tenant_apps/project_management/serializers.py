@@ -64,63 +64,11 @@ class ProjectMemberDetailSerializer(serializers.ModelSerializer):
         fields = ['id', 'employee', 'role', 'joined_at']
 
 
-class ProjectSerializer(serializers.ModelSerializer):
-    members = serializers.SerializerMethodField()
-    tasks = TaskSerializer(many=True, read_only=True, source='task_set')
-
-    def get_members(self, obj):
-        members = ProjectMember.objects.filter(project=obj, is_active=True)
-        return ProjectMemberDetailSerializer(members, many=True).data
-
+class SubtaskSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Project
-        fields = [
-            'id', 'name', 'description', 'start_date', 'end_date',
-            'created_by', 'members', 'tasks', 'status', 'is_active', 'priority'
-        ]
-        read_only_fields = ['id', 'created_by']
-
-    def validate_name(self, value):
-        if not value.strip():
-            raise serializers.ValidationError("Project name is required.")
-        return value
-
-    def validate_description(self, value):
-        if value and len(value.strip()) < 10:
-            raise serializers.ValidationError("Description must be at least 10 characters long.")
-        return value
-
-    def validate(self, data):
-        start = data.get('start_date') or getattr(self.instance, 'start_date', None)
-        end = data.get('end_date') or getattr(self.instance, 'end_date', None)
-
-        if start and end and end < start:
-            raise serializers.ValidationError({
-                "end_date": "End date cannot be before start date."
-            })
-
-        if start and start < date.today():
-            raise serializers.ValidationError({
-                "start_date": "Start date cannot be in the past."
-            })
-        return data
-
-    def create(self, validated_data):
-        request = self.context.get('request')
-        creator = request.user.employee
-
-        validated_data.pop('created_by', None)
-
-        project = Project.objects.create(**validated_data, created_by=creator)
-
-        ProjectMember.objects.create(
-            project=project,
-            employee=creator,
-            role="Project Manager",
-            is_active=True
-        )
-
-        return project
+        model = Subtask
+        fields = ['id', 'task', 'title', 'is_completed', 'assigned_to', 'created_at']
+        read_only_fields = ['id', 'created_at']
 
 
 class TaskSerializer(serializers.ModelSerializer):
@@ -192,11 +140,63 @@ class TaskSerializer(serializers.ModelSerializer):
         return super().update(instance, validated_data)
 
 
-class SubtaskSerializer(serializers.ModelSerializer):
+class ProjectSerializer(serializers.ModelSerializer):
+    members = serializers.SerializerMethodField()
+    tasks = TaskSerializer(many=True, read_only=True, source='task_set')
+
+    def get_members(self, obj):
+        members = ProjectMember.objects.filter(project=obj, is_active=True)
+        return ProjectMemberDetailSerializer(members, many=True).data
+
     class Meta:
-        model = Subtask
-        fields = ['id', 'task', 'title', 'is_completed', 'assigned_to', 'created_at']
-        read_only_fields = ['id', 'created_at']
+        model = Project
+        fields = [
+            'id', 'name', 'description', 'start_date', 'end_date',
+            'created_by', 'members', 'tasks', 'status', 'is_active', 'priority'
+        ]
+        read_only_fields = ['id', 'created_by']
+
+    def validate_name(self, value):
+        if not value.strip():
+            raise serializers.ValidationError("Project name is required.")
+        return value
+
+    def validate_description(self, value):
+        if value and len(value.strip()) < 10:
+            raise serializers.ValidationError("Description must be at least 10 characters long.")
+        return value
+
+    def validate(self, data):
+        start = data.get('start_date') or getattr(self.instance, 'start_date', None)
+        end = data.get('end_date') or getattr(self.instance, 'end_date', None)
+
+        if start and end and end < start:
+            raise serializers.ValidationError({
+                "end_date": "End date cannot be before start date."
+            })
+
+        if start and start < date.today():
+            raise serializers.ValidationError({
+                "start_date": "Start date cannot be in the past."
+            })
+        return data
+
+    def create(self, validated_data):
+        request = self.context.get('request')
+        creator = request.user.employee
+
+        validated_data.pop('created_by', None)
+
+        project = Project.objects.create(**validated_data, created_by=creator)
+
+        ProjectMember.objects.create(
+            project=project,
+            employee=creator,
+            role="Project Manager",
+            is_active=True
+        )
+
+        return project
 
 
 class DeveloperAssignmentAuditLogSerializer(serializers.ModelSerializer):
