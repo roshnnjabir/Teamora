@@ -76,7 +76,7 @@ class ProjectSerializer(serializers.ModelSerializer):
         model = Project
         fields = [
             'id', 'name', 'description', 'start_date', 'end_date',
-            'created_by', 'members', 'status', 'is_active', 'priority'
+            'created_by', 'members', 'tasks', 'status', 'is_active', 'priority'
         ]
         read_only_fields = ['id', 'created_by']
 
@@ -131,7 +131,7 @@ class TaskSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'project', 'title', 'description', 'assigned_to',
             'due_date', 'status', 'priority', 'created_at',
-            'created_by', 'updated_at'
+            'created_by', 'updated_at', 'subtasks'
         ]
         read_only_fields = ['id', 'created_at', 'updated_at', 'created_by']
 
