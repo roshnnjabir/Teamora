@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <style>
+    body {
+      font-family: 'Nunito Sans', sans-serif;
+      background-color: #F9FAFB;
+      color: #2F3A4C;
+      padding: 24px;
+    }
+    .email {
+      max-width: 600px;
+      margin: auto;
+      background: white;
+      border: 1px solid #E5E8EC;
+      border-radius: 12px;
+      padding: 32px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    }
+    .header {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+    .header h1 {
+      color: #1A2A44;
+    }
+    .section {
+      font-size: 15px;
+      line-height: 1.7;
+    }
+    .highlight {
+      font-weight: bold;
+      color: #00C4B4;
+    }
+    .footer {
+      margin-top: 32px;
+      font-size: 13px;
+      color: #B0B8C5;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="email">
+    <div class="header">
+      <h1>🔔 Role Changed in {{ tenant_name }}</h1>
+    </div>
+    <div class="section">
+      <p>Hello {{ full_name }},</p>
+
+      <p>Your role in the organization <strong>{{ tenant_name }}</strong> has recently been updated.</p>
+
+      <p>
+        <strong>Previous Role:</strong> <span class="highlight">{{ old_role }}</span><br/>
+        <strong>New Role:</strong> <span class="highlight">{{ new_role }}</span>
+      </p>
+
+      <p>If this change was unexpected, please contact your administrator.</p>
+
+      <p>Best regards,<br/>The Team, {{ tenant_name }}</p>
+    </div>
+    <div class="footer">
+      &copy; 2025 Teamora Inc. All rights reserved.
+    </div>
+  </div>
+</body>
+</html>
