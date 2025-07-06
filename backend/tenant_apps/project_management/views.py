@@ -36,14 +36,20 @@ class ProjectViewSet(viewsets.ModelViewSet):
     serializer_class = ProjectSerializer
     permission_classes = [IsAuthenticated, IsProjectReadOnlyOrManager]
 
-    def perform_create(self, serializer):
-        serializer.save(created_by=self.request.user.employee)
-
     def get_queryset(self):
         user = self.request.user
-        base_qs = Project.objects.all() if user.is_tenant_admin() else Project.objects.filter(members=user.employee)
+        if user.is_tenant_admin:
+            return Project.objects.all()
+        if user.is_project_manager:
+            return Project.objects.filter(assigned_pm=user)
+        return Project.objects.none()
 
-        return base_qs.filter(is_active=True).prefetch_related('members')
+    def perform_create(self, serializer):
+        user = self.request.user
+        if user.is_tenant_admin:
+            serializer.save(created_by=user)
+        elif user.is_project_manager:
+            serializer.save(created_by=user, assigned_pm=user)
 
 
 class ProjectManagerAssignmentViewSet(viewsets.ModelViewSet):
@@ -395,3 +401,16 @@ class MyAssignedTasksList(generics.ListAPIView):
 
     def get_queryset(self):
         return Task.objects.filter(assigned_to=self.request.user.employee)
+
+
+class SubtaskViewSet(viewsets.ModelViewSet):
+    queryset = Subtask.objects.all()
+    serializer_class = SubtaskSerializer
+
+    def get_queryset(self):
+        user = self.request.user
+        if user.is_project_manager:
+            return Subtask.objects.filter(task__project__assigned_pm=user)
+        elif user.is_developer:
+            return Subtask.objects.filter(assigned_to=user)
+        return Subtask.objects.none()

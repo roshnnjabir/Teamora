@@ -66,6 +66,7 @@ class ProjectMemberDetailSerializer(serializers.ModelSerializer):
 
 class ProjectSerializer(serializers.ModelSerializer):
     members = serializers.SerializerMethodField()
+    tasks = TaskSerializer(many=True, read_only=True, source='task_set')
 
     def get_members(self, obj):
         members = ProjectMember.objects.filter(project=obj, is_active=True)
@@ -123,6 +124,8 @@ class ProjectSerializer(serializers.ModelSerializer):
 
 
 class TaskSerializer(serializers.ModelSerializer):
+    subtasks = SubtaskSerializer(many=True, read_only=True)
+
     class Meta:
         model = Task
         fields = [
