@@ -338,7 +338,7 @@ export default function TenantSignup() {
                       className="flex-1 px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-blue-500 focus:outline-none bg-white/50"
                       required
                     />
-                    <span className="text-gray-500 font-medium">teamora.com</span>
+                    <span className="text-gray-500 font-medium">.teamora.com</span>
                   </div>
                   <p className="text-xs text-gray-500 mt-1">
                     Only lowercase letters, numbers, and hyphens allowed

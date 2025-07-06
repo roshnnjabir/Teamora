@@ -20,7 +20,7 @@ const UnprotectedRoute = ({ children }) => {
           ? <Navigate to="/super_admin" replace />
           : <Navigate to="/unauthorized" replace />;
       case "tenant_admin":
-        return <Navigate to="/admin" replace />;
+        return <Navigate to="/tenant_admin" replace />;
       case "project_manager":
         return <Navigate to="/project_manager" replace />;
       case "developer":

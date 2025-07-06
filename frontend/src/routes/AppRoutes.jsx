@@ -43,7 +43,7 @@ const AppRoutes = () => (
         </ProtectedRoute>
       } />
 
-      <Route path="admin" element={
+      <Route path="tenant_admin" element={
         <ProtectedRoute allowedRoles={["Tenant Admin", "tenant_admin", "super_admin", "Super Admin"]}>
           <TenantAdminDashboard />
         </ProtectedRoute>
