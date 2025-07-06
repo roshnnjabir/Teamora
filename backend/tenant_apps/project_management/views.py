@@ -1,16 +1,16 @@
-from rest_framework import viewsets
+from rest_framework import viewsets, generics, status, filters, permissions
 from rest_framework.views import APIView
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from collections import defaultdict
-from rest_framework import generics, status, filters
 from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.exceptions import PermissionDenied
 from django_filters.rest_framework import DjangoFilterBackend
 import django_filters
 from django.shortcuts import get_object_or_404
 from tenant_apps.employee.models import Employee, ProjectManagerAssignment
-from tenant_apps.project_management.models import DeveloperAssignmentAuditLog
+from tenant_apps.project_management.models import DeveloperAssignmentAuditLog, SubtaskAssignmentAudit
+
 from core.constants import UserRoles
 from core.permissions import (
     IsTenantAdmin,
@@ -19,7 +19,7 @@ from core.permissions import (
     IsAssigneeOrManager
 )
 from rest_framework.permissions import IsAuthenticated
-from .models import Project, ProjectMember, Task, Subtask, TaskAssignmentAudit
+from .models import Project, ProjectMember, Task, Subtask, TaskAssignmentAudit, Label, Comment
 from .serializers import (
     ProjectSerializer,
     ProjectMemberSerializer,
@@ -27,7 +27,9 @@ from .serializers import (
     SubtaskSerializer,
     ProjectManagerAssignmentSerializer,
     SimpleEmployeeSerializer,
-    DeveloperAssignmentAuditLogSerializer
+    DeveloperAssignmentAuditLogSerializer,
+    LabelSerializer,
+    CommentSerializer,
 )
 
 
@@ -383,18 +385,6 @@ class TaskViewSet(viewsets.ModelViewSet):
         return response
 
 
-class SubtaskViewSet(viewsets.ModelViewSet):
-    queryset = Subtask.objects.all()
-    serializer_class = SubtaskSerializer
-    permission_classes = [IsAuthenticated, IsProjectManagerOrTenantAdmin]
-
-    def get_queryset(self):
-        user = self.request.user
-        if user.is_tenant_admin():
-            return Subtask.objects.all()
-        return Subtask.objects.filter(task__assigned_to=user.employee)
-
-
 class MyAssignedTasksList(generics.ListAPIView):
     serializer_class = TaskSerializer
     permission_classes = [IsAuthenticated]
@@ -406,11 +396,79 @@ class MyAssignedTasksList(generics.ListAPIView):
 class SubtaskViewSet(viewsets.ModelViewSet):
     queryset = Subtask.objects.all()
     serializer_class = SubtaskSerializer
+    permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
         user = self.request.user
-        if user.is_project_manager:
-            return Subtask.objects.filter(task__project__assigned_pm=user)
+        employee = user.employee
+
+        if user.is_tenant_admin():
+            return Subtask.objects.all()
+        elif user.is_project_manager:
+            return Subtask.objects.filter(task__project__assigned_pm=employee)
         elif user.is_developer:
-            return Subtask.objects.filter(assigned_to=user)
+            return Subtask.objects.filter(assigned_to=employee)
         return Subtask.objects.none()
+
+    def partial_update(self, request, *args, **kwargs):
+        subtask = self.get_object()
+        user = request.user
+        employee = user.employee
+        previous_assignee = subtask.assigned_to
+    
+        # Developer permission restriction
+        if user.role == UserRoles.DEVELOPER:
+            if subtask.assigned_to != employee:
+                raise PermissionDenied("You can only update subtasks assigned to you.")
+    
+            allowed_fields = {'status', 'due_date'}
+            if not all(field in allowed_fields for field in request.data.keys()):
+                raise PermissionDenied("You can only update status or due date.")
+    
+        # Perform update
+        response = super().partial_update(request, *args, **kwargs)
+    
+        # Log reassignment only if 'assigned_to' changed
+        new_assignee_id = request.data.get('assigned_to')
+        if 'assigned_to' in request.data:
+            new_assignee = None
+            if new_assignee_id:
+                try:
+                    new_assignee = Employee.objects.get(id=new_assignee_id)
+                except Employee.DoesNotExist:
+                    pass
+    
+            if previous_assignee != new_assignee:
+                SubtaskAssignmentAudit.objects.create(
+                    subtask=subtask,
+                    previous_assignee=previous_assignee,
+                    new_assignee=new_assignee,
+                    changed_by=request.user
+                )
+    
+        return response
+
+
+class LabelViewSet(viewsets.ModelViewSet):
+    queryset = Label.objects.all()
+    serializer_class = LabelSerializer
+    permission_classes = [IsAuthenticated, IsProjectManagerOrTenantAdmin]
+
+    def perform_create(self, serializer):
+        serializer.save(created_by=self.request.user.employee)
+
+
+class CommentViewSet(viewsets.ModelViewSet):
+    queryset = Comment.objects.all()
+    serializer_class = CommentSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+    
+        try:
+            employee = user.employee 
+        except AttributeError:
+            return Comment.objects.none()
+    
+        return Comment.objects.filter(author=employee)
