@@ -17,7 +17,7 @@ import EditProjectModal from "./EditProjectModal.jsx";
 import ManageMembersModal from "./ManageMembersModal.jsx";
 import CreateTaskModal from "./CreateTaskModal.jsx";
 
-import { generateColumns } from "../../../../utils/projectUtils.jsx";
+import { generateColumns } from "../../utils/projectUtils.jsx";
 
 const ProjectManagerProjectDetail = () => {
   const { projectId } = useParams();

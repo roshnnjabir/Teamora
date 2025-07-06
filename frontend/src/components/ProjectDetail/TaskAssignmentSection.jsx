@@ -1,4 +1,3 @@
-// components/TaskAssignmentSection.jsx
 import { DragDropContext } from "@hello-pangea/dnd";
 import ScrollContainer from "./ScrollContainer";
 import TaskColumn from "./TaskColumn";

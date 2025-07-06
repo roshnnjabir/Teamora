@@ -1,6 +1,6 @@
 // components/ProjectOverview.jsx
-import InlineEditField from "../InlineEditField";
-import { getPriorityColor } from "../../../../utils/projectUtils";
+import InlineEditField from "./InlineEditField";
+import { getPriorityColor } from "../../utils/projectUtils";
 
 const ProjectOverview = ({ project, onFieldUpdate }) => {
   return (

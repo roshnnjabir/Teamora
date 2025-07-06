@@ -1,5 +1,5 @@
 // components/ProjectHeader.jsx
-import { getStatusColor } from "../../../../utils/projectUtils";
+import { getStatusColor } from "../../utils/projectUtils";
 
 const ProjectHeader = ({ project, onBack, onEdit }) => {
   return (

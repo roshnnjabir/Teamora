@@ -1,6 +1,6 @@
 // components/TaskCard.jsx
 import { Draggable } from "@hello-pangea/dnd";
-import { getPriorityColor } from "../../../../utils/projectUtils";
+import { getPriorityColor } from "../../utils/projectUtils";
 
 const TaskCard = ({ task, index }) => {
   return (

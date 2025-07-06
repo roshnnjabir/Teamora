@@ -1,4 +1,3 @@
-// components/TaskColumn.jsx
 import { Droppable } from "@hello-pangea/dnd";
 import TaskCard from "./TaskCard";
 

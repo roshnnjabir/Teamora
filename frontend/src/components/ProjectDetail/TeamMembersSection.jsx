@@ -1,5 +1,5 @@
 // components/TeamMembersSection.jsx
-import { getInitials } from "../../../../utils/projectUtils";
+import { getInitials } from "../../utils/projectUtils";
 
 const TeamMembersSection = ({ project, onManageTeam, onRemoveMember }) => {
   return (
