@@ -20,31 +20,26 @@ export default function LoginForm() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const hostname = window.location.hostname;
-  const isRootDomain = hostname === 'localhost';
+  const isRootDomain =
+    hostname === 'chronocrust.shop' || hostname === 'localhost';
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
 
+  useEffect(() => {
+    document.querySelector('input[type="email"]')?.focus();
+  }, []);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setError(null); // Clear previous error
+    setError(null);
 
-    // Step 1: Try login
     try {
       await apiClient.post('/api/token/', { email, password });
-    } catch (err) {
-      console.error("Login error:", err);
-      const message = extractErrorMessage(err, 'Login failed.');
-      setError(message);
-      setLoading(false);
-      return;
-    }
 
-    // Step 2: Try fetching user info
-    try {
       const userRes = await apiClient.get('/api/me/');
       const user = userRes.data;
 
@@ -60,29 +55,33 @@ export default function LoginForm() {
 
       switch (user.role) {
         case 'super_admin':
-          navigate(isRootDomain ? '/super_admin' : '/unauthorized');
+          if (!isRootDomain) {
+            setError("Super Admin must log in from chronocrust.shop");
+            return;
+          }
+          navigate('/super_admin');
           break;
+        
         case 'tenant_admin':
-          navigate('/admin');
-          break;
         case 'project_manager':
-          navigate('/project_manager');
-          break;
         case 'developer':
-          navigate('/developer');
-          break;
         case 'hr':
-          navigate('/hr');
+          if (isRootDomain) {
+            setError("Tenant users must log in from their workspace subdomain.");
+            return;
+          }
+          navigate(`/${user.role}`);
           break;
+        
         default:
           navigate('/');
       }
 
     } catch (err) {
-      console.error("User fetch failed:", err);
-      console.log("Error response:", err?.response?.data);
-
-      const message = extractErrorMessage(err, 'User info fetch failed.');
+      console.error("Login/User fetch error:", err);
+      const message = err?.response
+        ? extractErrorMessage(err, 'Login failed.')
+        : 'Server unreachable. Please try again later.';
       setError(message);
     } finally {
       setLoading(false);

@@ -9,7 +9,6 @@ class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
         # Add user fields
         token['email'] = user.email
         token['role'] = user.role
-        print(user.role)
 
         # Access tenant directly from user
         if user.tenant:

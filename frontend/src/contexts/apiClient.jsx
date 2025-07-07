@@ -1,20 +1,18 @@
 import axios from 'axios';
-const hostname = window.location.hostname;
-const protocol = window.location.protocol;
-let tenantSubdomain = null;
 
-if (hostname.includes('.') && !hostname.startsWith('localhost')) {
-  tenantSubdomain = hostname.split('.')[0];
-  console.log("Subdomain:", tenantSubdomain);
-}
+const getSubdomain = () => {
+  const host = window.location.hostname;
+  const parts = host.split('.');
+  return parts.length > 2 ? parts[0] : null;
+};
 
-const baseURL = tenantSubdomain
-  ? `${protocol}//${tenantSubdomain}.localhost:8000`
-  : `${protocol}//localhost:8000`;
+const BASE_URL = `https://chronocrust.shop/api`;
+const subdomain = getSubdomain();
 
 const apiClient = axios.create({
-  baseURL,
+  baseURL: BASE_URL,
   withCredentials: true,
+  headers: subdomain ? { 'X-Tenant': subdomain } : {},
 });
 
 let isRefreshing = false;
@@ -40,8 +38,6 @@ apiClient.interceptors.response.use(
     const isTokenExpired =
       error.response?.data?.detail?.toLowerCase?.().includes("token") ?? false;
 
-
-
     if (isUnauthorized && isTokenExpired && !originalRequest._retry) {
       if (isRefreshing) {
         return new Promise((resolve, reject) => {
@@ -53,7 +49,11 @@ apiClient.interceptors.response.use(
       isRefreshing = true;
 
       try {
-        await apiClient.post("/api/token/refresh/");
+        await axios.post(`${BASE_URL}/token/refresh/`, null, {
+          withCredentials: true,
+          headers: subdomain ? { 'X-Tenant': subdomain } : {},
+        });
+
         isRefreshing = false;
         processQueue(null, originalRequest);
         return apiClient(originalRequest);

@@ -12,3 +12,16 @@ DATABASES = {
 }
 
 DEBUG = env.bool("DEBUG", default=True)
+
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:5173",
+    "http://bigco.localhost:5173",
+    "http://acme.localhost:5173",
+    "http://brototype.localhost:5173",
+    "http://britco.localhost:5173",
+    "http://luminar.localhost:5173",
+    "http://openai.localhost:5173",
+    "http://microsoft.localhost:5173",
+    "http://greenpeace.localhost:5173",
+    "http://amazon.localhost:5173",
+]

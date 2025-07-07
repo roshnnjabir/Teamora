@@ -13,18 +13,7 @@ DJANGO_ENV = env("DJANGO_ENV", default="development")
 IS_PRODUCTION = DJANGO_ENV == "production"
 ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", default=['localhost'])
 
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:5173",
-    "http://bigco.localhost:5173",
-    "http://acme.localhost:5173",
-    "http://brototype.localhost:5173",
-    "http://britco.localhost:5173",
-    "http://luminar.localhost:5173",
-    "http://openai.localhost:5173",
-    "http://microsoft.localhost:5173",
-    "http://greenpeace.localhost:5173",
-    "http://amazon.localhost:5173",
-]
+CSRF_TRUSTED_ORIGINS = [f"https://{host}" for host in ALLOWED_HOSTS]
 
 CORS_ALLOW_CREDENTIALS = True
 
@@ -161,5 +150,6 @@ TIME_ZONE = 'UTC'
 USE_I18N = True
 USE_TZ = True
 
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'

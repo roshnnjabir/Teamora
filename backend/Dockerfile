@@ -1,5 +1,3 @@
-# backend/Dockerfile
-
 FROM python:3.11-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1
@@ -16,7 +14,3 @@ COPY requirements.txt .
 RUN pip install -r requirements.txt
 
 COPY . .
-
-# Create non-root user (optional)
-RUN adduser --disabled-password teamorauser
-USER teamorauser

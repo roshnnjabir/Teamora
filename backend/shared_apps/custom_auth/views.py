@@ -12,10 +12,8 @@ from shared_apps.custom_auth.models import User
 
 def index(request):
     tenant = request.tenant
-    print(tenant)
     
     users = tenant.users.all()
-    print(users)
 
     user_list = "".join(f"<li>{user.email} ({user.role})</li>" for user in users)
     return HttpResponse(f"<h1>{tenant.name} Users</h1><ul>{user_list}</ul>")
