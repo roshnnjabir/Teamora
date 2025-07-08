@@ -19,7 +19,7 @@ class EmployeeViewSet(viewsets.ModelViewSet):
     lookup_field = 'id'
 
     def get_queryset(self):
-        return Employee.objects.filter(user__tenant=self.request.user.tenant).exclude(role=UserRoles.TENANT_ADMIN)
+        return Employee.objects.filter(user__tenant=self.request.user.tenant).exclude(user__role=UserRoles.TENANT_ADMIN)
 
     def perform_create(self, serializer):
         serializer.save(tenant=self.request.user.tenant)
@@ -45,7 +45,8 @@ class EmployeeViewSet(viewsets.ModelViewSet):
         user.set_unusable_password()
         user.save()
 
-        send_set_password_email_task.delay(user.pk)
+        token = default_token_generator.make_token(user)
+        send_set_password_email_task.delay(user.pk, token)
 
         return Response({"detail": "Invitation resent."}, status=status.HTTP_200_OK)
 
