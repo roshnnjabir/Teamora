@@ -9,7 +9,17 @@ export const getPriorityColor = (priority) =>
 export const getInitials = (name) =>
   name?.split(' ').map(n => n[0]).join('').toUpperCase() || '?';
 
-export const generateColumns = (tasksList, devList) => {
+export const generateColumns = (tasksList = [], devList = []) => {
+  if (!Array.isArray(tasksList)) {
+    console.error("generateColumns error: tasksList is not an array:", tasksList);
+    tasksList = [];
+  }
+
+  if (!Array.isArray(devList)) {
+    console.error("generateColumns error: devList is not an array:", devList);
+    devList = [];
+  }
+
   const grouped = {
     0: {
       id: 0,

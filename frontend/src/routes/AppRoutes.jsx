@@ -5,13 +5,13 @@ import SetPasswordPage from '../pages/Auth/SetPasswordPage';
 import TenantAdminDashboard from '../pages/Tenant Admin/TenantAdminDashboard';
 import SuperAdminDashboard from '../pages/Super Admin/SuperAdminDashboard';
 import HrDashboard from "../pages/HR/HrDashboard";
-import ProjectManagerDashboard from "../pages/Project Manager/ProjectManagerDashboard";
-import ProjectManagerProjectDetail from '../pages/Project Manager/ProjectDetail';
+import ProjectManagerDashboard from '../domains/project/manager/pages/Dashboard';
+import ProjectManagerProjectDetail from '../domains/project/manager/ProjectManagerProjectDetail';
 import ProtectedRoute from '../wrappers/ProtectedRoute';
 import UnprotectedRoute from '../wrappers/UnprotectedRoute';
 import ConditionalLanding from '../wrappers/ConditionalLandingPage';
 import DeveloperDashboard from '../pages/Developer/DeveloperDashboard';
-import NotFound from '../pages/OtherPages/NotFound';
+import NotFound from '../pages/NotFound';
 import AppLayout from '../layouts/AppLayout';
 import DomainWrapper from '../wrappers/DomainWrapper';
 
