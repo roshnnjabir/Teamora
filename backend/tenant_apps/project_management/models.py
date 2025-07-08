@@ -16,6 +16,7 @@ class Project(models.Model):
 
     # The one who created the project (e.g. a PM or tenant admin)
     created_by = models.ForeignKey(Employee, on_delete=models.SET_NULL, null=True, related_name='created_projects')
+    assigned_pm = models.ForeignKey(Employee, on_delete=models.SET_NULL, null=True, related_name='managed_projects')
 
     members = models.ManyToManyField(Employee, through='ProjectMember', related_name='projects')
 
@@ -65,11 +66,12 @@ class Task(models.Model):
 
 
 class Subtask(models.Model):
-    task = models.ForeignKey(Task, on_delete=models.CASCADE, related_name='subtasks')
+    task = models.ForeignKey(Task, related_name='subtasks', on_delete=models.CASCADE)
     title = models.CharField(max_length=255)
-    is_completed = models.BooleanField(default=False)
-    assigned_to = models.ForeignKey(Employee, on_delete=models.SET_NULL, null=True, blank=True, related_name='assigned_subtasks')
-    created_at = models.DateTimeField(auto_now_add=True)
+    description = models.TextField(blank=True)
+    due_date = models.DateField(null=True, blank=True)
+    assigned_to = models.ForeignKey(Employee, null=True, blank=True, on_delete=models.SET_NULL)
+    status = models.CharField(max_length=20, choices=TaskStatus.choices)
 
     def __str__(self):
         return self.title

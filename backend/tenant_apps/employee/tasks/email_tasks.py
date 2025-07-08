@@ -1,6 +1,7 @@
 from celery import shared_task
 from django.contrib.auth.tokens import default_token_generator
 from django.core.mail import send_mail
+from django_tenants.utils import schema_context
 from django.conf import settings
 from django.utils.http import urlsafe_base64_encode
 from django.utils.encoding import force_bytes
@@ -27,12 +28,13 @@ def send_set_password_email_task(user_id):
 
     reset_url = f"http://{domain}:5173/set-password/{uid}/{token}"
 
-    # Fetch employee to get full_name
-    try:
-        employee = Employee.objects.get(user=user)
-        full_name = employee.full_name
-    except Employee.DoesNotExist:
-        full_name = "User"
+    # Switch to the correct tenant schema to access the Employee model
+    with schema_context(user.tenant.schema_name):
+        try:
+            employee = Employee.objects.get(user=user)
+            full_name = employee.full_name
+        except Employee.DoesNotExist:
+            full_name = "User"
 
     subject = "Set your password for Teamora"
  

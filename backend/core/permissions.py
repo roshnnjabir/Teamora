@@ -70,3 +70,34 @@ class IsAssigneeOrManager(BasePermission):
         if obj.assigned_to and obj.assigned_to.user_id == user.id:
             return request.method in ['PATCH']
         return False
+
+class IsSelfOrTenantAdmin(BasePermission):
+    """
+    Allows access if the user is accessing their own data or is a tenant admin.
+    """
+    def has_object_permission(self, request, view, obj):
+        return (
+            request.user.is_authenticated and (
+                obj == request.user or request.user.is_tenant_admin()
+            )
+        )
+
+class IsAssignedDeveloperOrReadOnly(BasePermission):
+    """
+    Developers can modify only if assigned. Others can read.
+    """
+    def has_object_permission(self, request, view, obj):
+        user = request.user
+        if request.method in SAFE_METHODS:
+            return True
+        if user.is_tenant_admin() or user.role == UserRoles.PROJECT_MANAGER:
+            return True
+        return obj.assigned_to and obj.assigned_to.user == user
+
+class IsProjectMember(BasePermission):
+    """
+    Grants access if the user is an active member of the project.
+    """
+    def has_object_permission(self, request, view, obj):
+        employee = request.user.employee
+        return obj.members.filter(employee=employee, is_active=True).exists()

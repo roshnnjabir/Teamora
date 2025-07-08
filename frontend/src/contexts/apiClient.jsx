@@ -1,18 +1,18 @@
 import axios from 'axios';
+import { getSubdomain } from '../utils/domainUtils';
 
-const getSubdomain = () => {
-  const host = window.location.hostname;
-  const parts = host.split('.');
-  return parts.length > 2 ? parts[0] : null;
-};
-
-const BASE_URL = `https://chronocrust.shop/api`;
+const protocol = window.location.protocol;
+const rootDomain = import.meta.env.VITE_ROOT_DOMAIN;
 const subdomain = getSubdomain();
+
+const BASE_URL = subdomain
+  ? `${protocol}//${subdomain}.${rootDomain}`
+  : import.meta.env.VITE_API_BASE_URL;
+
 
 const apiClient = axios.create({
   baseURL: BASE_URL,
   withCredentials: true,
-  headers: subdomain ? { 'X-Tenant': subdomain } : {},
 });
 
 let isRefreshing = false;
@@ -51,7 +51,6 @@ apiClient.interceptors.response.use(
       try {
         await axios.post(`${BASE_URL}/token/refresh/`, null, {
           withCredentials: true,
-          headers: subdomain ? { 'X-Tenant': subdomain } : {},
         });
 
         isRefreshing = false;
