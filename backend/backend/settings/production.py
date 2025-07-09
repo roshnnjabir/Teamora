@@ -22,3 +22,5 @@ CORS_ALLOWED_ORIGIN_REGEXES = [
     r"^https:\/\/([a-z0-9-]+\.)?chronocrust\.shop$",
     r"^https:\/\/([a-z0-9-]+\.)?teamora\.vercel\.app$",
 ]
+
+print("PRODUCTION")

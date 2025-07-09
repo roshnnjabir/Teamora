@@ -5,7 +5,14 @@ from datetime import timedelta
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 env = environ.Env()
-environ.Env.read_env(BASE_DIR / ".env")
+default_env_file = ".env"
+
+if os.getenv("DJANGO_ENV", "development") == "production":
+    default_env_file = ".env.production"
+
+print(f"🔧 Loading environment from: {default_env_file}") 
+
+env.read_env(BASE_DIR / default_env_file)
 
 SECRET_KEY = env("SECRET_KEY")
 DEBUG = env.bool("DEBUG", default=False)
