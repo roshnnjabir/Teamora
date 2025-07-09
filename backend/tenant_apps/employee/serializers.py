@@ -73,6 +73,7 @@ class EmployeeSerializer(serializers.ModelSerializer):
             user.save()
 
             validated_data.pop('tenant', None)
+            validated_data.pop('role', None)
 
             with schema_context(tenant.schema_name):
                 with transaction.atomic():
