@@ -11,6 +11,7 @@ urlpatterns = [
         path("", include("shared_apps.custom_auth.urls")),
 
         path("tenants/signup/", views.TenantSignupView.as_view(), name="tenant-signup"),
+        path("tenants/check-availability/", views.CheckTenantAvailabilityView.as_view(), name="check-availability"),
         path("tenants/send-otp/", views.SendOTPView.as_view(), name="send-otp"),
         path("tenants/verify-otp/", views.VerifyOTPView.as_view(), name="verify-otp"),
 
