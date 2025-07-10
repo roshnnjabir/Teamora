@@ -139,11 +139,19 @@ export default function TenantSignup() {
 
   // Clear messages when input changes
   const handleInputChange = (field, value) => {
+    let processedValue = value;
+
+    if (field === 'subdomain') {
+      processedValue = value.toLowerCase().replace(/[^a-z0-9-]/g, '');
+    } else if (field === 'email') {
+      processedValue = value.trim().toLowerCase();
+    }
+
     setFormData(prev => ({
       ...prev,
-      [field]: field === 'subdomain' ? value.toLowerCase().replace(/[^a-z0-9-]/g, '') : value
+      [field]: processedValue
     }));
-    
+
     if (error) setError('');
     if (success) setSuccess('');
   };
@@ -179,12 +187,47 @@ export default function TenantSignup() {
     return true;
   };
 
-  const handleNext = () => {
-    if (validateCurrentStep()) {
-      setCurrentStep(prev => prev + 1);
-      setError('');
+  const handleNext = async () => {
+    if (!validateCurrentStep()) return;
+
+    if (currentStep === 0) {
+      try {
+        const res = await fetch(`${BASE_URL}/api/tenants/check-availability/`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            subdomain: formData.subdomain,
+            tenant_name: formData.tenantName
+          }),
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          setError(data.detail || 'Could not validate subdomain/tenant name');
+          return;
+        }
+
+        if (!data.subdomain_available) {
+          setError('Subdomain is already taken. Please choose another.');
+          return;
+        }
+
+        if (!data.tenant_name_available) {
+          setError('Organization name is already in use. Please pick another.');
+          return;
+        }
+
+      } catch (err) {
+        setError(getErrorMessage(err));
+        return;
+      }
     }
+
+    setCurrentStep((prev) => prev + 1);
+    setError('');
   };
+
 
   const handlePrevious = () => {
     if (currentStep > 0) {
