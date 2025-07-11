@@ -2,3 +2,6 @@
 __pycache__/
 *.pyc
 celerybeat-schedule
+
+create_public_tenant_and_superuser.py
+structure.txt*
