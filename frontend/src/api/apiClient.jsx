@@ -6,7 +6,7 @@ const rootDomain = import.meta.env.VITE_ROOT_DOMAIN;
 const subdomain = getSubdomain();
 
 const BASE_URL = subdomain
-  ? `${protocol}//${subdomain}.${rootDomain}`
+  ? `${protocol}://${subdomain}.${rootDomain}`
   : import.meta.env.VITE_API_BASE_URL;
 
 
