@@ -1,3 +1,9 @@
+"""
+Developer Assignment Audit Views
+
+Manages listing and filtering audit logs that track developer–manager assignment history.
+"""
+
 import django_filters
 import logging
 

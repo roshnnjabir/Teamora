@@ -1,3 +1,10 @@
+"""
+Project Member Views
+
+Manages adding, removing, and updating project members.
+Includes bulk assignment and validation logic for membership rules.
+"""
+
 from django.shortcuts import get_object_or_404
 from rest_framework import status, viewsets
 from rest_framework.decorators import action

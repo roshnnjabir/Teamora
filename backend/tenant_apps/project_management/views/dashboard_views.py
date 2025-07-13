@@ -1,3 +1,9 @@
+"""
+Dashboard Views
+
+Serves developer dashboard-related API views like workload summaries or performance insights.
+"""
+
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response

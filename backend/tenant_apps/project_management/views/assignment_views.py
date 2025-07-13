@@ -1,3 +1,10 @@
+"""
+Project Manager Assignment Views
+
+Handles assigning developers to project managers,
+grouping views, and returning assigned/unassigned developer data.
+"""
+
 from collections import defaultdict
 import logging
 

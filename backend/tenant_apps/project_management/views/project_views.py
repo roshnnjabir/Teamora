@@ -1,3 +1,10 @@
+"""
+Project Views
+
+This module contains viewsets related to project CRUD operations and related actions.
+- ProjectViewSet: Handles listing, creating, updating, and retrieving projects.
+"""
+
 from rest_framework import viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated

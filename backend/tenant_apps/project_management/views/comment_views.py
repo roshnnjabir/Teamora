@@ -1,3 +1,9 @@
+"""
+Comment Views
+
+Handles comment creation, listing, and modification for tasks and subtasks.
+"""
+
 import logging
 
 from django.contrib.contenttypes.models import ContentType
