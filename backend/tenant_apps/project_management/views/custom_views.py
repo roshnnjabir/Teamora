@@ -31,7 +31,7 @@ from core.permissions import (
     IsAssigneeOrManager
 )
 from rest_framework.permissions import IsAuthenticated
-from .serializers import (
+from tenant_apps.project_management.serializers import (
     ProjectSerializer,
     ProjectMemberSerializer,
     TaskSerializer,

@@ -20,9 +20,10 @@ class User(AbstractUser):
     objects = CustomUserManager()
 
     def clean(self):
-        if self.role == UserRoles.SUPER_ADMIN and self.tenant is not None:
-            raise ValidationError("Super admins must not be assigned to a tenant.")
-        elif self.role != UserRoles.SUPER_ADMIN and self.tenant is None:
+        if self.role == UserRoles.SUPER_ADMIN:
+            if not self.tenant or self.tenant.schema_name != "public":
+                raise ValidationError("Super admins must be assigned to the public tenant.")
+        elif self.tenant is None:
             raise ValidationError("Non-super admins must be assigned to a tenant.")
     
     def is_super_admin(self):

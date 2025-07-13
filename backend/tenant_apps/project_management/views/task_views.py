@@ -15,10 +15,11 @@ from rest_framework.decorators import action
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import IsAuthenticated
 
-from tenant_apps.employee.models import Employee, ProjectMember, Notification
+from tenant_apps.employee.models import Employee, Notification
 from tenant_apps.project_management.models import (
     Project, Task, Subtask,
-    SubtaskAssignmentAudit, Label
+    SubtaskAssignmentAudit, Label,
+    ProjectMember
 )
 from tenant_apps.project_management.tasks.email_tasks import send_pm_blocking_subtasks_email
 
@@ -33,7 +34,7 @@ from core.permissions import (
     IsProjectManagerOrTenantAdmin,
 )
 
-from .serializers import (
+from tenant_apps.project_management.serializers import (
     TaskSerializer,
     SubtaskSerializer,
     LabelSerializer,
@@ -195,7 +196,7 @@ class LabelViewSet(viewsets.ModelViewSet):
         if not employee:
             return Label.objects.none()
 
-        if user.role == 'developer':
+        if user.role == UserRoles.DEVELOPER:
             task_label_ids = Label.objects.filter(tasks__project__project_members__employee=employee).values_list("id", flat=True)
             subtask_label_ids = Label.objects.filter(subtasks__assigned_to=employee).values_list("id", flat=True)
 

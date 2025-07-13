@@ -12,7 +12,7 @@ from rest_framework.response import Response
 
 from tenant_apps.project_management.models import Project, Task
 from core.permissions import IsProjectReadOnlyOrManager
-from .serializers import ProjectSerializer, TaskSerializer
+from tenant_apps.project_management.serializers import ProjectSerializer, TaskSerializer
 
 
 class ProjectViewSet(viewsets.ModelViewSet):

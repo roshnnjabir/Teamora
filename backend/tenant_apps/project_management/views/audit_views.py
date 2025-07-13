@@ -14,14 +14,10 @@ from django_filters.rest_framework import DjangoFilterBackend
 
 from tenant_apps.project_management.models import DeveloperAssignmentAuditLog
 from core.permissions import IsTenantAdmin
-from .serializers import DeveloperAssignmentAuditLogSerializer
+from core.pagination import StandardAuditPagination as DeveloperAssignmentAuditLogPagination
+from tenant_apps.project_management.serializers import DeveloperAssignmentAuditLogSerializer
 
 logger = logging.getLogger(__name__)
-
-
-class DeveloperAssignmentAuditLogPagination(LimitOffsetPagination):
-    default_limit = 10
-    max_limit = 50
 
 
 class DeveloperAuditLogFilter(django_filters.FilterSet):
@@ -46,5 +42,4 @@ class DeveloperAssignmentAuditLogList(generics.ListAPIView):
 
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_class = DeveloperAuditLogFilter
-    filterset_fields = ['developer', 'previous_manager', 'new_manager', 'assigned_by']
     search_fields = ['developer__full_name', 'assigned_by__full_name']

@@ -49,7 +49,7 @@ class TenantSignupSerializer(serializers.Serializer):
         user = User.objects.create_user(
             email=validated_data['email'],
             password=validated_data['password'],
-            role='tenant_admin',
+            role=UserRoles.TENANT_ADMIN,
             tenant=tenant
         )
         user.first_name = validated_data['full_name']

@@ -6,3 +6,4 @@ from .is_assignee_or_manager import IsAssigneeOrManager
 from .is_self_or_tenant_admin import IsSelfOrTenantAdmin
 from .is_assigned_developer_or_read_only import IsAssignedDeveloperOrReadOnly
 from .is_project_member import IsProjectMember
+from .is_tenant_admin_with_assign_once import IsTenantAdminWithAssignOnce

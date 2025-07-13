@@ -21,15 +21,21 @@ from tenant_apps.project_management.models import (
     Project,
     ProjectMember,
     Subtask,
-    DeveloperAssignmentAuditLog
 )
-from .serializers import (
+from tenant_apps.project_management.services import (
+    log_pm_assignment_change,
+)
+from tenant_apps.project_management.serializers import (
     ProjectManagerAssignmentSerializer,
     SimpleEmployeeSerializer
 )
 from core.permissions import (
     IsTenantAdmin,
     IsProjectManagerOrTenantAdmin
+)
+from core.constants import (
+    TaskStatus,
+    UserRoles
 )
 
 logger = logging.getLogger(__name__)
@@ -88,13 +94,8 @@ class ProjectManagerAssignmentViewSet(viewsets.ModelViewSet):
                     except ProjectMember.DoesNotExist:
                         continue
 
-                # Log audit
-                DeveloperAssignmentAuditLog.objects.create(
-                    developer_id=developer_id,
-                    previous_manager=previous_manager,
-                    new_manager=None,
-                    assigned_by=assigned_by
-                )
+                print("#1")
+                log_pm_assignment_change(developer_id, previous_manager.id, None, assigned_by)
 
                 return Response({
                     "detail": "Developer unassigned and removed from all related projects.",
@@ -107,16 +108,11 @@ class ProjectManagerAssignmentViewSet(viewsets.ModelViewSet):
                 existing.assigned_by = assigned_by
                 existing.save()
 
-                # Audit log
-                DeveloperAssignmentAuditLog.objects.create(
-                    developer_id=developer_id,
-                    previous_manager=previous_manager,
-                    new_manager_id=manager_id,
-                    assigned_by=assigned_by
-                )
+                print("#2")
+                log_pm_assignment_change(developer_id, previous_manager.id, manager_id, assigned_by)
 
                 serializer = ProjectManagerAssignmentSerializer(existing)
-                return Response(serializer.data)
+                return Response(serializer.data, status=status.HTTP_200_OK)
 
         except ProjectManagerAssignment.DoesNotExist:
             if manager_id is None:
@@ -128,13 +124,8 @@ class ProjectManagerAssignmentViewSet(viewsets.ModelViewSet):
                 developer_id=developer_id,
                 assigned_by=assigned_by
             )
-
-            DeveloperAssignmentAuditLog.objects.create(
-                developer_id=developer_id,
-                previous_manager=None,
-                new_manager_id=manager_id,
-                assigned_by=assigned_by
-            )
+            print(f"#Dev Id{developer_id} Manager id {manager_id}")
+            log_pm_assignment_change(developer_id, None, manager_id, assigned_by)
 
             serializer = ProjectManagerAssignmentSerializer(assignment)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -144,8 +135,8 @@ class GroupedPMAssignmentView(APIView):
     permission_classes = [IsAuthenticated, IsTenantAdmin]
 
     def get(self, request):
-        all_pms = Employee.objects.filter(user__role='project_manager')
-        all_devs = set(Employee.objects.filter(user__role='developer'))
+        all_pms = Employee.objects.filter(user__role=UserRoles.PROJECT_MANAGER)
+        all_devs = set(Employee.objects.filter(user__role=UserRoles.DEVELOPER))
 
         assignments = ProjectManagerAssignment.objects.select_related(
             "manager", "developer", "manager__user", "developer__user"
@@ -180,7 +171,7 @@ class GroupedPMAssignmentView(APIView):
             })
 
 
-        return Response(result)
+        return Response(result, status=status.HTTP_200_OK)
 
 
 class ProjectManagerMyDevelopersView(APIView):
@@ -224,4 +215,4 @@ class ProjectManagerMyDevelopersView(APIView):
                 "assigned_subtasks_count": subtask_count
             })
 
-        return Response(data)
+        return Response(data, status=status.HTTP_200_OK)

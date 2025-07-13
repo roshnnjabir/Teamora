@@ -19,14 +19,14 @@ from core.guards.project_guards import (
     ensure_project_is_active,
     ensure_active_via_member
 )
-from core.permissions import IsTenantAdmin, IsProjectManagerOrTenantAdmin
-from .serializers import ProjectMemberSerializer
+from core.permissions import IsTenantAdmin, IsProjectManagerOrTenantAdmin, IsTenantAdminWithAssignOnce
+from tenant_apps.project_management.serializers import ProjectMemberSerializer
 
 
 class ProjectMemberViewSet(viewsets.ModelViewSet):
     queryset = ProjectMember.objects.filter(is_active=True)
     serializer_class = ProjectMemberSerializer
-    permission_classes = [IsAuthenticated, IsTenantAdmin | IsProjectManagerOrTenantAdmin]
+    permission_classes = [IsAuthenticated, IsProjectManagerOrTenantAdmin, IsTenantAdminWithAssignOnce]
 
     def get_queryset(self):
         return ProjectMember.objects.filter(is_active=True)
@@ -47,6 +47,11 @@ class ProjectMemberViewSet(viewsets.ModelViewSet):
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
         ensure_active_via_member(instance)
+
+        if request.user.role == UserRoles.PROJECT_MANAGER:
+            pm = request.user.employee
+            if not ProjectManagerAssignment.objects.filter(manager=pm, developer=instance.employee).exists():
+                raise PermissionDenied("You can only remove developers who are under your management.")
     
         if instance.role == UserRoles.PROJECT_MANAGER:
             raise PermissionDenied("You cannot remove a Project Manager from the project.")
