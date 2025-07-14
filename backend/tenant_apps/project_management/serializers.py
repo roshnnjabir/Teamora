@@ -1,7 +1,16 @@
 # project_management/serializers.py
 from rest_framework import serializers
 from rest_framework import generics
-from tenant_apps.project_management.models import Project, ProjectMember, Task, Subtask, DeveloperAssignmentAuditLog
+from tenant_apps.project_management.models import (
+    Project,
+    ProjectMember,
+    Task,
+    Subtask,
+    Label,
+    Comment,
+    DeveloperAssignmentAuditLog,
+    SubtaskAssignmentAudit,
+)
 from tenant_apps.employee.models import Employee, ProjectManagerAssignment
 from core.constants import UserRoles
 from datetime import date
@@ -64,15 +73,66 @@ class ProjectMemberDetailSerializer(serializers.ModelSerializer):
         fields = ['id', 'employee', 'role', 'joined_at']
 
 
+class LabelSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Label
+        fields = ['id', 'name', 'color']
+
+
+class CommentSerializer(serializers.ModelSerializer):
+    author_name = serializers.CharField(source="author.full_name", read_only=True)
+
+    class Meta:
+        model = Comment
+        fields = ["id", "author", "author_name", "text", "created_at", "content_type", "object_id"]
+        read_only_fields = ["id", "created_at", "author", "author_name"]
+
+    def create(self, validated_data):
+        validated_data["author"] = self.context["request"].user.employee
+        return super().create(validated_data)
+
+
 class SubtaskSerializer(serializers.ModelSerializer):
+    labels = LabelSerializer(many=True, read_only=True)
+    comments = CommentSerializer(many=True, read_only=True)
+
     class Meta:
         model = Subtask
-        fields = ['id', 'task', 'title', 'is_completed', 'assigned_to', 'created_at']
-        read_only_fields = ['id', 'created_at']
+        fields = [
+            'id', 'task', 'title', 'description', 'due_date', 'status',
+            'priority', 'assigned_to', 'created_by', 'created_at'
+        ]
+        read_only_fields = ['id', 'created_by', 'created_at']
+
+    def validate_assigned_to(self, value):
+        task = self.initial_data.get("task")
+        if not task:
+            task = getattr(self.instance, "task", None)
+
+        if not task:
+            raise serializers.ValidationError("Task is required.")
+
+        project_id = Task.objects.get(id=task).project_id
+        is_member = ProjectMember.objects.filter(
+            employee=value,
+            project_id=project_id,
+            is_active=True
+        ).exists()
+
+        if not is_member:
+            raise serializers.ValidationError("Assigned employee is not a member of the task's project.")
+
+        return value
+
+    def create(self, validated_data):
+        validated_data['created_by'] = self.context['request'].user.employee
+        return super().create(validated_data)
 
 
 class TaskSerializer(serializers.ModelSerializer):
     subtasks = SubtaskSerializer(many=True, read_only=True)
+    labels = LabelSerializer(many=True, read_only=True)
+    comments = CommentSerializer(many=True, read_only=True)
 
     class Meta:
         model = Task
@@ -208,3 +268,13 @@ class DeveloperAssignmentAuditLogSerializer(serializers.ModelSerializer):
     class Meta:
         model = DeveloperAssignmentAuditLog
         fields = ['id', 'developer', 'previous_manager', 'new_manager', 'assigned_by', 'assigned_at']
+
+
+class SubtaskAssignmentAuditSerializer(serializers.ModelSerializer):
+    previous_assignee = SimpleEmployeeSerializer(read_only=True)
+    new_assignee = SimpleEmployeeSerializer(read_only=True)
+    changed_by = SimpleEmployeeSerializer(read_only=True)
+
+    class Meta:
+        model = SubtaskAssignmentAudit
+        fields = ['id', 'subtask', 'previous_assignee', 'new_assignee', 'changed_by', 'timestamp']
