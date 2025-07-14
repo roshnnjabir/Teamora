@@ -1,9 +1,9 @@
 # core/services.py
 
-from erp_modules.project_management.models import Task
+from erp_modules.project_management.models import Subtask
 
 def assign_task(task_id, user):
-    task = Task.objects.get(id=task_id)
-    task.assigned_to = user
-    task.save()
+    subtask = Task.objects.get(id=task_id)
+    subtask.assigned_to = user
+    subtask.save()
     return task

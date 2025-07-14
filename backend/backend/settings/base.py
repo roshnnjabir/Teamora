@@ -28,6 +28,8 @@ SHARED_APPS = [
 
     'channels',
 
+    'drf_yasg',
+
     'django_celery_beat',
 
     'django.contrib.admin',
