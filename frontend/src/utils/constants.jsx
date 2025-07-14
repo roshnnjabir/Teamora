@@ -23,3 +23,6 @@ export const PRIORITY_COLORS = {
   medium: 'text-yellow-600',
   low: 'text-green-600',
 };
+
+export const TASK_STATUSES = ["todo", "in_progress", "done"];
+export const PRIORITIES = ["low", "medium", "high"];

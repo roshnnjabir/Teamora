@@ -1,19 +1,22 @@
 import { Routes, Route } from 'react-router-dom';
-import LoginForm from '../pages/Auth/LoginForm';
-import TenantSignup from '../pages/Auth/TenantSignup';
-import SetPasswordPage from '../pages/Auth/SetPasswordPage';
-import TenantAdminDashboard from '../pages/Tenant Admin/TenantAdminDashboard';
-import SuperAdminDashboard from '../pages/Super Admin/SuperAdminDashboard';
-import HrDashboard from "../pages/HR/HrDashboard";
-import ProjectManagerDashboard from "../pages/Project Manager/ProjectManagerDashboard";
-import ProjectManagerProjectDetail from '../pages/Project Manager/ProjectDetail';
+import LoginForm from '../domains/auth/LoginForm';
+import TenantSignup from '../domains/auth/TenantSignup';
+import SetPasswordPage from '../domains/auth/SetPasswordPage';
+import SuperAdminDashboard from '../domains/superAdmin/pages/SuperAdminDashboard';
+import TenantAdminDashboard from '../domains/tenantAdmin/pages/TenantAdminDashboard';
+import TenantAdminProjectDetail from '../domains/tenantAdmin/pages/TenantAdminProjectDetail';
+import HrDashboard from "../domains/hr/admin/pages/HrDashboard";
+import ProjectManagerDashboard from "../domains/project/manager/pages/ProjectManagerDashboard";
+import ProjectManagerProjectDetail from '../domains/project/manager/pages/ProjectDetail';
 import ProtectedRoute from '../wrappers/ProtectedRoute';
 import UnprotectedRoute from '../wrappers/UnprotectedRoute';
 import ConditionalLanding from '../wrappers/ConditionalLandingPage';
-import DeveloperDashboard from '../pages/Developer/DeveloperDashboard';
-import NotFound from '../pages/OtherPages/NotFound';
+import DeveloperDashboard from '../domains/project/developer/pages/DeveloperDashboard';
+import NotFound from '../domains/general/pages/NotFound';
 import AppLayout from '../layouts/AppLayout';
 import DomainWrapper from '../wrappers/DomainWrapper';
+import TaskDetailPage from '../domains/project/shared/components/TaskDetailPage';
+import SubtaskDetailPage from '../domains/project/shared/components/SubtaskDetailPage';
 
 const AppRoutes = () => (
   <Routes>
@@ -66,6 +69,16 @@ const AppRoutes = () => (
           <ProjectManagerProjectDetail />
         </ProtectedRoute>
       } />
+
+      <Route path="tenant_admin/projects/:projectId" element={
+        <ProtectedRoute allowedRoles={["Tenant Admin", "tenant_admin"]}>
+          <TenantAdminProjectDetail />
+        </ProtectedRoute>
+      } />
+      
+      <Route path="project_manager/tasks/:taskId" element={<TaskDetailPage />} />
+
+      <Route path="project_manager/tasks/:taskId/subtasks/:subtaskId" element={<SubtaskDetailPage />} />
 
       <Route path="developer" element={
         <ProtectedRoute allowedRoles={["Developer", "developer"]}>
