@@ -1,7 +1,7 @@
 from django.urls import path
 from shared_apps.custom_auth.views import (
     MyTokenObtainPairView, MyTokenRefreshView,
-    LogoutView, MeView, index
+    LogoutView, MeView, index, TenantUsersListView
 )
 from django.conf import settings
 from rest_framework import permissions
@@ -26,6 +26,7 @@ urlpatterns = [
     path('token/', MyTokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('token/refresh/', MyTokenRefreshView.as_view(), name='token_refresh'),
     path('logout/', LogoutView.as_view(), name='logout'),
+    path('users/', TenantUsersListView.as_view(), name='users'),
     path('me/', MeView.as_view(), name='me'),
 ]
 

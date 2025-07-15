@@ -100,6 +100,30 @@ class LogoutView(APIView):
         return response
 
 
+class TenantUsersListView(APIView):
+    permission_classes = [IsAuthenticated]
+    http_method_names = ['get']
+
+    def get(self, request):
+        tenant = request.tenant
+        users = tenant.users.all().exclude(id=request.user.id)
+
+        user_dicts = [
+            {
+                "id": user.id,
+                "email": user.email,
+                "role": user.role,
+                "is_tenant_admin": user.is_tenant_admin(),
+                "name": user.get_full_name() or user.email,
+            }
+            for user in users
+        ]
+
+        serializer = UserSerializer(data=user_dicts, many=True)
+        serializer.is_valid(raise_exception=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
 class MeView(APIView):
     permission_classes = [IsAuthenticated]
 
