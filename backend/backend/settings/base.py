@@ -5,7 +5,14 @@ from datetime import timedelta
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 env = environ.Env()
-environ.Env.read_env(BASE_DIR / ".env")
+default_env_file = ".env"
+
+if os.getenv("DJANGO_ENV", "development") == "production":
+    default_env_file = ".env.production"
+
+print(f"🔧 Loading environment from: {default_env_file}") 
+
+env.read_env(BASE_DIR / default_env_file)
 
 SECRET_KEY = env("SECRET_KEY")
 DEBUG = env.bool("DEBUG", default=False)
@@ -55,7 +62,7 @@ INSTALLED_APPS = SHARED_APPS + [app for app in TENANT_APPS if app not in SHARED_
 ASGI_APPLICATION = "backend.asgi.application"
 
 # Celery Settings
-CELERY_BROKER_URL = "redis://redis:6379/0"
+CELERY_BROKER_URL = "redis://localhost:6379/0"
 CELERY_ACCEPT_CONTENT = ["json"]
 CELERY_TASK_SERIALIZER = "json"
 

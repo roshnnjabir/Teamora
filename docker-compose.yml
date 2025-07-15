@@ -1,30 +1,30 @@
 services:
-  backend:
-    build:
-      context: ./backend
-    container_name: teamora-backend
-    env_file:
-      - ./backend/.env
-    command: >
-      sh -c "
-        python manage.py migrate &&
-        uvicorn backend.asgi:application --reload --host 0.0.0.0 --port 8000
-      "
-    volumes:
-      - ./backend:/app
-    ports:
-      - "8000:8000"
-    depends_on:
-      - db
-      - redis
-    environment:
-      - POSTGRES_DB=teamora
-      - POSTGRES_USER=teamora
-      - POSTGRES_PASSWORD=teamora
-      - DB_HOST=db
-      - DB_PORT=5432
-      - REDIS_URL=redis://redis:6379
-      - DJANGO_SETTINGS_MODULE=backend.settings.local
+  # backend:
+  #   build:
+  #     context: ./backend
+  #   container_name: teamora-backend
+  #   env_file:
+  #     - ./backend/.env
+  #   command: >
+  #     sh -c "
+  #       python manage.py migrate &&
+  #       uvicorn backend.asgi:application --reload --host 0.0.0.0 --port 8000
+  #     "
+  #   volumes:
+  #     - ./backend:/app
+  #   ports:
+  #     - "8000:8000"
+  #   depends_on:
+  #     - db
+  #     - redis
+  #   environment:
+  #     - POSTGRES_DB=teamora
+  #     - POSTGRES_USER=teamora
+  #     - POSTGRES_PASSWORD=teamora
+  #     - DB_HOST=db
+  #     - DB_PORT=5432
+  #     - REDIS_URL=redis://redis:6379
+  #     - DJANGO_SETTINGS_MODULE=backend.settings.local
 
   celery:
     build:

@@ -61,7 +61,6 @@ class TenantSignupSerializer(serializers.Serializer):
                 user=user,
                 full_name=validated_data['full_name'],
                 job_title="Tenant Admin",
-                role="tenant_admin",
                 department="Management",
                 date_joined=date.today()
             )
