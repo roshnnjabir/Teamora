@@ -83,7 +83,6 @@ class MyTokenRefreshView(APIView):
                 secure=False,
                 samesite='Lax',
                 max_age=15 * 60,  # 15 minutes
-                path='/api/',
             )
 
             return response
