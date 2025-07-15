@@ -9,7 +9,7 @@ from tenant_apps.employee.tasks.email_tasks import send_set_password_email_task,
 from django.contrib.auth.tokens import default_token_generator
 from django.utils.http import urlsafe_base64_decode
 from django.utils.encoding import force_str
-
+import re
 
 ALLOWED_EMPLOYEE_ROLES = {
     UserRoles.PROJECT_MANAGER,
@@ -125,7 +125,26 @@ class EmployeeSerializer(serializers.ModelSerializer):
 class SetPasswordSerializer(serializers.Serializer):
     uidb64 = serializers.CharField()
     token = serializers.CharField()
-    new_password = serializers.CharField(min_length=8)
+    new_password = serializers.CharField(write_only=True)
+
+    def validate_new_password(self, password):
+        errors = []
+
+        if len(password) < 8:
+            errors.append("Password must be at least 8 characters long.")
+        if not re.search(r'[A-Z]', password):
+            errors.append("Password must contain at least one uppercase letter.")
+        if not re.search(r'[a-z]', password):
+            errors.append("Password must contain at least one lowercase letter.")
+        if not re.search(r'\d', password):
+            errors.append("Password must contain at least one number.")
+        if not re.search(r'[!@#$%^&*(),.?\":{}|<>]', password):
+            errors.append("Password must contain at least one special character.")
+
+        if errors:
+            raise serializers.ValidationError(errors)
+
+        return password
 
     def validate(self, data):
         uidb64 = data.get("uidb64")
