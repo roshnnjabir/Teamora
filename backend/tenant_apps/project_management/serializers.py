@@ -369,12 +369,13 @@ class ProjectSerializer(serializers.ModelSerializer):
 
         user = request.user
 
-        if user.is_tenant_admin:
+        if user.role == UserRoles.TENANT_ADMIN:
+            print(user.role)
             if not assigned_pm:
                 raise serializers.ValidationError({
                     'assigned_pm': 'Tenant admin must assign a project manager.'
                 })
-        elif user.is_project_manager:
+        elif user.role == UserRoles.PROJECT_MANAGER:
             assigned_pm = creator
         else:
             raise serializers.ValidationError({
