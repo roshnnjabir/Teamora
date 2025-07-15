@@ -200,6 +200,7 @@ const TenantAdminProjectDetail = () => {
         {viewMode === "subtasks" ? (
           <SubtaskAssignmentSection
             projectId={projectId}
+            isProjectActive={project.is_active}
             tasks={tasks}
             subtasks={subtasks}
             developers={developers}

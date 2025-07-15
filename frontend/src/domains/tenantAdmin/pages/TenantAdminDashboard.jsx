@@ -270,7 +270,7 @@ const TenantAdminDashboard = () => {
           )}
         </section>
 
-        <div className="flex justify-between items-center mb-4">
+        <div className="flex justify-between items-center mt-10 mb-4">
           <h2 className="text-2xl font-semibold">All Projects</h2>
             {employees.filter(emp => emp.role === 'project_manager').length > 0 ? (
               <button
@@ -300,7 +300,7 @@ const TenantAdminDashboard = () => {
             {projects.map((project) => (
               <div
                 key={project.id}
-                onClick={() => navigate(`/tenant_admin/projects/${project.id}`)}
+                onClick={() => navigate?.(`/tenant_admin/projects/${project.id}`)}
                 className="bg-white p-4 rounded shadow border border-[#E5E8EC] hover:bg-[#F3F4F6] cursor-pointer transition"
               >
                 <div className="flex justify-between items-center mb-2">
@@ -372,10 +372,8 @@ const TenantAdminDashboard = () => {
                     {emp.full_name}
                   </option>
                 ) : null
-              ) : (
-                <tr>
-                  <td colSpan="4">No employee data available.</td>
-                </tr>
+              ) :  (
+                <option disabled>No developers available</option>
               )}
             </select>
 
