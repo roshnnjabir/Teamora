@@ -26,6 +26,10 @@ class User(AbstractUser):
         elif self.tenant is None:
             raise ValidationError("Non-super admins must be assigned to a tenant.")
     
+    @property
+    def name(self):
+        return self.first_name or self.email
+    
     def is_super_admin(self):
         return self.role == UserRoles.SUPER_ADMIN and self.tenant is None
 
