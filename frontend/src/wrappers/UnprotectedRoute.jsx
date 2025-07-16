@@ -5,7 +5,6 @@ import { isSubdomain } from "../utils/domainUtils";
 
 const UnprotectedRoute = ({ children }) => {
   const user = useSelector((state) => state.auth.user);
-  const hostname = window.location.hostname;
 
   const isRootDomain = !isSubdomain();
 

@@ -31,7 +31,7 @@ const AppLayout = () => {
     }, 4 * 60 * 1000); // every 4 min
 
     return () => clearInterval(interval);
-  }, [dispatch]);
+  }, []);
 
   return <Outlet />;
 };
