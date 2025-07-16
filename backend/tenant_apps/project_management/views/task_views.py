@@ -51,7 +51,7 @@ class TaskViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        qs = Task.objects.all() if user.is_tenant_admin() else Task.objects.filter(project__members=user.employee)
+        qs = Task.objects.all() if user.is_tenant_admin() else Task.objects.filter(project__project_members__employee=user.employee)
 
         project_id = self.request.query_params.get("project")
         if project_id:
@@ -98,7 +98,6 @@ class SubtaskViewSet(viewsets.ModelViewSet):
             return Subtask.objects.filter(
                 task__project__project_members__employee=employee,
                 task__project__project_members__role=UserRoles.PROJECT_MANAGER,
-                task__project__project_members__is_active=True,
             ).distinct()
 
         if user.role == UserRoles.DEVELOPER:
