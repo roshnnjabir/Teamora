@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { getSubdomain } from '../utils/domainUtils';
 
-const protocol = window.location.protocol;
+const protocol = import.meta.env.VITE_PROTOCOL;
 const rootDomain = import.meta.env.VITE_ROOT_DOMAIN;
 const subdomain = getSubdomain();
 

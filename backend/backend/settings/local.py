@@ -23,7 +23,7 @@ CORS_ALLOWED_ORIGINS = [
     "http://openai.localhost:5173",
     "http://microsoft.localhost:5173",
     "http://greenpeace.localhost:5173",
-    "http://amazon.localhost:5173",
+    "http://singlebridge.localhost:5173",
 ]
 
 LOGGING = {
