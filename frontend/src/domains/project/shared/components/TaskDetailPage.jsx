@@ -4,7 +4,7 @@ import { useSelector } from "react-redux";
 import apiClient from "../../../../api/apiClient";
 import CreateSubtaskModal from "./CreateSubtaskModal";
 import EditSubtaskModal from "./EditSubtaskModal";
-import EditTaskModal from "./EditTaskModal"; // ✅ New
+import EditTaskModal from "./EditTaskModal";
 
 const TaskDetailPage = () => {
   const { taskId } = useParams();

@@ -37,6 +37,12 @@ const TenantAdminDashboard = () => {
   const [blockedDeveloperId, setBlockedDeveloperId] = useState(null);
   const [success, setSuccess] = useState("");
 
+  const [labels, setLabels] = useState([]);
+  const [loadingLabels, setLoadingLabels] = useState(true);
+  const [labelError, setLabelError] = useState("");
+  const [newLabel, setNewLabel] = useState({ name: "", color: "#00C4B4" });
+
+
   const handleLogout = () => dispatch(logoutUser());
 
   const showNotification = (message, type = "success") => {
@@ -71,6 +77,19 @@ const TenantAdminDashboard = () => {
       console.error(err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchLabels = async () => {
+    try {
+      const res = await apiClient.get("/api/labels/");
+
+      const data = res.data.results || res.data;
+      setLabels(data);
+    } catch (err) {
+      setLabelError("Failed to fetch labels.");
+    } finally {
+      setLoadingLabels(false);
     }
   };
 
@@ -113,7 +132,23 @@ const TenantAdminDashboard = () => {
       throw err;
     }
   };
-  
+
+  const handleLabelCreate = async () => {
+    if (!newLabel.name.trim()) {
+      showNotification("Label name is required.", "error");
+      return;
+    }
+
+    try {
+      const res = await apiClient.post("/api/labels/", newLabel);
+      setLabels((prev) => [...prev, res.data]);
+      setNewLabel({ name: "", color: "#00C4B4" });
+      showNotification("Label created successfully.");
+    } catch (err) {
+      showNotification("Failed to create label.", "error");
+    }
+  };
+
   const handleResendInvitation = async (id) => {
     const confirmed = window.confirm("Resend invitation to this employee?");
     if (!confirmed) return;
@@ -155,6 +190,7 @@ const TenantAdminDashboard = () => {
     fetchEmployees();
     fetchAuditLogs();
     fetchProjects();
+    fetchLabels();
   }, [limit]);
 
 
@@ -389,6 +425,59 @@ const TenantAdminDashboard = () => {
               onChange={(e) => fetchAuditLogs({ to_date: e.target.value })}
             />
           </div>
+        </section>
+
+        <section className="mt-10">
+          <h2 className="text-2xl font-semibold mb-4">Labels</h2>
+
+          <div className="mb-4 flex items-center gap-4 flex-wrap">
+            <input
+              type="text"
+              placeholder="Label name"
+              value={newLabel.name}
+              onChange={(e) => setNewLabel((prev) => ({ ...prev, name: e.target.value }))}
+              className="border px-4 py-2 rounded"
+            />
+
+            <input
+              type="color"
+              value={newLabel.color}
+              onChange={(e) => setNewLabel((prev) => ({ ...prev, color: e.target.value }))}
+              className="h-10 w-16 border rounded"
+            />
+
+            <button
+              onClick={handleLabelCreate}
+              className="bg-[#00C4B4] text-white px-4 py-2 rounded hover:bg-teal-600"
+            >
+              + Add Label
+            </button>
+          </div>
+
+          {loadingLabels ? (
+            <p>Loading labels...</p>
+          ) : labelError ? (
+            <p className="text-red-600">{labelError}</p>
+          ) : labels.length === 0 ? (
+            <p>No labels created yet.</p>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+              {labels.map((label) => (
+                <div
+                  key={label.id}
+                  className="flex items-center justify-between p-4 border rounded shadow bg-white"
+                >
+                  <div className="flex items-center gap-2">
+                    <div
+                      className="w-5 h-5 rounded-full"
+                      style={{ backgroundColor: label.color }}
+                    ></div>
+                    <span className="font-medium">{label.name}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </section>
 
         <section className="mt-10">
