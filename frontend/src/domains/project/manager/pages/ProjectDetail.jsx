@@ -231,7 +231,7 @@ const ProjectManagerProjectDetail = () => {
       <ProjectHeader
         isProjectActive={project?.is_active}
         project={project}
-        onBack={() => navigate(-1)}
+        onBack={() => navigate('/')}
         onEdit={() => setShowEditModal(true)}
       />
 
