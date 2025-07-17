@@ -19,12 +19,40 @@ export default function SetPasswordPage() {
     }
   }, [uid, token]);
 
+  const validatePassword = (password) => {
+    const errors = [];
+    
+    if (password.length < 8) {
+      errors.push("Password must be at least 8 characters long.");
+    }
+    if (!/[A-Z]/.test(password)) {
+      errors.push("Password must include at least one uppercase letter.");
+    }
+    if (!/[a-z]/.test(password)) {
+      errors.push("Password must include at least one lowercase letter.");
+    }
+    if (!/[0-9]/.test(password)) {
+      errors.push("Password must include at least one number.");
+    }
+    if (!/[!@#$%^&*(),.?\":{}|<>]/.test(password)) {
+      errors.push("Password must include at least one special character.");
+    }
+  
+    return errors;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError(null);
 
     if (newPassword !== confirmPassword) {
       setError("Passwords do not match.");
+      return;
+    }
+
+    const validationErrors = validatePassword(newPassword);
+    if (validationErrors.length > 0) {
+      setError(validationErrors.join(" "));
       return;
     }
 
