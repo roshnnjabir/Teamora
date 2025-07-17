@@ -16,7 +16,7 @@ import NotFound from '../domains/general/pages/NotFound';
 import AppLayout from '../layouts/AppLayout';
 import DomainWrapper from '../wrappers/DomainWrapper';
 import TaskDetailPage from '../domains/project/shared/components/TaskDetailPage';
-import SubtaskDetailPage from '../domains/project/shared/components/SubtaskDetailPage';
+import ChatDashboard from "../domains/chat/pages/ChatDashboard";
 
 const AppRoutes = () => (
   <Routes>
@@ -35,6 +35,15 @@ const AppRoutes = () => (
           <DomainWrapper>
             <TenantSignup />
           </DomainWrapper>
+        }
+      />
+
+      <Route
+        path="/chat"
+        element={
+
+            <ChatDashboard />
+
         }
       />
 
@@ -77,8 +86,6 @@ const AppRoutes = () => (
       } />
       
       <Route path="project_manager/tasks/:taskId" element={<TaskDetailPage />} />
-
-      <Route path="project_manager/tasks/:taskId/subtasks/:subtaskId" element={<SubtaskDetailPage />} />
 
       <Route path="developer" element={
         <ProtectedRoute allowedRoles={["Developer", "developer"]}>
