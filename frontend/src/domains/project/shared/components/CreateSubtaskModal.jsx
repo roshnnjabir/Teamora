@@ -41,9 +41,14 @@ const CreateSubtaskModal = ({ taskId, projectId, onClose, onCreated }) => {
 
     try {
       const payload = {
-        ...formData,
-        task: taskId,
+        title: formData.title,
+        description: formData.description || "",
         due_date: formData.due_date || null,
+        status: formData.status,
+        priority: formData.priority,
+        task: taskId,
+        assigned_to_id: formData.assigned_to || null,
+        estimated_hours: formData.estimated_hours || null, 
       };
 
       await apiClient.post("/api/subtasks/", payload);
@@ -56,6 +61,7 @@ const CreateSubtaskModal = ({ taskId, projectId, onClose, onCreated }) => {
       setIsSubmitting(false);
     }
   };
+
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
