@@ -16,7 +16,23 @@ const SubtaskModal = ({ show, onClose, tasks = [], developers = [], onSubmit }) 
     if (tasks.length > 0 && form.taskId === null) {
       setForm(prev => ({ ...prev, taskId: tasks[0].id }));
     }
-  }, [tasks]);
+  }, [tasks, form.taskId]);
+
+  useEffect(() => {
+    if (show) {
+      setForm({
+        title: "",
+        description: "",
+        taskId: tasks.length > 0 ? tasks[0].id : null,
+        assignedToId: "",
+        status: "todo",
+        due_date: "",
+        priority: "medium",
+        estimated_hours: ""
+      });
+    }
+  }, [show, tasks]);
+
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -33,7 +49,7 @@ const SubtaskModal = ({ show, onClose, tasks = [], developers = [], onSubmit }) 
     const payload = {
       title: form.title,
       description: form.description || "",
-      task: form.taskId,
+      taskId: form.taskId,
       assigned_to: form.assignedToId || null,
       status: form.status,
       due_date: form.due_date || null,
@@ -41,7 +57,7 @@ const SubtaskModal = ({ show, onClose, tasks = [], developers = [], onSubmit }) 
       estimated_hours: form.estimated_hours || null
     };
 
-    console.log(payload)
+    console.log(payload);
 
     onSubmit(payload);
   };
