@@ -84,7 +84,7 @@ const SubtaskCard = ({ subtask, task }) => (
   <div className="pl-4 border-l-4 border-[#00C4B4] bg-white p-3 rounded-md shadow-sm hover:shadow-md transition-shadow duration-200">
     <div className="flex justify-between items-start mb-2">
       <a
-        href={`/project_manager/tasks/${task?.id}/subtasks/${subtask.id}`}
+        href={`/project_manager/tasks/${task?.id}`}
         className="text-[#00C4B4] font-medium hover:underline hover:text-teal-600 transition-colors"
       >
         {subtask.title}
