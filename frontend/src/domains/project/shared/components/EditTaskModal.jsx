@@ -1,37 +1,43 @@
 import { useState, useEffect } from "react";
 import apiClient from "../../../../api/apiClient";
-import { PRIORITIES, TASK_STATUSES } from "../../../../utils/constants";
 
+const priorities = ["low", "medium", "high"];
 
-const CreateSubtaskModal = ({ taskId, projectId, onClose, onCreated }) => {
-  const [developers, setDevelopers] = useState([]);
+const EditTaskModal = ({ task, onClose, onUpdated }) => {
+  const [labels, setLabels] = useState([]);
+  const [selectedLabels, setSelectedLabels] = useState(task.labels?.map((l) => l.id) || []);
   const [formData, setFormData] = useState({
-    title: "",
-    description: "",
-    due_date: "",
-    status: "todo",
-    priority: "medium",
-    assigned_to: "",
+    title: task.title || "",
+    description: task.description || "",
+    priority: task.priority || "medium",
+    due_date: task.due_date || "",
   });
+
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
-    const fetchDevelopers = async () => {
+    const fetchLabels = async () => {
       try {
-        const res = await apiClient.get(`/api/my-developers/?project_id=${projectId}`);
-        setDevelopers(res.data);
+        const res = await apiClient.get("/api/labels/");
+        setLabels(res.data.results || []);
       } catch (err) {
-        console.error("Failed to load developers", err);
+        console.error("Failed to load labels", err);
       }
     };
 
-    fetchDevelopers();
-  }, [projectId]);
+    fetchLabels();
+  }, []);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
-    setErrors({ ...errors, [e.target.name]: null });
+    setErrors((prev) => ({ ...prev, [e.target.name]: null }));
+  };
+
+  const toggleLabel = (id) => {
+    setSelectedLabels((prev) =>
+      prev.includes(id) ? prev.filter((l) => l !== id) : [...prev, id]
+    );
   };
 
   const handleSubmit = async (e) => {
@@ -41,18 +47,14 @@ const CreateSubtaskModal = ({ taskId, projectId, onClose, onCreated }) => {
 
     try {
       const payload = {
-        title: formData.title,
-        description: formData.description || "",
+        ...formData,
+        label_ids: selectedLabels,
         due_date: formData.due_date || null,
-        status: formData.status,
-        priority: formData.priority,
-        task: taskId,
-        assigned_to_id: formData.assigned_to || null,
-        estimated_hours: formData.estimated_hours || null, 
       };
 
-      await apiClient.post("/api/subtasks/", payload);
-      onCreated?.();
+      await apiClient.patch(`/api/tasks/${task.id}/`, payload);
+
+      if (onUpdated) onUpdated();
       onClose();
     } catch (error) {
       const response = error?.response?.data;
@@ -62,11 +64,9 @@ const CreateSubtaskModal = ({ taskId, projectId, onClose, onCreated }) => {
     }
   };
 
-
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
       <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-lg mx-4 relative">
-        {/* Close Icon */}
         <button
           onClick={onClose}
           className="absolute top-3 right-3 text-gray-500 hover:text-red-500 text-xl"
@@ -74,7 +74,7 @@ const CreateSubtaskModal = ({ taskId, projectId, onClose, onCreated }) => {
           ×
         </button>
 
-        <h2 className="text-xl font-semibold text-[#2F3A4C] mb-4">Create Subtask</h2>
+        <h2 className="text-xl font-semibold text-[#2F3A4C] mb-4">Edit Task</h2>
 
         {errors.general && (
           <p className="mb-4 text-sm text-red-600">{errors.general}</p>
@@ -83,7 +83,7 @@ const CreateSubtaskModal = ({ taskId, projectId, onClose, onCreated }) => {
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Title */}
           <div>
-            <label className="block text-sm font-medium text-gray-700">Title</label>
+            <label className="block text-sm font-medium text-gray-700">Task Title</label>
             <input
               type="text"
               name="title"
@@ -94,7 +94,6 @@ const CreateSubtaskModal = ({ taskId, projectId, onClose, onCreated }) => {
                 errors.title ? "border-red-500" : "border-gray-200"
               } focus:outline-none focus:ring-2 focus:ring-blue-400`}
             />
-            {errors.title && <p className="text-red-500 text-sm mt-1">{errors.title[0]}</p>}
           </div>
 
           {/* Description */}
@@ -108,12 +107,9 @@ const CreateSubtaskModal = ({ taskId, projectId, onClose, onCreated }) => {
                 errors.description ? "border-red-500" : "border-gray-200"
               } focus:outline-none focus:ring-2 focus:ring-blue-400`}
             />
-            {errors.description && (
-              <p className="text-red-500 text-sm mt-1">{errors.description[0]}</p>
-            )}
           </div>
 
-          {/* Due Date, Status, Priority */}
+          {/* Due Date & Priority */}
           <div className="flex gap-4">
             <div className="flex-1">
               <label className="block text-sm font-medium text-gray-700">Due Date</label>
@@ -127,9 +123,6 @@ const CreateSubtaskModal = ({ taskId, projectId, onClose, onCreated }) => {
                   errors.due_date ? "border-red-500" : "border-gray-200"
                 } focus:outline-none focus:ring-2 focus:ring-blue-400`}
               />
-              {errors.due_date && (
-                <p className="text-red-500 text-sm mt-1">{errors.due_date[0]}</p>
-              )}
             </div>
 
             <div className="flex-1">
@@ -140,7 +133,7 @@ const CreateSubtaskModal = ({ taskId, projectId, onClose, onCreated }) => {
                 onChange={handleChange}
                 className="mt-1 w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
               >
-                {PRIORITIES.map((p) => (
+                {priorities.map((p) => (
                   <option key={p} value={p}>
                     {p.charAt(0).toUpperCase() + p.slice(1)}
                   </option>
@@ -149,49 +142,46 @@ const CreateSubtaskModal = ({ taskId, projectId, onClose, onCreated }) => {
             </div>
           </div>
 
-          {/* Status & Assigned To */}
-          <div className="flex gap-4">
-            <div className="flex-1">
-              <label className="block text-sm font-medium text-gray-700">Status</label>
-              <select
-                name="status"
-                value={formData.status}
-                onChange={handleChange}
-                className="mt-1 w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
-              >
-                {TASK_STATUSES.map((s) => (
-                  <option key={s} value={s}>
-                    {s.replace("_", " ").toUpperCase()}
-                  </option>
-                ))}
-              </select>
-              {errors.status && (
-                <p className="text-red-500 text-sm mt-1">{errors.status[0]}</p>
-              )}
-            </div>
-
-            <div className="flex-1">
-              <label className="block text-sm font-medium text-gray-700">Assign to</label>
-              <select
-                name="assigned_to"
-                value={formData.assigned_to}
-                onChange={handleChange}
-                className="mt-1 w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
-              >
-                <option value="">-- Select Developer --</option>
-                {developers.map((dev) => (
-                  <option key={dev.id} value={dev.id}>
-                    {dev.full_name || dev.email}
-                  </option>
-                ))}
-              </select>
-              {errors.assigned_to && (
-                <p className="text-red-500 text-sm mt-1">{errors.assigned_to[0]}</p>
-              )}
+          {/* Labels */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Labels</label>
+            <div className="flex flex-wrap gap-2">
+              {labels.map((label) => (
+                <button
+                  key={label.id}
+                  type="button"
+                  onClick={() => toggleLabel(label.id)}
+                  className={`px-3 py-1 rounded-full text-sm font-medium transition border-2 ${
+                    selectedLabels.includes(label.id)
+                      ? "text-white"
+                      : "text-gray-700"
+                  }`}
+                  style={{
+                    borderColor: label.color,
+                    backgroundColor: selectedLabels.includes(label.id)
+                      ? label.color
+                      : "#fff",
+                    color: selectedLabels.includes(label.id)
+                      ? "#fff"
+                      : label.color,
+                  }}
+                >
+                  {label.name}
+                </button>
+              ))}
             </div>
           </div>
 
-          {/* Buttons */}
+          {/* Errors */}
+          {errors.non_field_errors && (
+            <div className="mb-4 text-sm text-red-600">
+              {errors.non_field_errors.map((err, idx) => (
+                <p key={idx}>{err}</p>
+              ))}
+            </div>
+          )}
+
+          {/* Action Buttons */}
           <div className="flex justify-end gap-3 pt-4">
             <button
               type="button"
@@ -203,10 +193,10 @@ const CreateSubtaskModal = ({ taskId, projectId, onClose, onCreated }) => {
             </button>
             <button
               type="submit"
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+              className="px-4 py-2 bg-[#00C4B4] text-white rounded-lg hover:bg-[#009d94] disabled:opacity-50"
               disabled={isSubmitting}
             >
-              {isSubmitting ? "Creating..." : "Create"}
+              {isSubmitting ? "Saving..." : "Save Changes"}
             </button>
           </div>
         </form>
@@ -215,4 +205,4 @@ const CreateSubtaskModal = ({ taskId, projectId, onClose, onCreated }) => {
   );
 };
 
-export default CreateSubtaskModal;
+export default EditTaskModal;

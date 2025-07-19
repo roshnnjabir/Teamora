@@ -2,8 +2,7 @@ import { useState, useEffect } from "react";
 import apiClient from "../../../../api/apiClient";
 import { PRIORITIES, TASK_STATUSES } from "../../../../utils/constants";
 
-
-const CreateSubtaskModal = ({ taskId, projectId, onClose, onCreated }) => {
+const EditSubtaskModal = ({ subtask, projectId, onClose, onUpdated }) => {
   const [developers, setDevelopers] = useState([]);
   const [formData, setFormData] = useState({
     title: "",
@@ -27,7 +26,19 @@ const CreateSubtaskModal = ({ taskId, projectId, onClose, onCreated }) => {
     };
 
     fetchDevelopers();
-  }, [projectId]);
+
+    // Set initial form values from the subtask
+    if (subtask) {
+      setFormData({
+        title: subtask.title || "",
+        description: subtask.description || "",
+        due_date: subtask.due_date || "",
+        status: subtask.status || "todo",
+        priority: subtask.priority || "medium",
+        assigned_to: subtask.assigned_to?.id || "",
+      });
+    }
+  }, [subtask, projectId]);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -46,13 +57,11 @@ const CreateSubtaskModal = ({ taskId, projectId, onClose, onCreated }) => {
         due_date: formData.due_date || null,
         status: formData.status,
         priority: formData.priority,
-        task: taskId,
         assigned_to_id: formData.assigned_to || null,
-        estimated_hours: formData.estimated_hours || null, 
       };
 
-      await apiClient.post("/api/subtasks/", payload);
-      onCreated?.();
+      await apiClient.patch(`/api/subtasks/${subtask.id}/`, payload);
+      onUpdated?.(); // Refresh the subtask list
       onClose();
     } catch (error) {
       const response = error?.response?.data;
@@ -62,11 +71,9 @@ const CreateSubtaskModal = ({ taskId, projectId, onClose, onCreated }) => {
     }
   };
 
-
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
       <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-lg mx-4 relative">
-        {/* Close Icon */}
         <button
           onClick={onClose}
           className="absolute top-3 right-3 text-gray-500 hover:text-red-500 text-xl"
@@ -74,11 +81,9 @@ const CreateSubtaskModal = ({ taskId, projectId, onClose, onCreated }) => {
           ×
         </button>
 
-        <h2 className="text-xl font-semibold text-[#2F3A4C] mb-4">Create Subtask</h2>
+        <h2 className="text-xl font-semibold text-[#2F3A4C] mb-4">Edit Subtask</h2>
 
-        {errors.general && (
-          <p className="mb-4 text-sm text-red-600">{errors.general}</p>
-        )}
+        {errors.general && <p className="mb-4 text-sm text-red-600">{errors.general}</p>}
 
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Title */}
@@ -113,7 +118,7 @@ const CreateSubtaskModal = ({ taskId, projectId, onClose, onCreated }) => {
             )}
           </div>
 
-          {/* Due Date, Status, Priority */}
+          {/* Due Date, Priority */}
           <div className="flex gap-4">
             <div className="flex-1">
               <label className="block text-sm font-medium text-gray-700">Due Date</label>
@@ -122,7 +127,6 @@ const CreateSubtaskModal = ({ taskId, projectId, onClose, onCreated }) => {
                 name="due_date"
                 value={formData.due_date}
                 onChange={handleChange}
-                min={new Date().toISOString().split("T")[0]}
                 className={`mt-1 w-full px-3 py-2 border-2 rounded-lg ${
                   errors.due_date ? "border-red-500" : "border-gray-200"
                 } focus:outline-none focus:ring-2 focus:ring-blue-400`}
@@ -206,7 +210,7 @@ const CreateSubtaskModal = ({ taskId, projectId, onClose, onCreated }) => {
               className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
               disabled={isSubmitting}
             >
-              {isSubmitting ? "Creating..." : "Create"}
+              {isSubmitting ? "Saving..." : "Save Changes"}
             </button>
           </div>
         </form>
@@ -215,4 +219,4 @@ const CreateSubtaskModal = ({ taskId, projectId, onClose, onCreated }) => {
   );
 };
 
-export default CreateSubtaskModal;
+export default EditSubtaskModal;

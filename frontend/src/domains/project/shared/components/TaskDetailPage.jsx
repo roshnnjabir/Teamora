@@ -1,22 +1,28 @@
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
 import apiClient from "../../../../api/apiClient";
 import CreateSubtaskModal from "./CreateSubtaskModal";
+import EditSubtaskModal from "./EditSubtaskModal";
+import EditTaskModal from "./EditTaskModal";
 
 const TaskDetailPage = () => {
   const { taskId } = useParams();
+  const navigate = useNavigate();
   const id = parseInt(taskId, 10);
 
   const [task, setTask] = useState(null);
-  const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
-  const [newComment, setNewComment] = useState("");
-  const [showSubtaskModal, setShowSubtaskModal] = useState(false);
+  const [error, setError] = useState("");
 
+  const [newComment, setNewComment] = useState("");
   const currentUser = useSelector((state) => state.auth?.user);
 
-  const fetchTaskDetails = async () => {
+  const [showCreateSubtask, setShowCreateSubtask] = useState(false);
+  const [editingSubtask, setEditingSubtask] = useState(null);
+  const [showEditTask, setShowEditTask] = useState(false);
+
+  const fetchTask = async () => {
     try {
       const res = await apiClient.get(`/api/tasks/${id}/`);
       setTask({
@@ -24,156 +30,175 @@ const TaskDetailPage = () => {
         comments: res.data.comments || [],
         subtasks: res.data.subtasks || [],
       });
-    } catch (err) {
-      setError("Failed to fetch task details.");
+    } catch {
+      setError("Failed to load task.");
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchTaskDetails();
+    fetchTask();
   }, [id]);
 
-  const handleCommentSubmit = async () => {
-    if (!newComment.trim()) return;
-
-    try {
-      const res = await apiClient.post("/api/comments/", {
-        content_type: "task",
-        object_id: task.id,
-        text: newComment,
-      });
-
-      setTask((prev) => ({
-        ...prev,
-        comments: [res.data, ...prev.comments],
-      }));
-
-      setNewComment("");
-    } catch (err) {
-      console.error("Comment submission failed:", err);
-    }
-  };
-
-  const handleDeleteComment = async (commentId) => {
-    try {
-      await apiClient.delete(`/api/comments/${commentId}/`);
-      setTask((prev) => ({
-        ...prev,
-        comments: prev.comments.filter((c) => c.id !== commentId),
-      }));
-    } catch (err) {
-      console.error("Failed to delete comment:", err);
-    }
-  };
-
-  if (loading) return <p className="p-6 text-gray-600">Loading task...</p>;
-  if (error) return <p className="text-red-500 p-6">{error}</p>;
+  if (loading) return <p className="p-6 text-[#2F3A4C]">Loading task...</p>;
+  if (error) return <p className="p-6 text-[#EF4444]">{error}</p>;
   if (!task) return null;
 
   return (
-    <div className="max-w-4xl mx-auto py-10 px-4 text-[#1A2A44]">
-      {/* Task Info */}
-      <h1 className="text-3xl font-bold mb-2">{task.title}</h1>
-      <p className="text-gray-600 mb-6">{task.description}</p>
+    <div className="max-w-3xl mx-auto p-6 bg-[#F9FAFB] rounded-lg shadow-sm">
+      {/* Navigation */}
+      <button
+        onClick={() => navigate(`/project_manager/projects/${task.project}`)}
+        className="mb-4 flex items-center text-[#6B7280] hover:text-[#00C4B4] transition"
+      >
+        ← Back to Project
+      </button>
 
-      {/* Subtasks */}
-      <section className="mb-10">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-2xl font-semibold">Subtasks</h2>
+      {/* Task Header */}
+      <div className="flex justify-between items-center mb-4">
+        <div>
+          <h1 className="text-2xl font-bold text-[#1A2A44]">{task.title}</h1>
+          <p className="text-[#6B7280]">{task.description}</p>
+        </div>
+        <button
+          onClick={() => setShowEditTask(true)}
+          className="text-sm text-[#00C4B4] hover:text-[#005f53]"
+        >
+          Edit Task ✏️
+        </button>
+      </div>
+
+      {/* Subtasks Section */}
+      <section className="mb-8">
+        <div className="flex justify-between items-center mb-2">
+          <h2 className="text-lg font-semibold text-[#2F3A4C]">Subtasks</h2>
           <button
-            onClick={() => setShowSubtaskModal(true)}
-            className="bg-[#00C4B4] hover:bg-teal-600 text-white px-4 py-2 rounded transition"
+            onClick={() => setShowCreateSubtask(true)}
+            className="text-sm bg-[#00C4B4] hover:bg-[#005f53] text-white px-3 py-1 rounded"
           >
             + Add Subtask
           </button>
         </div>
-
         {task.subtasks.length === 0 ? (
-          <p className="text-sm text-gray-500">No subtasks yet.</p>
+          <p className="text-[#B0B8C5] italic">No subtasks yet.</p>
         ) : (
-          <div className="space-y-3">
-            {task.subtasks.map((subtask) => (
-              <div
-                key={subtask.id}
-                className="bg-white border rounded p-4 shadow-sm"
+          <ul className="space-y-3">
+            {task.subtasks.map((st) => (
+              <li
+                key={st.id}
+                className="flex justify-between p-4 bg-white border border-[#E5E8EC] rounded"
               >
-                <div className="flex justify-between items-center">
-                  <h3 className="font-semibold text-[#1A2A44]">{subtask.title}</h3>
-                  <span className="text-xs text-gray-500">
-                    Due: {subtask.due_date || "—"}
+                <div>
+                  <p className="font-medium text-[#1A2A44]">{st.title}</p>
+                  <p className="text-sm text-[#6B7280]">{st.description}</p>
+                  <p className="text-xs text-[#B0B8C5] mt-1">
+                    Due: {st.due_date || "—"}
+                  </p>
+                </div>
+                <div className="flex flex-col items-end">
+                  <button
+                    onClick={() => setEditingSubtask(st)}
+                    className="text-xs text-[#00C4B4] hover:underline mb-2"
+                  >
+                    Edit
+                  </button>
+                  <span className="text-xs text-[#6B7280]">
+                    {st.assigned_to?.full_name || "Unassigned"}
                   </span>
                 </div>
-                <p className="text-sm text-gray-600">{subtask.description}</p>
-                <p className="text-xs text-gray-500 mt-1">
-                  Assigned to: {subtask.assigned_to?.full_name || "Unassigned"}
-                </p>
-              </div>
+              </li>
             ))}
-          </div>
-        )}
-
-        {showSubtaskModal && (
-          <CreateSubtaskModal
-            taskId={task.id}
-            projectId={task.project}
-            onClose={() => setShowSubtaskModal(false)}
-            onCreated={fetchTaskDetails}
-          />
+          </ul>
         )}
       </section>
 
       {/* Comments */}
       <section>
-        <h2 className="text-2xl font-semibold mb-4">Comments</h2>
-
-        <div className="space-y-3 mb-4">
-          {task.comments.length === 0 ? (
-            <p className="text-sm text-gray-500">No comments yet.</p>
-          ) : (
-            task.comments.map((comment) => (
-              <div
-                key={comment.id}
-                className="border p-3 rounded bg-gray-50 flex justify-between"
-              >
-                <div>
-                  <p className="text-sm text-gray-700">{comment.text}</p>
-                  <p className="text-xs text-gray-500 mt-1">
-                    — {comment.author_name || "Unknown"} at{" "}
-                    {new Date(comment.created_at).toLocaleString()}
-                  </p>
-                </div>
-                {comment.author === currentUser?.employee?.id && (
-                  <button
-                    onClick={() => handleDeleteComment(comment.id)}
-                    className="text-xs text-red-500 hover:underline"
-                  >
-                    Delete
-                  </button>
-                )}
+        <h2 className="text-lg font-semibold text-[#2F3A4C] mb-2">Comments</h2>
+        <ul className="space-y-2 mb-4">
+          {task.comments.map((c) => (
+            <li
+              key={c.id}
+              className="p-3 bg-white border border-[#E5E8EC] rounded flex justify-between"
+            >
+              <div>
+                <p className="text-[#2F3A4C]">{c.text}</p>
+                <p className="text-xs text-[#B0B8C5] mt-1">
+                  — {c.author_name} at{" "}
+                  {new Date(c.created_at).toLocaleString()}
+                </p>
               </div>
-            ))
-          )}
-        </div>
-
-        {/* New comment input */}
-        <div className="flex items-center gap-2">
+              {c.author === currentUser?.employee?.id && (
+                <button
+                  onClick={() => {
+                    apiClient.delete(`/api/comments/${c.id}/`);
+                    setTask((t) => ({
+                      ...t,
+                      comments: t.comments.filter((x) => x.id !== c.id),
+                    }));
+                  }}
+                  className="text-xs text-[#EF4444] hover:underline"
+                >
+                  Delete
+                </button>
+              )}
+            </li>
+          ))}
+        </ul>
+        <div className="flex gap-2">
           <input
             type="text"
             value={newComment}
             onChange={(e) => setNewComment(e.target.value)}
             placeholder="Write a comment..."
-            className="flex-1 border border-[#D1D5DB] rounded p-2"
+            className="flex-1 px-3 py-2 border border-[#E5E8EC] rounded"
           />
           <button
-            onClick={handleCommentSubmit}
-            className="bg-[#00C4B4] hover:bg-teal-600 text-white px-4 py-2 rounded"
+            onClick={async () => {
+              if (!newComment.trim()) return;
+              const res = await apiClient.post("/api/comments/", {
+                content_type: "task",
+                object_id: task.id,
+                text: newComment,
+              });
+              setTask((t) => ({
+                ...t,
+                comments: [res.data, ...t.comments],
+              }));
+              setNewComment("");
+            }}
+            className="px-4 py-2 bg-[#00C4B4] hover:bg-[#005f53] text-white rounded"
           >
             Send
           </button>
         </div>
       </section>
+
+      {/* Modals */}
+      {showCreateSubtask && (
+        <CreateSubtaskModal
+          taskId={task.id}
+          projectId={task.project}
+          onClose={() => setShowCreateSubtask(false)}
+          onCreated={fetchTask}
+        />
+      )}
+      {editingSubtask && (
+        <EditSubtaskModal
+          subtask={editingSubtask}
+          projectId={task.project}
+          onClose={() => setEditingSubtask(null)}
+          onUpdated={fetchTask}
+        />
+      )}
+      {showEditTask && (
+        <EditTaskModal
+          task={task}
+          onClose={() => setShowEditTask(false)}
+          onUpdated={fetchTask}
+        />
+      )}
     </div>
   );
 };

@@ -148,10 +148,8 @@ const SubtaskAssignmentSection = ({
   columns = {},
   columnOrder = [],
   isDragging = false,
-  onCreateTask,
   onDragStart,
   onDragEnd,
-  onSubtaskCreated,
 }) => {
   const [showCompletedTasks, setShowCompletedTasks] = useState(false);
   const [sortOrder, setSortOrder] = useState("priority");
@@ -242,8 +240,8 @@ const SubtaskAssignmentSection = ({
       const res = await apiClient.post(`/api/subtasks/`, {
         title: form.title,
         description: form.description || "",
-        task_id: form.taskId,
-        assigned_to_id: form.assignedToId || null,
+        task: form.taskId,
+        assigned_to: form.assignedToId || null,
         status: form.status,
         due_date: form.due_date || null,
         priority: form.priority,
@@ -251,10 +249,6 @@ const SubtaskAssignmentSection = ({
       });
 
       setShowSubtaskModal(false);
-
-      if (onSubtaskCreated) {
-        await onSubtaskCreated();
-      }
     } catch (err) {
       console.error("Failed to create subtask", err);
     }
