@@ -24,7 +24,15 @@ CORS_ALLOWED_ORIGINS = [
     "http://microsoft.localhost:5173",
     "http://greenpeace.localhost:5173",
     "http://singlebridge.localhost:5173",
+    "http://amazon.localhost:5173",
 ]
+
+CSRF_TRUSTED_ORIGINS = [
+    "http://localhost:5173",
+]
+
+SESSION_COOKIE_DOMAIN = ".localhost"
+CSRF_COOKIE_DOMAIN = ".localhost"
 
 LOGGING = {
     'version': 1,
@@ -52,6 +60,11 @@ LOGGING = {
     },
 }
 
+SESSION_COOKIE_SAMESITE = None
+SESSION_COOKIE_SECURE = False
+CSRF_COOKIE_SAMESITE = "None"
+CSRF_COOKIE_SECURE = False
+
 SWAGGER_SETTINGS = {
     'SECURITY_DEFINITIONS': {
         'Bearer': {
@@ -62,6 +75,17 @@ SWAGGER_SETTINGS = {
         }
     },
     'USE_SESSION_AUTH': False,
+}
+
+REDIS_URL = env("REDIS_URL", default="redis://localhost:6379")
+
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        'CONFIG': {
+            "hosts": [REDIS_URL],
+        },
+    },
 }
 
 print("LOCAL")

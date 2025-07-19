@@ -50,6 +50,7 @@ SHARED_APPS = [
 TENANT_APPS = [
     'tenant_apps.project_management',
     'tenant_apps.employee',
+    'tenant_apps.communication',
 
     'django.contrib.contenttypes',
     'django.contrib.sessions',
@@ -78,7 +79,7 @@ PUBLIC_SCHEMA_NAME = 'public'
 PUBLIC_SCHEMA_URLCONF = "shared_apps.tenants.urls"
 
 MIDDLEWARE = [
-    'django_tenants.middleware.TenantMainMiddleware',
+    'django_tenants.middleware.TenantMiddleware',
 
     'corsheaders.middleware.CorsMiddleware',
 
