@@ -143,6 +143,7 @@ const EditProjectModal = ({ project, onClose, onUpdate }) => {
                 value={formData.start_date}
                 onChange={handleChange}
                 disabled={isInactiveProject}
+                // min={new Date().toISOString().split("T")[0]}
                 className="w-full px-3 py-2 border rounded-lg border-gray-300"
               />
               {errors.start_date && (
@@ -158,6 +159,7 @@ const EditProjectModal = ({ project, onClose, onUpdate }) => {
                 value={formData.end_date}
                 onChange={handleChange}
                 disabled={isInactiveProject}
+                // min={new Date().toISOString().split("T")[0]}
                 className="w-full px-3 py-2 border rounded-lg border-gray-300"
               />
               {errors.end_date && (

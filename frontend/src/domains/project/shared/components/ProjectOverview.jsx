@@ -1,4 +1,4 @@
-import InlineEditField from "./InlineEditField";
+import InlineEditField from "../../../../components/common/InlineEditField";
 import { getPriorityColor } from "../../../../utils/projectUtils";
 
 const ProjectOverview = ({ project = {}, isProjectActive = false, onFieldUpdate }) => {
@@ -26,6 +26,7 @@ const ProjectOverview = ({ project = {}, isProjectActive = false, onFieldUpdate 
         value={start_date}
         type="date"
         icon="📅"
+        // min={new Date().toISOString().split("T")[0]}
         onSave={handleSave("start_date")}
       />
 
@@ -35,6 +36,7 @@ const ProjectOverview = ({ project = {}, isProjectActive = false, onFieldUpdate 
         value={end_date}
         type="date"
         icon="🏁"
+        // min={new Date().toISOString().split("T")[0]}
         onSave={handleSave("end_date")}
       />
 

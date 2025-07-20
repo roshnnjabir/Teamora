@@ -143,6 +143,7 @@ const SubtaskModal = ({ show, onClose, tasks = [], developers = [], onSubmit }) 
             name="due_date"
             value={form.due_date}
             onChange={handleChange}
+            // min={new Date().toISOString().split("T")[0]}
             className="w-full border p-2 rounded"
           />
 

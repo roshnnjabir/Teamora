@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import apiClient from "../../../../api/apiClient";
 
 const priorities = ["low", "medium", "high"];
+const status = ["todo", "in_progress", "done"];
 
 const CreateTaskModal = ({ projectId, onClose, onTaskCreated }) => {
   const [labels, setLabels] = useState([]);
@@ -11,6 +12,7 @@ const CreateTaskModal = ({ projectId, onClose, onTaskCreated }) => {
     description: "",
     priority: "medium",
     due_date: "",
+    status: "todo",
   });
 
   const [errors, setErrors] = useState({});
@@ -130,15 +132,15 @@ const CreateTaskModal = ({ projectId, onClose, onTaskCreated }) => {
           </div>
 
           {/* Due Date & Priority */}
-          <div className="flex gap-4">
-            <div className="flex-1">
+          <div className="flex gap-4 flex-wrap">
+            <div className="flex-1 min-w-[140px]">
               <label className="block text-sm font-medium text-gray-700">Due Date</label>
               <input
                 type="date"
                 name="due_date"
                 value={formData.due_date}
                 onChange={handleChange}
-                min={new Date().toISOString().split("T")[0]}
+                // min={new Date().toISOString().split("T")[0]}
                 className={`mt-1 w-full px-3 py-2 border-2 rounded-lg ${
                   errors.due_date ? "border-red-500" : "border-gray-200"
                 } focus:outline-none focus:ring-2 focus:ring-blue-400`}
@@ -148,7 +150,7 @@ const CreateTaskModal = ({ projectId, onClose, onTaskCreated }) => {
               )}
             </div>
 
-            <div className="flex-1">
+            <div className="flex-1 min-w-[140px]">
               <label className="block text-sm font-medium text-gray-700">Priority</label>
               <select
                 name="priority"
@@ -159,6 +161,25 @@ const CreateTaskModal = ({ projectId, onClose, onTaskCreated }) => {
                 {priorities.map((p) => (
                   <option key={p} value={p}>
                     {p.charAt(0).toUpperCase() + p.slice(1)}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="flex-1 min-w-[140px]">
+              <label className="block text-sm font-medium text-gray-700">Status</label>
+              <select
+                name="status"
+                value={formData.status}
+                onChange={handleChange}
+                className="mt-1 w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
+              >
+                {status.map((p) => (
+                  <option key={p} value={p}>
+                    {p
+                      .split("_")
+                      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+                      .join(" ")}
                   </option>
                 ))}
               </select>

@@ -1,4 +1,5 @@
 import { useParams, useNavigate } from "react-router-dom";
+import { useSelector } from "react-redux";
 import { useEffect, useState, useCallback } from "react";
 import apiClient from "../../../../api/apiClient";
 import Toast from "../../../../components/modals/Toast";
@@ -9,8 +10,8 @@ import ProjectOverview from "../../shared/components/ProjectOverview";
 import TeamMembersSection from "../../shared/components/TeamMembersSection";
 import TaskListSection from "../../shared/components/TaskListSection";
 import SubtaskAssignmentSection from "../../shared/components/SubtaskAssignmentSection";
-import LoadingState from "../../shared/components/LoadingState";
-import NotFoundState from "../../shared/components/NotFoundState";
+import LoadingState from "../../../../components/common/LoadingState";
+import NotFoundState from "../../../../components/common/NotFoundState";
 import ComingSoonSection from "../../shared/components/ComingSoonSection";
 
 // Modals
@@ -29,6 +30,7 @@ const ProjectManagerProjectDetail = () => {
   const [tasks, setTasks] = useState([]);
   const [subtasks, setSubtasks] = useState([]);
   const [developers, setDevelopers] = useState([]);
+  const user = useSelector((state) => state.auth.user);
   const [allDevelopers, setAllDevelopers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isDragging, setIsDragging] = useState(false);
@@ -137,6 +139,15 @@ const ProjectManagerProjectDetail = () => {
     const dev = developers.find(d => d.id === member.employee.id);
     const subtaskCount = dev?.assigned_subtasks_count || 0;
 
+    if (member.employee.email === user.email) {
+      setToast({
+        show: true,
+        type: "warning",
+        message: `${member.employee.full_name} is the Project Manager, and cannot be removed`
+      });
+      return;
+    }
+
     if (subtaskCount > 0) {
       setToast({
         show: true,
@@ -167,12 +178,14 @@ const ProjectManagerProjectDetail = () => {
       setProject(projRes.data);
       setDevelopers(newDevs);
     } catch (err) {
-      console.error("Failed to remove member:", err);
+      const detail = err?.response?.data?.detail;
+      console.error("Failed to remove member:", detail || err.message || err);
+
       setProject(prev => ({ ...prev, members: previousMembers }));
       setDevelopers(previousDevelopers);
       setToast({
         show: true,
-        message: "Error removing member. Please try again.",
+        message: detail || "Error removing member. Please try again.",
         type: "error"
       });
     }

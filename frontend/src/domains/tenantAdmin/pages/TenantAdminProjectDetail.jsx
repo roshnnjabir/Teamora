@@ -9,14 +9,14 @@ import ProjectOverview from "../../project/shared/components/ProjectOverview";
 import TeamMembersSection from "../../project/shared/components/TeamMembersSection";
 import TaskListSection from "../../project/shared/components/TaskListSection";
 import SubtaskAssignmentSection from "../../project/shared/components/SubtaskAssignmentSection";
-import LoadingState from "../../project/shared/components/LoadingState";
-import NotFoundState from "../../project/shared/components/NotFoundState";
+import LoadingState from "../../../components/common/LoadingState";
+import NotFoundState from "../../../components/common/NotFoundState";
 import ComingSoonSection from "../../project/shared/components/ComingSoonSection";
 
 // Modals
 import EditProjectModal from "../../../domains/project/manager/modals/EditProjectModal";
 import ManageMembersModal from "../../../domains/project/manager/modals/ManageMembersModal";
-import CreateTaskModal from "../../../domains/project/manager/modals/CreateProjectModal";
+import CreateTaskModal from "../../../components/modals/ProjectModals/CreateProjectModal";
 
 // Utils
 import { generateColumns } from "../../../utils/projectUtils";

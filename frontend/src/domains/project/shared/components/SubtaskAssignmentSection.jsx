@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { DragDropContext } from "@hello-pangea/dnd";
-import ScrollContainer from "./ScrollContainer";
+import ScrollContainer from "../../../../components/common/ScrollContainer";
 import TaskColumn from "./TaskColumn";
 import DeleteZone from "./DeleteZone";
 import SubtaskModal from "./SubtaskModal";
@@ -176,11 +176,6 @@ const SubtaskAssignmentSection = ({
     setShowSubtaskModal(false);
   };
 
-  // Calculate totals and statistics
-  const totalSubtasks = useMemo(() => {
-    return Object.values(columns).reduce((sum, col) => sum + (col?.items?.length || 0), 0);
-  }, [columns]);
-
   // Filter and sort columns based on user preferences
   const processedColumns = useMemo(() => {
     const processed = {};
@@ -203,7 +198,7 @@ const SubtaskAssignmentSection = ({
 
       // Filter by completion status
       if (!showCompletedTasks) {
-        filteredItems = filteredItems.filter(item => item.status !== 'completed');
+        filteredItems = filteredItems.filter(item => item.status !== 'done');
       }
 
       // Sort items
@@ -234,6 +229,11 @@ const SubtaskAssignmentSection = ({
 
     return processed;
   }, [columns, searchTerm, showCompletedTasks, sortOrder]);
+
+  // Calculate totals and statistics
+  const totalSubtasks = useMemo(() => {
+    return Object.values(processedColumns).reduce((sum, col) => sum + (col?.items?.length || 0), 0);
+  }, [processedColumns]);
 
   const handleCreateSubtask = async (form) => {
     try {

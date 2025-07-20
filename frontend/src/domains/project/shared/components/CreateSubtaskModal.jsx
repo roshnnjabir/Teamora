@@ -122,7 +122,7 @@ const CreateSubtaskModal = ({ taskId, projectId, onClose, onCreated }) => {
                 name="due_date"
                 value={formData.due_date}
                 onChange={handleChange}
-                min={new Date().toISOString().split("T")[0]}
+                // min={new Date().toISOString().split("T")[0]}
                 className={`mt-1 w-full px-3 py-2 border-2 rounded-lg ${
                   errors.due_date ? "border-red-500" : "border-gray-200"
                 } focus:outline-none focus:ring-2 focus:ring-blue-400`}

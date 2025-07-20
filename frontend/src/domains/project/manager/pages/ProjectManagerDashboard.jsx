@@ -1,8 +1,8 @@
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { logoutUser } from "../../../auth/features/authThunks";
-import CreateProjectModal from "../modals/CreateProjectModal";
+import CreateProjectModal from "../../../../components/modals/ProjectModals/CreateProjectModal";
 import apiClient from "../../../../api/apiClient";
 
 const PmDashboard = () => {
@@ -13,13 +13,11 @@ const PmDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [myDevelopers, setMyDevelopers] = useState([]);
-  const totalAssignedSubtasks = myDevelopers.reduce((sum, dev) => {
-    const activeSubtasksCount = dev.assigned_subtasks?.filter(
-      (subtask) => subtask.project?.is_active
-    ).length || 0;
-
-    return sum + activeSubtasksCount;
-  }, 0);
+  const currentUser = useSelector((state) => state.auth.user);
+  const totalAssignedSubtasks = myDevelopers.reduce(
+    (sum, dev) => sum + (dev.assigned_subtasks_count || 0),
+    0
+  );
 
   const fetchProjects = async () => {
     try {
@@ -120,6 +118,7 @@ const PmDashboard = () => {
 
         {showCreateModal && (
           <CreateProjectModal
+            currentUser={currentUser}
             onClose={() => setShowCreateModal(false)}
             onSuccess={fetchProjects}
           />
@@ -277,7 +276,7 @@ const PmDashboard = () => {
                   <h4 className="font-semibold">{dev.full_name}</h4>
                   <p className="text-sm text-gray-500">{dev.email}</p>
                   <p className="text-sm text-[#00C4B4] mt-2">
-                    Assigned Subtasks: <strong>{dev.assigned_subtasks?.filter(subtask => subtask.project?.is_active).length || 0}</strong>
+                    Assigned Subtasks: <strong>{dev.assigned_subtasks_count}</strong>
                   </p>
                 </div>
               ))}

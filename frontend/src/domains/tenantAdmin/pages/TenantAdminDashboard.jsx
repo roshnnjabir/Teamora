@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { logoutUser } from "../../auth/features/authThunks";
 import { format } from "date-fns";
 import apiClient from "../../../api/apiClient";
 import PMDeveloperAssignmentManager from "../components/PMDeveloperAssignmentManager";
 import EmployeeFormModal from "../modals/EmployeeFormModal";
-import CreateProjectModal from "../modals/CreateProjectModal";
+import CreateProjectModal from "../../../components/modals/ProjectModals/CreateProjectModal";
 import SubtaskBlockToast from "../../../components/Modals/SubTaskBlockToast";
 import { useNavigate } from "react-router-dom";
 
@@ -41,6 +41,8 @@ const TenantAdminDashboard = () => {
   const [loadingLabels, setLoadingLabels] = useState(true);
   const [labelError, setLabelError] = useState("");
   const [newLabel, setNewLabel] = useState({ name: "", color: "#00C4B4" });
+
+  const currentUser = useSelector((state) => state.auth.user);
 
 
   const handleLogout = () => dispatch(logoutUser());
@@ -215,7 +217,7 @@ const TenantAdminDashboard = () => {
       <main className="flex-1 p-10">
         <div className="mb-6">
           <h1 className="text-3xl font-bold">Tenant Admin Dashboard</h1>
-          <p className="text-[#2F3A4C]">Manage your employees here.</p>
+          <p className="text-[#2F3A4C]">Manage your employees here.</p> 
         </div>
 
         {notification.message && (
@@ -363,7 +365,7 @@ const TenantAdminDashboard = () => {
           <CreateProjectModal
             onClose={() => setShowCreateModal(false)}
             onSuccess={fetchProjects}
-            currentUser={{ role: "tenant_admin" }} // or from auth
+            currentUser={currentUser}
             allProjectManagers={employees.filter(emp => emp.role === 'project_manager')}
           />
         )}
@@ -392,40 +394,6 @@ const TenantAdminDashboard = () => {
           }}
           onSuccessMessage={setSuccess}
         />
-
-        <section className="mb-6">
-          <h3 className="text-lg font-medium mb-2">Filter Logs</h3>
-          <div className="flex flex-wrap gap-4">
-            <select
-              onChange={(e) => fetchAuditLogs({ developer: e.target.value || undefined })}
-              className="border p-2 rounded"
-              defaultValue=""
-            >
-              <option value="">All Developers</option>
-              {Array.isArray(employees) ?  employees.map((emp) =>
-                emp.role === "developer" ? (
-                  <option key={emp.id} value={emp.id}>
-                    {emp.full_name}
-                  </option>
-                ) : null
-              ) :  (
-                <option disabled>No developers available</option>
-              )}
-            </select>
-
-            <input
-              type="date"
-              className="border p-2 rounded"
-              onChange={(e) => fetchAuditLogs({ from_date: e.target.value })}
-            />
-
-            <input
-              type="date"
-              className="border p-2 rounded"
-              onChange={(e) => fetchAuditLogs({ to_date: e.target.value })}
-            />
-          </div>
-        </section>
 
         <section className="mt-10">
           <h2 className="text-2xl font-semibold mb-4">Labels</h2>
@@ -482,6 +450,37 @@ const TenantAdminDashboard = () => {
 
         <section className="mt-10">
           <h2 className="text-xl font-semibold mb-4">Project Manager Assignment History</h2>
+          <h3 className="text-lg font-medium mb-2">Filter Logs</h3>
+          <div className="flex flex-wrap gap-4">
+            <select
+              onChange={(e) => fetchAuditLogs({ developer: e.target.value || undefined })}
+              className="border p-2 rounded"
+              defaultValue=""
+            >
+              <option value="">All Developers</option>
+              {Array.isArray(employees) ?  employees.map((emp) =>
+                emp.role === "developer" ? (
+                  <option key={emp.id} value={emp.id}>
+                    {emp.full_name}
+                  </option>
+                ) : null
+              ) :  (
+                <option disabled>No developers available</option>
+              )}
+            </select>
+
+            <input
+              type="date"
+              className="border p-2 rounded"
+              onChange={(e) => fetchAuditLogs({ from_date: e.target.value })}
+            />
+
+            <input
+              type="date"
+              className="border p-2 rounded"
+              onChange={(e) => fetchAuditLogs({ to_date: e.target.value })}
+            />
+          </div>
           {auditLogs.length === 0 ? (
             <p className="text-gray-600">No assignment activity yet.</p>
           ) : (

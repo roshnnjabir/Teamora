@@ -83,8 +83,6 @@ const EditSubtaskModal = ({ subtask, projectId, onClose, onUpdated }) => {
 
         <h2 className="text-xl font-semibold text-[#2F3A4C] mb-4">Edit Subtask</h2>
 
-        {errors.general && <p className="mb-4 text-sm text-red-600">{errors.general}</p>}
-
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Title */}
           <div>
@@ -127,6 +125,7 @@ const EditSubtaskModal = ({ subtask, projectId, onClose, onUpdated }) => {
                 name="due_date"
                 value={formData.due_date}
                 onChange={handleChange}
+                // min={new Date().toISOString().split("T")[0]}
                 className={`mt-1 w-full px-3 py-2 border-2 rounded-lg ${
                   errors.due_date ? "border-red-500" : "border-gray-200"
                 } focus:outline-none focus:ring-2 focus:ring-blue-400`}
@@ -194,6 +193,15 @@ const EditSubtaskModal = ({ subtask, projectId, onClose, onUpdated }) => {
               )}
             </div>
           </div>
+          
+          {errors.general && <p className="mb-4 text-sm text-red-600">{errors.general}</p>}
+          {errors.non_field_errors && (
+            <div className="mb-4 text-sm text-red-600">
+              {errors.non_field_errors.map((err, idx) => (
+                <p key={idx}>{err}</p>
+              ))}
+            </div>
+          )}
 
           {/* Buttons */}
           <div className="flex justify-end gap-3 pt-4">

@@ -1,254 +1,274 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { isSubdomain } from '../../utils/domainUtils';
+import { useState, useEffect, useReducer, useRef } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
 
-const BASE_URL = import.meta.env.VITE_API_BASE_URL;
+const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
 
-// Simplified error extraction
-function getErrorMessage(error) {
-  return error?.response?.data?.detail || 
-         error?.response?.data?.non_field_errors?.[0] || 
-         error?.message || 
-         'Something went wrong';
-}
+const RATE_LIMITS = {
+  OTP_COOLDOWN: 60000, // 1 minute
+  MAX_OTP_ATTEMPTS: 3,
+  MAX_VERIFICATION_ATTEMPTS: 5,
+  SUBDOMAIN_CHECK_DEBOUNCE: 500,
+};
 
-// Validation functions
-const validateEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-const validateSubdomain = (subdomain) => /^[a-z0-9-]+$/.test(subdomain);
+// Validation and error utils
+const getErrorMessage = (error) => {
+  if (error?.response?.status === 429) {
+    return 'Too many requests. Please wait before trying again.';
+  }
+  return error?.response?.data?.detail ||
+         error?.response?.data?.non_field_errors?.[0] ||
+         error?.message ||
+         'Something went wrong. Please try again.';
+};
 
-// OTP Modal Component
-function OtpModal({ visible, onClose, email, onVerified }) {
-  const [otp, setOtp] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+const validateEmail = (email) =>
+  /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(email);
 
-  const handleVerify = async () => {
-    if (!otp.trim()) return setError('Please enter OTP');
-    
-    setLoading(true);
-    setError('');
-    
-    try {
-      const res = await fetch(`${BASE_URL}/api/tenants/verify-otp/`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, otp })
-      });
+const validateSubdomain = (subdomain) =>
+  /^[a-z0-9][a-z0-9-]{1,61}[a-z0-9]$/.test(subdomain) && !subdomain.includes('--');
 
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.detail || 'Verification failed');
-      }
-
-      onVerified();
-      onClose();
-    } catch (err) {
-      setError(getErrorMessage(err));
-    } finally {
-      setLoading(false);
-    }
+const validatePassword = (password) => {
+  return {
+    isValid:
+      password.length >= 8 &&
+      /[A-Z]/.test(password) &&
+      /[a-z]/.test(password) &&
+      /\d/.test(password),
+    errors: [
+      password.length < 8 && 'At least 8 characters',
+      !/[A-Z]/.test(password) && 'One uppercase letter',
+      !/[a-z]/.test(password) && 'One lowercase letter',
+      !/\d/.test(password) && 'One number',
+    ].filter(Boolean),
   };
+};
 
-  // Reset on open/close
-  useEffect(() => {
-    if (visible) {
-      setOtp('');
-      setError('');
-    }
-  }, [visible]);
-
-  if (!visible) return null;
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-      <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-sm mx-4">
-        <h2 className="text-xl font-semibold mb-2">Verify Email</h2>
-        <p className="text-gray-600 text-sm mb-4">
-          Enter the 6-digit code sent to <strong>{email}</strong>
-        </p>
-
-        <input
-          type="text"
-          placeholder="Enter 6-digit code"
-          value={otp}
-          onChange={(e) => {
-            const value = e.target.value.replace(/\D/g, '').slice(0, 6);
-            setOtp(value);
-            if (error) setError('');
-          }}
-          className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none mb-2"
-          maxLength={6}
-        />
-
-        {error && (
-          <p className="mb-4 text-sm text-red-600">
-            {error}
-          </p>
-        )}
-
-        <div className="flex gap-2">
-          <button
-            onClick={onClose}
-            disabled={loading}
-            className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 disabled:opacity-50"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={handleVerify}
-            disabled={loading || otp.length !== 6}
-            className="flex-1 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {loading ? 'Verifying...' : 'Verify'}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// Main Component
-export default function TenantSignup() {
-  const [formData, setFormData] = useState({
+// Initial reducer state
+const initialState = {
+  formData: {
     tenantName: '',
     subdomain: '',
     email: '',
     fullName: '',
-    password: ''
-  });
-  
-  const [currentStep, setCurrentStep] = useState(0);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
-  const [emailVerified, setEmailVerified] = useState(false);
-  const [otpModalVisible, setOtpModalVisible] = useState(false);
-  const [sendingOtp, setSendingOtp] = useState(false);
+    password: '',
+  },
+  currentStep: 0,
+  loading: false,
+  errors: {},
+  success: '',
+  emailVerified: false,
+  showOtpSection: false,
+  otp: '',
+  otpAttempts: 0,
+  otpVerificationAttempts: 0,
+  lastOtpSent: null,
+  subdomainChecking: false,
+  subdomainAvailable: null,
+  tenantNameAvailable: null,
+};
+
+const reducer = (state, action) => {
+  switch (action.type) {
+    case 'UPDATE_FIELD':
+      return {
+        ...state,
+        formData: { ...state.formData, [action.field]: action.value },
+        errors: { ...state.errors, [action.field]: null },
+      };
+    case 'SET_ERROR':
+      return { ...state, errors: { ...state.errors, [action.field]: action.error } };
+    case 'CLEAR_ERRORS':
+      return { ...state, errors: {} };
+    case 'SET_LOADING':
+      return { ...state, loading: action.value };
+    case 'SET_SUCCESS':
+      return { ...state, success: action.message };
+    case 'SET_STEP':
+      return { ...state, currentStep: action.step, errors: {} };
+    case 'SET_EMAIL_VERIFIED':
+      return { ...state, emailVerified: true, showOtpSection: false };
+    case 'SHOW_OTP_SECTION':
+      return { ...state, showOtpSection: true, lastOtpSent: Date.now(), otp: '' };
+    case 'UPDATE_OTP':
+      return { ...state, otp: action.value };
+    case 'INCREMENT_OTP_ATTEMPTS':
+      return { ...state, otpAttempts: state.otpAttempts + 1 };
+    case 'INCREMENT_OTP_VERIFY_ATTEMPTS':
+      return {
+        ...state,
+        otpVerificationAttempts: action.value !== undefined
+          ? action.value
+          : state.otpVerificationAttempts + 1,
+      };
+    case 'SET_SUBDOMAIN_CHECKING':
+      return { ...state, subdomainChecking: action.value };
+    case 'SET_SUBDOMAIN_AVAILABLE':
+      return { ...state, subdomainAvailable: action.value };
+    case 'SET_TENANT_NAME_AVAILABLE':
+      return { ...state, tenantNameAvailable: action.value };
+    default:
+      return state;
+  }
+};
+
+export default function TenantSignup() {
+  const [state, dispatch] = useReducer(reducer, initialState);
+  const [otpCooldown, setOtpCooldown] = useState(0);
+  const subdomainTimeoutRef = useRef();
+  const otpInputRef = useRef();
   const navigate = useNavigate();
 
   const steps = [
     { title: 'Company Details', fields: ['tenantName', 'subdomain'] },
-    { title: 'Admin Account', fields: ['fullName', 'email', 'password'] }
+    { title: 'Admin Account', fields: ['fullName', 'email', 'password'] },
   ];
 
-  const baseHost = isSubdomain()
-    ? window.location.hostname.split('.').slice(-2).join('.') // e.g., chronocrust.shop
-    : window.location.hostname; // localhost:8000
+  // Autofocus on OTP input
+  useEffect(() => {
+    if (state.showOtpSection && otpInputRef.current) {
+      otpInputRef.current.focus();
+    }
+  }, [state.showOtpSection]);
 
-  const domain_url = `${formData.subdomain}.${baseHost}`;
+  // Subdomain check debounce
+  useEffect(() => {
+    if (state.formData.subdomain.length < 3 || state.formData.tenantName.trim().length === 0) return;
 
-  // Clear messages when input changes
+    clearTimeout(subdomainTimeoutRef.current);
+    subdomainTimeoutRef.current = setTimeout(checkSubdomainAvailability, RATE_LIMITS.SUBDOMAIN_CHECK_DEBOUNCE);
+
+    return () => clearTimeout(subdomainTimeoutRef.current);
+  }, [state.formData.subdomain, state.formData.tenantName]);
+
+  // OTP cooldown countdown
+  useEffect(() => {
+    if (!state.lastOtpSent) return;
+    const interval = setInterval(() => {
+      const remaining = RATE_LIMITS.OTP_COOLDOWN - (Date.now() - state.lastOtpSent);
+      setOtpCooldown(Math.max(0, Math.ceil(remaining / 1000)));
+      if (remaining <= 0) clearInterval(interval);
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [state.lastOtpSent]);
+
   const handleInputChange = (field, value) => {
-    let processedValue = value;
-
-    if (field === 'subdomain') {
-      processedValue = value.toLowerCase().replace(/[^a-z0-9-]/g, '');
-    } else if (field === 'email') {
-      processedValue = value.trim().toLowerCase();
-    }
-
-    setFormData(prev => ({
-      ...prev,
-      [field]: processedValue
-    }));
-
-    if (error) setError('');
-    if (success) setSuccess('');
-  };
-
-  // Validate current step
-  const validateCurrentStep = () => {
-    const currentFields = steps[currentStep].fields;
-    const emptyFields = currentFields.filter(field => !formData[field].trim());
+    let processed = value;
+    if (field === 'subdomain') processed = value.toLowerCase().replace(/[^a-z0-9-]/g, '').slice(0, 63);
+    if (field === 'email') processed = value.trim().toLowerCase();
+    if (field === 'otp') processed = value.replace(/\D/g, '').slice(0, 6);
     
-    if (emptyFields.length > 0) {
-      setError('Please fill in all required fields');
-      return false;
-    }
+    dispatch({
+      type: field === 'otp' ? 'UPDATE_OTP' : 'UPDATE_FIELD',
+      field,
+      value: processed,
+    });
 
-    if (currentStep === 0) {
-      if (!validateSubdomain(formData.subdomain)) {
-        setError('Subdomain can only contain lowercase letters, numbers, and hyphens');
-        return false;
-      }
-    }
-
-    if (currentStep === 1) {
-      if (!validateEmail(formData.email)) {
-        setError('Please enter a valid email address');
-        return false;
-      }
-      if (formData.password.length < 6) {
-        setError('Password must be at least 6 characters long');
-        return false;
-      }
-    }
-
-    return true;
+    dispatch({ type: 'SET_SUCCESS', message: '' });
   };
 
-  const handleNext = async () => {
+  const validateCurrentStep = () => {
+    const fields = steps[state.currentStep].fields;
+    let valid = true;
+
+    fields.forEach((field) => {
+      if (!state.formData[field].trim()) {
+        dispatch({ type: 'SET_ERROR', field, error: 'This field is required' });
+        valid = false;
+      }
+    });
+
+    if (state.currentStep === 0) {
+      if (!validateSubdomain(state.formData.subdomain)) {
+        dispatch({ type: 'SET_ERROR', field: 'subdomain', error: 'Invalid subdomain format' });
+        valid = false;
+      } else if (state.subdomainAvailable === false) {
+        dispatch({ type: 'SET_ERROR', field: 'subdomain', error: 'Subdomain not available' });
+        valid = false;
+      }
+
+      if (state.tenantNameAvailable === false) {
+        dispatch({ type: 'SET_ERROR', field: 'tenantName', error: 'Organization name already taken' });
+        valid = false;
+      }
+    }
+
+    if (state.currentStep === 1) {
+      if (!validateEmail(state.formData.email)) {
+        dispatch({ type: 'SET_ERROR', field: 'email', error: 'Invalid email format' });
+        valid = false;
+      }
+
+      const pwdCheck = validatePassword(state.formData.password);
+      if (!pwdCheck.isValid) {
+        dispatch({ type: 'SET_ERROR', field: 'password', error: pwdCheck.errors.join(', ') });
+        valid = false;
+      }
+    }
+
+    return valid;
+  };
+
+  const checkSubdomainAvailability = async () => {
+    if (!validateSubdomain(state.formData.subdomain)) {
+      dispatch({ type: 'SET_SUBDOMAIN_AVAILABLE', value: false });
+      return;
+    }
+
+    dispatch({ type: 'SET_SUBDOMAIN_CHECKING', value: true });
+    try {
+      const res = await fetch(`${BASE_URL}/api/tenants/check-availability/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          subdomain: `${state.formData.subdomain}.localhost`,
+          tenant_name: state.formData.tenantName,
+        }),
+      });
+      const data = await res.json();
+
+      dispatch({
+        type: 'SET_SUBDOMAIN_AVAILABLE',
+        value: res.ok && data.subdomain_available,
+      });
+      dispatch({
+        type: 'SET_TENANT_NAME_AVAILABLE',
+        value: res.ok && data.tenant_name_available,
+      });
+    } catch {
+      dispatch({ type: 'SET_SUBDOMAIN_AVAILABLE', value: false });
+      dispatch({ type: 'SET_TENANT_NAME_AVAILABLE', value: false });
+    } finally {
+      dispatch({ type: 'SET_SUBDOMAIN_CHECKING', value: false });
+    }
+  };
+
+  const handleNext = () => {
     if (!validateCurrentStep()) return;
-
-    if (currentStep === 0) {
-      try {
-        const res = await fetch(`${BASE_URL}/api/tenants/check-availability/`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            subdomain: formData.subdomain,
-            tenant_name: formData.tenantName
-          }),
-        });
-
-        const data = await res.json();
-
-        if (!res.ok) {
-          setError(data.detail || 'Could not validate subdomain/tenant name');
-          return;
-        }
-
-        if (!data.subdomain_available) {
-          setError('Subdomain is already taken. Please choose another.');
-          return;
-        }
-
-        if (!data.tenant_name_available) {
-          setError('Organization name is already in use. Please pick another.');
-          return;
-        }
-
-      } catch (err) {
-        setError(getErrorMessage(err));
-        return;
-      }
-    }
-
-    setCurrentStep((prev) => prev + 1);
-    setError('');
+    dispatch({ type: 'SET_STEP', step: state.currentStep + 1 });
   };
-
 
   const handlePrevious = () => {
-    if (currentStep > 0) {
-      setCurrentStep(prev => prev - 1);
-      setError('');
+    if (state.currentStep > 0) {
+      dispatch({ type: 'SET_STEP', step: state.currentStep - 1 });
     }
+  };
+
+  const canSendOtp = () => {
+    const cooldownOver = !state.lastOtpSent || Date.now() - state.lastOtpSent > RATE_LIMITS.OTP_COOLDOWN;
+    return cooldownOver && state.otpAttempts < RATE_LIMITS.MAX_OTP_ATTEMPTS && validateEmail(state.formData.email);
   };
 
   const handleSendOtp = async () => {
-    if (!validateEmail(formData.email)) {
-      return setError('Please enter a valid email address');
-    }
+    if (!canSendOtp()) return;
 
-    setSendingOtp(true);
-    setError('');
+    dispatch({ type: 'SET_LOADING', value: true });
+    dispatch({ type: 'CLEAR_ERRORS' });
 
     try {
       const res = await fetch(`${BASE_URL}/api/tenants/send-otp/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: formData.email })
+        body: JSON.stringify({ email: state.formData.email }),
       });
 
       if (!res.ok) {
@@ -256,33 +276,74 @@ export default function TenantSignup() {
         throw new Error(data.detail || 'Failed to send OTP');
       }
 
-      setOtpModalVisible(true);
-    } catch (err) {
-      setError(getErrorMessage(err));
+      dispatch({ type: 'SHOW_OTP_SECTION' });
+      dispatch({ type: 'SET_SUCCESS', message: 'OTP sent successfully!' });
+      dispatch({ type: 'INCREMENT_OTP_ATTEMPTS' });
+
+      dispatch({ type: 'UPDATE_OTP', field: 'otp', value: '' });
+      dispatch({ type: 'INCREMENT_OTP_VERIFY_ATTEMPTS', value: 0 });
+    } catch (error) {
+      dispatch({ type: 'SET_ERROR', field: 'email', error: getErrorMessage(error) });
+      dispatch({ type: 'INCREMENT_OTP_ATTEMPTS' });
     } finally {
-      setSendingOtp(false);
+      dispatch({ type: 'SET_LOADING', value: false });
+    }
+  };
+
+  const handleVerifyOtp = async () => {
+    if (state.otp.length !== 6) {
+      dispatch({ type: 'SET_ERROR', field: 'otp', error: 'Enter 6-digit code' });
+      return;
+    }
+
+    if (state.otpVerificationAttempts >= RATE_LIMITS.MAX_VERIFICATION_ATTEMPTS) {
+      dispatch({ type: 'SET_ERROR', field: 'otp', error: 'Too many attempts. Please resend code.' });
+      return;
+    }
+
+    dispatch({ type: 'SET_LOADING', value: true });
+
+    try {
+      const res = await fetch(`${BASE_URL}/api/tenants/verify-otp/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: state.formData.email, otp: state.otp }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.detail || 'OTP verification failed');
+      }
+
+      dispatch({ type: 'SET_EMAIL_VERIFIED' });
+      dispatch({ type: 'SET_SUCCESS', message: 'Email verified successfully!' });
+    } catch (error) {
+      dispatch({ type: 'INCREMENT_OTP_VERIFY_ATTEMPTS' });
+      dispatch({ type: 'SET_ERROR', field: 'otp', error: getErrorMessage(error) });
+    } finally {
+      dispatch({ type: 'SET_LOADING', value: false });
     }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    if (!validateCurrentStep()) return;
-    if (!emailVerified) {
-      setError('Please verify your email before submitting');
+    if (!validateCurrentStep() || !state.emailVerified) {
+      if (!state.emailVerified) {
+        dispatch({ type: 'SET_ERROR', field: 'email', error: 'Please verify your email' });
+      }
       return;
     }
 
-    setLoading(true);
-    setError('');
+    dispatch({ type: 'SET_LOADING', value: true });
+    dispatch({ type: 'CLEAR_ERRORS' });
 
     try {
       const payload = {
-        tenant_name: formData.tenantName,
-        domain_url: domain_url,
-        email: formData.email,
-        password: formData.password,
-        full_name: formData.fullName,
+        tenant_name: state.formData.tenantName,
+        domain_url: `${state.formData.subdomain}.localhost`,
+        email: state.formData.email,
+        password: state.formData.password,
+        full_name: state.formData.fullName,
       };
 
       const res = await fetch(`${BASE_URL}/api/tenants/signup/`, {
@@ -296,14 +357,16 @@ export default function TenantSignup() {
         throw new Error(data.detail || 'Signup failed');
       }
 
-      setSuccess(`Workspace created successfully! Login link sent to ${formData.email}`);
-      setTimeout(() => {
-        navigate('/');
-      }, 5000);
-    } catch (err) {
-      setError(getErrorMessage(err));
+      dispatch({
+        type: 'SET_SUCCESS',
+        message: `Workspace created! Login link sent to ${state.formData.email}`,
+      });
+
+      setTimeout(() => navigate('/'), 3000);
+    } catch (error) {
+      dispatch({ type: 'SET_ERROR', field: 'general', error: getErrorMessage(error) });
     } finally {
-      setLoading(false);
+      dispatch({ type: 'SET_LOADING', value: false });
     }
   };
 
@@ -311,159 +374,297 @@ export default function TenantSignup() {
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 flex items-center justify-center p-4">
       <div className="w-full max-w-2xl">
         {/* Header */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full mb-4">
-            <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-            </svg>
+        <Link to="/" className="block text-center mb-8 group">
+          <div className="text-center mb-8">
+            <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl mb-4 shadow-lg">
+              <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+              </svg>
+            </div>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">Create Your Workspace</h1>
+            <p className="text-gray-600">Set up your organization in just a few steps</p>
           </div>
-          <h1 className="text-3xl font-bold text-gray-800 mb-2">Create Your Workspace</h1>
-          <p className="text-gray-600">Set up your organization in just a few steps</p>
-        </div>
+        </Link>
 
         {/* Main Card */}
-        <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 overflow-hidden">
+        <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-2xl border border-white/20 overflow-hidden">
           {/* Progress Bar */}
           <div className="px-8 pt-8">
-            <div className="flex items-center justify-between mb-8">
+            <div className="flex items-center justify-between mb-6">
               {steps.map((step, index) => (
                 <div key={index} className="flex items-center flex-1">
-                  <div className={`flex items-center justify-center w-10 h-10 rounded-full text-sm font-medium ${
-                    index <= currentStep ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-500'
-                  }`}>
-                    {index + 1}
+                  <div
+                    className={`flex items-center justify-center w-10 h-10 rounded-full text-sm font-semibold transition-all duration-200 ${
+                      index <= state.currentStep
+                        ? 'bg-gradient-to-r from-blue-500 to-indigo-600 text-white shadow-md'
+                        : 'bg-gray-200 text-gray-500'
+                    }`}
+                  >
+                    {index < state.currentStep ? (
+                      <svg
+                        className="w-5 h-5"
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                    ) : (
+                      index + 1
+                    )}
                   </div>
                   <div className="ml-4 flex-1">
-                    <div className={`text-sm font-medium ${
-                      index <= currentStep ? 'text-gray-800' : 'text-gray-400'
-                    }`}>
+                    <div
+                      className={`text-sm font-medium transition-colors ${
+                        index <= state.currentStep ? 'text-gray-900' : 'text-gray-400'
+                      }`}
+                    >
                       {step.title}
                     </div>
                   </div>
                   {index < steps.length - 1 && (
-                    <div className={`flex-1 h-1 mx-4 rounded-full ${
-                      index < currentStep ? 'bg-blue-500' : 'bg-gray-200'
-                    }`} />
+                    <div
+                      className={`flex-1 h-1 mx-4 rounded-full transition-colors duration-300 ${
+                        index < state.currentStep
+                          ? 'bg-gradient-to-r from-blue-500 to-indigo-600'
+                          : 'bg-gray-200'
+                      }`}
+                    />
                   )}
                 </div>
               ))}
             </div>
-          </div>
             
+            {/* Move Back Button Here */}
+            <div className="flex justify-end mb-6">
+              <button
+                onClick={() => navigate('/')}
+                className="inline-flex items-center text-sm font-medium text-gray-600 hover:text-blue-600 transition-colors"
+              >
+                ← Back to Home
+              </button>
+            </div>
+          </div>
+
           {/* Form Content */}
-          <div className="px-8 pb-8">
-            {currentStep === 0 && (
+          <form onSubmit={handleSubmit} className="px-8 pb-8">
+            {state.currentStep === 0 && (
               <div className="space-y-6">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
                     Organization Name *
                   </label>
                   <input
                     type="text"
-                    value={formData.tenantName}
+                    value={state.formData.tenantName}
                     onChange={(e) => handleInputChange('tenantName', e.target.value)}
                     placeholder="e.g., Acme Corporation"
-                    className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-blue-500 focus:outline-none bg-white/50"
-                    required
+                    className={`w-full px-4 py-3 rounded-xl border-2 transition-all duration-200 focus:outline-none bg-white/70 ${
+                      state.errors.tenantName 
+                        ? 'border-red-300 focus:border-red-500' 
+                        : 'border-gray-200 focus:border-blue-500'
+                    }`}
+                    autoFocus
                   />
+                  {state.errors.tenantName && (
+                    <p className="mt-2 text-sm text-red-600">{state.errors.tenantName}</p>
+                  )}
                 </div>
             
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
                     Subdomain *
                   </label>
-                  <div className="flex items-center space-x-2">
+                  <div className="flex items-center">
                     <input
                       type="text"
-                      value={formData.subdomain}
+                      value={state.formData.subdomain}
                       onChange={(e) => handleInputChange('subdomain', e.target.value)}
                       placeholder="acme"
-                      className="flex-1 px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-blue-500 focus:outline-none bg-white/50"
-                      required
+                      className={`flex-1 px-4 py-3 rounded-l-xl border-2 border-r-0 transition-all duration-200 focus:outline-none bg-white/70 ${
+                        state.errors.subdomain 
+                          ? 'border-red-300 focus:border-red-500' 
+                          : state.subdomainAvailable === true
+                            ? 'border-green-300 focus:border-green-500'
+                            : 'border-gray-200 focus:border-blue-500'
+                      }`}
                     />
-                    <span className="text-gray-500 font-medium">.teamora.com</span>
+                    <div className="px-4 py-3 bg-gray-100 border-2 border-l-0 border-gray-200 rounded-r-xl text-gray-600 font-medium">
+                      .teamora.com
+                    </div>
+                    {state.subdomainChecking && (
+                      <div className="ml-2 w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                    )}
+                    {state.subdomainAvailable === true && (
+                      <div className="ml-2 w-5 h-5 bg-green-500 rounded-full flex items-center justify-center">
+                        <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                        </svg>
+                      </div>
+                    )}
                   </div>
                   <p className="text-xs text-gray-500 mt-1">
-                    Only lowercase letters, numbers, and hyphens allowed
+                    Lowercase letters, numbers, and hyphens only (3-63 characters)
                   </p>
+                  {state.errors.subdomain && (
+                    <p className="mt-2 text-sm text-red-600">{state.errors.subdomain}</p>
+                  )}
                 </div>
               </div>
             )}
 
-            {currentStep === 1 && (
+            {state.currentStep === 1 && (
               <div className="space-y-6">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
                     Admin Full Name *
                   </label>
                   <input
                     type="text"
-                    value={formData.fullName}
+                    value={state.formData.fullName}
                     onChange={(e) => handleInputChange('fullName', e.target.value)}
                     placeholder="John Doe"
-                    className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-blue-500 focus:outline-none bg-white/50"
-                    required
+                    className={`w-full px-4 py-3 rounded-xl border-2 transition-all duration-200 focus:outline-none bg-white/70 ${
+                      state.errors.fullName 
+                        ? 'border-red-300 focus:border-red-500' 
+                        : 'border-gray-200 focus:border-blue-500'
+                    }`}
+                    autoFocus
                   />
+                  {state.errors.fullName && (
+                    <p className="mt-2 text-sm text-red-600">{state.errors.fullName}</p>
+                  )}
                 </div>
             
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Email *
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Email Address *
                   </label>
-                  <div className="flex gap-2">
+                  <div className="flex gap-3">
                     <input
                       type="email"
-                      value={formData.email}
+                      value={state.formData.email}
                       onChange={(e) => handleInputChange('email', e.target.value)}
                       placeholder="admin@company.com"
-                      disabled={emailVerified}
-                      className="flex-1 px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-blue-500 focus:outline-none bg-white/50 disabled:bg-gray-100"
-                      required
+                      disabled={state.emailVerified}
+                      className={`flex-1 px-4 py-3 rounded-xl border-2 transition-all duration-200 focus:outline-none ${
+                        state.emailVerified 
+                          ? 'bg-green-50 border-green-300 text-green-700'
+                          : state.errors.email 
+                            ? 'border-red-300 focus:border-red-500 bg-white/70' 
+                            : 'border-gray-200 focus:border-blue-500 bg-white/70'
+                      }`}
                     />
                     <button
                       type="button"
                       onClick={handleSendOtp}
-                      disabled={!formData.email || emailVerified || sendingOtp}
-                      className={`px-4 py-3 rounded-xl font-medium text-white ${
-                        emailVerified 
-                          ? 'bg-green-500 cursor-default' 
-                          : !formData.email || sendingOtp
+                      disabled={!canSendOtp() || state.loading}
+                      className={`px-6 py-3 rounded-xl font-semibold text-white transition-all duration-200 min-w-[120px] ${
+                        state.emailVerified 
+                          ? 'bg-green-500 shadow-lg' 
+                          : !canSendOtp() || state.loading
                             ? 'bg-gray-400 cursor-not-allowed'
-                            : 'bg-blue-500 hover:bg-blue-600'
+                            : 'bg-blue-500 hover:bg-blue-600 shadow-lg hover:shadow-xl'
                       }`}
                     >
-                      {sendingOtp ? 'Sending...' : emailVerified ? 'Verified ✓' : 'Verify'}
+                      {state.loading ? (
+                        <div className="flex items-center justify-center">
+                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                        </div>
+                      ) : state.emailVerified ? (
+                        'Verified ✓'
+                      ) : otpCooldown  > 0 ? (
+                        `Wait ${otpCooldown}s`
+                      ) : (
+                        'Send Code'
+                      )}
                     </button>
                   </div>
+                  {state.errors.email && (
+                    <p className="mt-2 text-sm text-red-600">{state.errors.email}</p>
+                  )}
+                  
+                  {/* OTP Section - Visible/Invisible based on state */}
+                  {state.showOtpSection && !state.emailVerified && (
+                    <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-xl">
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        Enter Verification Code
+                      </label>
+                      <div className="flex gap-3">
+                        <input
+                          ref={otpInputRef}
+                          type="text"
+                          value={state.otp}
+                          onChange={(e) => handleInputChange('otp', e.target.value)}
+                          placeholder="6-digit code"
+                          className={`flex-1 px-4 py-3 rounded-xl border-2 transition-all duration-200 focus:outline-none bg-white ${
+                            state.errors.otp 
+                              ? 'border-red-300 focus:border-red-500' 
+                              : 'border-gray-200 focus:border-blue-500'
+                          }`}
+                          maxLength={6}
+                        />
+                        <button
+                          type="button"
+                          onClick={handleVerifyOtp}
+                          disabled={state.loading || state.otp.length !== 6}
+                          className={`px-6 py-3 rounded-xl font-semibold text-white transition-all duration-200 ${
+                            state.loading || state.otp.length !== 6
+                              ? 'bg-gray-400 cursor-not-allowed'
+                              : 'bg-green-500 hover:bg-green-600 shadow-lg hover:shadow-xl'
+                          }`}
+                        >
+                          {state.loading ? 'Verifying...' : 'Verify'}
+                        </button>
+                      </div>
+                      {state.errors.otp && (
+                        <p className="mt-2 text-sm text-red-600">{state.errors.otp}</p>
+                      )}
+                      <p className="text-xs text-gray-600 mt-2">
+                        Code sent to {state.formData.email}
+                      </p>
+                    </div>
+                  )}
                 </div>
                     
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
                     Password *
                   </label>
                   <input
                     type="password"
-                    value={formData.password}
+                    value={state.formData.password}
                     onChange={(e) => handleInputChange('password', e.target.value)}
-                    placeholder="Min. 6 characters"
-                    className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-blue-500 focus:outline-none bg-white/50"
-                    required
-                    minLength={6}
+                    placeholder="Strong password required"
+                    className={`w-full px-4 py-3 rounded-xl border-2 transition-all duration-200 focus:outline-none bg-white/70 ${
+                      state.errors.password 
+                        ? 'border-red-300 focus:border-red-500' 
+                        : 'border-gray-200 focus:border-blue-500'
+                    }`}
                   />
+                  <p className="text-xs text-gray-500 mt-1">
+                    At least 8 characters with uppercase, lowercase, and number
+                  </p>
+                  {state.errors.password && (
+                    <p className="mt-2 text-sm text-red-600">{state.errors.password}</p>
+                  )}
                 </div>
               </div>
             )}
 
-            {/* Messages */}
-            {error && (
-              <p className="mt-4 text-sm text-red-600">
-                {error}
-              </p>
+            {/* General Messages */}
+            {state.errors.general && (
+              <div className="mt-6 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700">
+                {state.errors.general}
+              </div>
             )}
 
-            {success && (
+            {state.success && (
               <div className="mt-6 p-4 bg-green-50 border border-green-200 rounded-xl text-green-700">
-                {success}
+                {state.success}
               </div>
             )}
 
@@ -472,9 +673,9 @@ export default function TenantSignup() {
               <button
                 type="button"
                 onClick={handlePrevious}
-                disabled={currentStep === 0}
-                className={`px-6 py-3 rounded-xl font-medium ${
-                  currentStep === 0
+                disabled={state.currentStep === 0}
+                className={`px-6 py-3 rounded-xl font-semibold transition-all duration-200 ${
+                  state.currentStep === 0
                     ? 'text-gray-400 cursor-not-allowed'
                     : 'text-gray-600 hover:text-gray-800 hover:bg-gray-100'
                 }`}
@@ -482,26 +683,25 @@ export default function TenantSignup() {
                 Previous
               </button>
               
-              {currentStep < steps.length - 1 ? (
+              {state.currentStep < steps.length - 1 ? (
                 <button
                   type="button"
                   onClick={handleNext}
-                  className="px-8 py-3 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-xl font-medium shadow-lg hover:shadow-xl"
+                  className="px-8 py-3 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-200 hover:from-blue-600 hover:to-indigo-700"
                 >
                   Next
                 </button>
               ) : (
                 <button
                   type="submit"
-                  onClick={handleSubmit}
-                  disabled={loading || !emailVerified}
-                  className={`px-8 py-3 rounded-xl font-medium shadow-lg text-white ${
-                    loading || !emailVerified
+                  disabled={state.loading || !state.emailVerified}
+                  className={`px-8 py-3 rounded-xl font-semibold shadow-lg transition-all duration-200 text-white ${
+                    state.loading || !state.emailVerified
                       ? 'bg-gray-400 cursor-not-allowed'
-                      : 'bg-gradient-to-r from-green-500 to-emerald-600 hover:shadow-xl'
+                      : 'bg-gradient-to-r from-green-500 to-emerald-600 hover:shadow-xl hover:from-green-600 hover:to-emerald-700'
                   }`}
                 >
-                  {loading ? (
+                  {state.loading ? (
                     <div className="flex items-center gap-2">
                       <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                       <span>Creating...</span>
@@ -512,30 +712,22 @@ export default function TenantSignup() {
                 </button>
               )}
             </div>
-          </div> {/* Close form content */}
-        </div> {/* Close card */}
+          </form>
+        </div>
             
         {/* Footer */}
         <div className="text-center mt-8">
           <p className="text-gray-600 text-sm">
             Already have an account?{' '}
-            <button className="text-blue-600 hover:text-blue-700 font-medium">
+            <button 
+              onClick={() => navigate('/login')}
+              className="text-blue-600 hover:text-blue-700 font-semibold transition-colors"
+            >
               Sign in
             </button>
           </p>
         </div>
-      </div> {/* Close max-w-2xl */}
-            
-      {/* OTP Modal */}
-      <OtpModal
-        visible={otpModalVisible}
-        onClose={() => setOtpModalVisible(false)}
-        email={formData.email}
-        onVerified={() => {
-          setEmailVerified(true);
-          setSuccess('Email verified successfully!');
-        }}
-      />
+      </div>
     </div>
   );
 }

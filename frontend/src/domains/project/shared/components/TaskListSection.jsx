@@ -114,7 +114,7 @@ const SubtaskCard = ({ subtask, task }) => (
       </span>
       {subtask.status && (
         <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-          subtask.status === 'completed' 
+          subtask.status === 'done' 
             ? 'bg-green-100 text-green-800' 
             : subtask.status === 'in_progress'
             ? 'bg-blue-100 text-blue-800'
@@ -147,9 +147,9 @@ const FilterControls = ({
         className="text-sm border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-[#00C4B4] focus:border-transparent"
       >
         <option value="">All Statuses</option>
-        <option value="pending">Pending</option>
+        <option value="todo">To Do</option>
         <option value="in_progress">In Progress</option>
-        <option value="completed">Completed</option>
+        <option value="done">Done</option>
       </select>
       
       <select
@@ -161,7 +161,6 @@ const FilterControls = ({
         <option value="low">Low</option>
         <option value="medium">Medium</option>
         <option value="high">High</option>
-        <option value="urgent">Urgent</option>
       </select>
       
       {hasActiveFilters && (
@@ -211,7 +210,7 @@ const TaskListSection = ({ tasks = [], projectId, isProjectActive, onTaskCreated
   // Task statistics
   const taskStats = useMemo(() => {
     const total = filteredTasks.length;
-    const completed = filteredTasks.filter(t => t.status === 'completed').length;
+    const completed = filteredTasks.filter(t => t.status === 'done').length;
     const inProgress = filteredTasks.filter(t => t.status === 'in_progress').length;
     const totalSubtasks = filteredTasks.reduce((sum, task) => sum + (task.subtasks?.length || 0), 0);
     
