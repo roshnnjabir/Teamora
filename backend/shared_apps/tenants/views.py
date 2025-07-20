@@ -26,7 +26,11 @@ class TenantSignupView(APIView):
     permission_classes = [AllowAny]
 
     @transaction.atomic
-    def post(self, request):
+    def post(self, request):        
+        email = request.data.get('email', '').strip().lower()
+        if not cache.get(f'otp_verified_{email}'):
+            return Response({"detail": "OTP not verified."}, status=status.HTTP_400_BAD_REQUEST)
+
         serializer = TenantSignupSerializer(data=request.data)
         if serializer.is_valid():
             tenant = serializer.save()
@@ -52,6 +56,7 @@ class TenantSignupView(APIView):
                 )
 
             refresh = RefreshToken.for_user(tenant_admin_user)
+            cache.delete(f'otp_verified_{email}')
 
             return Response({
                 'tenant_id': tenant.id,
@@ -126,5 +131,6 @@ class VerifyOTPView(APIView):
             return Response({'detail': 'Invalid OTP.'}, status=status.HTTP_400_BAD_REQUEST)
 
         cache.delete(cache_key)
+        cache.set(f'otp_verified_{email}', True, timeout=600)
 
         return Response({'detail': 'OTP verified successfully.'}, status=status.HTTP_200_OK)
