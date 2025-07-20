@@ -74,11 +74,7 @@ class CheckTenantAvailabilityView(APIView):
         elif not tenant_name:
             return Response({'detail': 'Tenant name is required'}, status=status.HTTP_400_BAD_REQUEST)
 
-        base_host = request.get_host().split('.', 1)[0]
-        full_domain = f"{subdomain}.{base_host}"
-        print(full_domain)
-
-        domain_exist = Domain.objects.filter(domain=full_domain).exists()
+        domain_exist = Domain.objects.filter(domain=subdomain).exists()
         tenant_name_exist = Client.objects.filter(name__iexact=tenant_name).exists()
 
         return Response({

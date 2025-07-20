@@ -12,6 +12,7 @@ from rest_framework.response import Response
 
 from tenant_apps.project_management.models import Project, Task
 from core.permissions import IsProjectReadOnlyOrManager
+from core.constants import UserRoles
 from tenant_apps.project_management.serializers import ProjectSerializer, TaskSerializer
 
 
@@ -22,18 +23,11 @@ class ProjectViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        if user.is_tenant_admin:
+        if user.role == UserRoles.TENANT_ADMIN:
             return Project.objects.all()
-        if user.is_project_manager:
-            return Project.objects.filter(assigned_pm=user)
+        if user.role == UserRoles.PROJECT_MANAGER:
+            return Project.objects.filter(assigned_pm=user.employee)
         return Project.objects.none()
-
-    def perform_create(self, serializer):
-        user = self.request.user
-        if user.is_tenant_admin:
-            serializer.save(created_by=user)
-        elif user.is_project_manager:
-            serializer.save(created_by=user, assigned_pm=user)
     
     @action(detail=True, methods=["get"])
     def tasks(self, request, pk=None):
