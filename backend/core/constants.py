@@ -16,9 +16,6 @@ class UserRoles(models.TextChoices):
     HR = 'hr', 'HR'
     DEVELOPER = 'developer', 'Developer'
 
-TASK_STATUSES = ['open', 'in_progress', 'closed']
-
-
 class ProjectStatus(models.TextChoices):
     PLANNING = 'planning', 'Planning'
     IN_PROGRESS = 'in_progress', 'In Progress'

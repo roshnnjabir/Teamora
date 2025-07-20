@@ -16,9 +16,8 @@ from tenant_apps.employee.models import Employee, ProjectManagerAssignment
 from django.contrib.contenttypes.models import ContentType
 from django.db import IntegrityError
 from rest_framework.exceptions import ValidationError
-from core.constants import UserRoles
+from core.constants import UserRoles, TaskStatus
 from datetime import date
-
 
 class ProjectMemberSerializer(serializers.ModelSerializer):
     class Meta:
@@ -186,6 +185,17 @@ class SubtaskSerializer(serializers.ModelSerializer):
         title = data.get("title") or (self.instance and self.instance.title)
         description = data.get("description") or (self.instance and self.instance.description)
         task = data.get("task") or (self.instance and self.instance.task)
+        
+        if task:
+            if isinstance(task, int):
+                try:
+                    task = Task.objects.get(id=task)
+                except Task.DoesNotExist:
+                    raise serializers.ValidationError({"task": "Invalid task ID."})
+            if task.status == TaskStatus.DONE:
+                raise serializers.ValidationError({
+                    "non_field_errors": ["Cannot modify subtasks of a completed task."]
+                })
     
         if title and description and task:
             qs = Subtask.objects.filter(title=title, description=description, task=task)
@@ -206,9 +216,6 @@ class SubtaskSerializer(serializers.ModelSerializer):
         }
 
     def create(self, validated_data):
-        import logging
-        logger = logging.getLogger(__name__)
-        logger.warning(f"Validated data: {validated_data}") 
         validated_data['created_by'] = self.context['request'].user.employee
         return super().create(validated_data)
 
@@ -370,7 +377,6 @@ class ProjectSerializer(serializers.ModelSerializer):
         user = request.user
 
         if user.role == UserRoles.TENANT_ADMIN:
-            print(user.role)
             if not assigned_pm:
                 raise serializers.ValidationError({
                     'assigned_pm': 'Tenant admin must assign a project manager.'
