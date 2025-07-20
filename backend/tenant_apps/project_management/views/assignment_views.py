@@ -203,16 +203,27 @@ class ProjectManagerMyDevelopersView(APIView):
         # response with subtask count
         data = []
         for dev in developers:
-            subtask_count = Subtask.objects.filter(
-                assigned_to=dev,
-                task__project__is_active=True
-            ).count()
+            if project_id:
+                subtask_qs = Subtask.objects.filter(
+                    assigned_to=dev,
+                    task__project_id=project_id
+                )
+            else:
+                subtask_qs = Subtask.objects.filter(
+                    assigned_to=dev,
+                    task__project__is_active=True
+                )
+
+            subtask_count = subtask_qs.count()
+            completed_count = subtask_qs.filter(status='done').count()
 
             data.append({
                 "id": dev.id,
                 "full_name": dev.full_name, 
                 "email": dev.user.email,
-                "assigned_subtasks_count": subtask_count
+                "assigned_subtasks_count": subtask_count,
+                "completed_subtasks_count": completed_count,
+                "incomplete_subtasks_count": subtask_count - completed_count,
             })
 
         return Response(data, status=status.HTTP_200_OK)
