@@ -3,7 +3,7 @@ import { getStatusBadge, getPriorityLabel } from "../../../../utils/projectUtils
 import CreateTaskModal from "../../manager/modals/CreateTaskModal";
 
 // Task Card Component for better organization
-const TaskCard = ({ task, isExpanded, onToggle }) => {
+const TaskCard = ({ task, isExpanded, isTenantAdmin, onToggle }) => {
   const hasSubtasks = task.subtasks?.length > 0;
   
   return (
@@ -12,7 +12,7 @@ const TaskCard = ({ task, isExpanded, onToggle }) => {
       <div className="flex justify-between items-start mb-3">
         <div className="flex-1">
           <a
-            href={`/project_manager/tasks/${task.id}`}
+            href={isTenantAdmin ? `#` : `/project_manager/tasks/${task.id}`}
             className="text-[#00C4B4] font-semibold hover:underline text-lg block mb-1 group-hover:text-teal-600 transition-colors"
           >
             {task.title}
@@ -70,7 +70,7 @@ const TaskCard = ({ task, isExpanded, onToggle }) => {
         <div className="mt-4 border-t pt-4 animate-fadeIn">
           <div className="space-y-3">
             {task.subtasks.map((subtask) => (
-              <SubtaskCard key={subtask.id} subtask={subtask} task={task} />
+              <SubtaskCard key={subtask.id} isTenantAdmin={isTenantAdmin} subtask={subtask} task={task} />
             ))}
           </div>
         </div>
@@ -80,11 +80,11 @@ const TaskCard = ({ task, isExpanded, onToggle }) => {
 };
 
 // Subtask Card Component
-const SubtaskCard = ({ subtask, task }) => (
+const SubtaskCard = ({ subtask, task, isTenantAdmin }) => (
   <div className="pl-4 border-l-4 border-[#00C4B4] bg-white p-3 rounded-md shadow-sm hover:shadow-md transition-shadow duration-200">
     <div className="flex justify-between items-start mb-2">
       <a
-        href={`/project_manager/tasks/${task?.id}`}
+        href={isTenantAdmin ? `#` : `/project_manager/tasks/${task.id}`}
         className="text-[#00C4B4] font-medium hover:underline hover:text-teal-600 transition-colors"
       >
         {subtask.title}
@@ -192,7 +192,7 @@ const EmptyState = ({ hasFilters }) => (
 );
 
 // Main TaskListSection Component
-const TaskListSection = ({ tasks = [], projectId, isProjectActive, onTaskCreated }) => {
+const TaskListSection = ({ tasks = [], projectId, isProjectActive, isTenantAdmin, onTaskCreated }) => {
   const [expandedTasks, setExpandedTasks] = useState({});
   const [statusFilter, setStatusFilter] = useState("");
   const [priorityFilter, setPriorityFilter] = useState("");
@@ -275,6 +275,7 @@ const TaskListSection = ({ tasks = [], projectId, isProjectActive, onTaskCreated
           )}
           
           {/* New Task Button */}
+          {!isTenantAdmin && (
           <button
             onClick={() => {
               if (!isProjectActive) return;
@@ -293,6 +294,7 @@ const TaskListSection = ({ tasks = [], projectId, isProjectActive, onTaskCreated
             </svg>
             <span>New Task</span>
           </button>
+          )}
         </div>
       </div>
 
@@ -316,6 +318,7 @@ const TaskListSection = ({ tasks = [], projectId, isProjectActive, onTaskCreated
             <TaskCard
               key={task.id}
               task={task}
+              isTenantAdmin={isTenantAdmin}
               isExpanded={expandedTasks[task.id] === true}
               onToggle={toggleSubtasks}
             />
@@ -324,7 +327,7 @@ const TaskListSection = ({ tasks = [], projectId, isProjectActive, onTaskCreated
       )}
 
       {/* Create Task Modal */}
-      {showCreateTaskModal && (
+      {!isTenantAdmin && showCreateTaskModal && (
         <CreateTaskModal
           projectId={projectId}
           onClose={() => setShowCreateTaskModal(false)}
