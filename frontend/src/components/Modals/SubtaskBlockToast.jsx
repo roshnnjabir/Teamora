@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import axios from "axios";
+import apiClient from "../../api/apiClient";
 
 const SubtaskBlockToast = ({ developerId, blockingSubtasks = [], onClose, onNotified, onCancel }) => {
   const [visible, setVisible] = useState(false);
@@ -12,7 +12,7 @@ const SubtaskBlockToast = ({ developerId, blockingSubtasks = [], onClose, onNoti
     setErrorMsg("");
 
     try {
-      await axios.post("/api/notify-pm/", {
+      await apiClient.post("/api/notify-pm/", {
         developer_id: developerId,
         subtask_ids: blockingSubtasks.map((s) => s.id),
       });
