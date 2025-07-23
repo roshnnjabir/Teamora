@@ -9,7 +9,8 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from django.core.exceptions import ObjectDoesNotExist
 
-from tenant_apps.employee.models import Employee, Notification
+from tenant_apps.employee.models import Employee
+from tenant_apps.notifications.tasks.notification_tasks import send_notification_task
 from tenant_apps.project_management.models import Subtask
 from tenant_apps.project_management.tasks.email_tasks import send_pm_blocking_subtasks_email
 
@@ -48,12 +49,19 @@ class NotifyPMView(APIView):
                 + ", ".join(project_names)
                 + ". Please resolve them to allow unassignment."
             )
-            Notification.objects.create(
-                recipient=pm,
+
+            send_notification_task.delay(
+                schema_name=pm.tenant.schema_name,
+                recipient_id=pm.id,
                 message=message,
-                url="/pm/my-subtasks/"
+                url="/"
             )
 
-            send_pm_blocking_subtasks_email.delay(pm.id, developer.full_name, list(project_names))
+            send_pm_blocking_subtasks_email.delay(
+                pm.tenant.schema_name,
+                pm.id,
+                developer.full_name,
+                list(project_names)
+            )
 
-        return Response({"detail": "PM(s) notified successfully."})
+        return Response({"detail": "PM notified successfully."})
