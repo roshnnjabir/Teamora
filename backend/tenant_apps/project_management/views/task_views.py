@@ -15,7 +15,8 @@ from rest_framework.decorators import action
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import IsAuthenticated
 
-from tenant_apps.employee.models import Employee, Notification
+from tenant_apps.employee.models import Employee
+from tenant_apps.notifications.tasks.notification_tasks import send_notification_task
 from tenant_apps.project_management.models import (
     Project, Task, Subtask,
     SubtaskAssignmentAudit, Label,
@@ -135,6 +136,20 @@ class SubtaskViewSet(viewsets.ModelViewSet):
 
         logger.warning(f"Access denied for user {user} on subtask {obj.id}")
         raise PermissionDenied("You do not have permission to access this subtask.")
+
+    def create(self, request, *args, **kwargs):
+        response = super().create(request, *args, **kwargs)
+        subtask = Subtask.objects.get(id=response.data['id'])
+    
+        # Notify if subtask is assigned on creation
+        if subtask.assigned_to:
+            send_notification_task.delay(
+                schema_name=subtask.schema_name,
+                recipient_id=subtask.assigned_to.id,
+                message=f"You have been assigned a new subtask: {subtask.title}",
+                url=f"/subtasks/{subtask.id}/"
+            )
+        return response
 
     def partial_update(self, request, *args, **kwargs):
         instance = self.get_object()
