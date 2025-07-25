@@ -16,6 +16,7 @@ import NotFound from '../domains/general/pages/NotFound';
 import AppLayout from '../layouts/AppLayout';
 import DomainWrapper from '../wrappers/DomainWrapper';
 import TaskDetailPage from '../domains/project/shared/components/TaskDetailPage';
+import PaymentRequiredPage from '../domains/general/pages/PaymentRequiredPage';
 import UserProfilePage from '../domains/general/pages/UserProfilePage';
 import ChatDashboard from "../domains/chat/pages/ChatDashboard";
 
@@ -56,6 +57,10 @@ const AppRoutes = () => (
           </ProtectedRoute>
         }
       />
+
+      <Route path="/payment-required" element={<PaymentRequiredPage />} />
+      <Route path="/payment-success" element={<div>✅ Payment Successful!</div>} />
+      <Route path="/payment-cancel" element={<div>❌ Payment Cancelled.</div>} />
 
       <Route path="/set-password/:uid/:token" element={<SetPasswordPage />} />
 
