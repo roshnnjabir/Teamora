@@ -173,8 +173,9 @@ class SubtaskViewSet(viewsets.ModelViewSet):
         response = super().partial_update(request, *args, **kwargs)
     
         # Log reassignment only if 'assigned_to' changed
-        new_assignee_id = request.data.get('assigned_to')
-        if 'assigned_to' in request.data:
+        new_assignee_id = request.data.get('assigned_to_id')
+        if 'assigned_to_id' in request.data:
+            logger.warning("🔔 Reassignment logic triggered")
             new_assignee = None
             if new_assignee_id:
                 try:
@@ -183,13 +184,41 @@ class SubtaskViewSet(viewsets.ModelViewSet):
                     pass
     
             if previous_assignee != new_assignee:
+                project_title = subtask.task.project.name
+                task_title = subtask.task.title
+                subtask_title = subtask.title
+
                 SubtaskAssignmentAudit.objects.create(
                     subtask=subtask,
                     previous_assignee=previous_assignee,
                     new_assignee=new_assignee,
                     changed_by=request.user
                 )
-    
+                
+                # Notify previous assignee (if any)
+                if previous_assignee:
+                    send_notification_task.delay(
+                        schema_name=subtask.schema_name,
+                        recipient_id=previous_assignee.id,
+                        message=(
+                            f"You have been unassigned from subtask: '{subtask_title}' "
+                            f"in task: '{task_title}' under project: '{project_title}'."
+                        ),
+                        url=f"/subtasks/{subtask.id}/"
+                    )
+
+
+                # Notify new assignee (if any)
+                if new_assignee:
+                    send_notification_task.delay(
+                        schema_name=subtask.schema_name,
+                        recipient_id=new_assignee.id,
+                        message=(
+                            f"You have been assigned to subtask: '{subtask_title}' "
+                            f"in task: '{task_title}' under project: '{project_title}'."
+                        ),
+                        url=f"/subtasks/{subtask.id}/"
+                    )
         return response
 
     def destroy(self, request, *args, **kwargs):
