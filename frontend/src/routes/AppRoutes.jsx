@@ -16,6 +16,7 @@ import NotFound from '../domains/general/pages/NotFound';
 import AppLayout from '../layouts/AppLayout';
 import DomainWrapper from '../wrappers/DomainWrapper';
 import TaskDetailPage from '../domains/project/shared/components/TaskDetailPage';
+import UserProfilePage from '../domains/general/pages/UserProfilePage';
 import ChatDashboard from "../domains/chat/pages/ChatDashboard";
 
 const AppRoutes = () => (
@@ -39,11 +40,20 @@ const AppRoutes = () => (
       />
 
       <Route
+        path="profile"
+        element={
+          <ProtectedRoute>
+            <UserProfilePage />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
         path="/chat"
         element={
-
+          <ProtectedRoute>
             <ChatDashboard />
-
+          </ProtectedRoute>
         }
       />
 
