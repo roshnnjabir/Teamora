@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import apiClient from "../../../../api/apiClient";
+import ConfirmToast from "../../../../components/Modals/ConfirmToast";
 
 const priorities = ["low", "medium", "high"];
 const status = ["todo", "in_progress", "done"];
@@ -7,6 +8,9 @@ const status = ["todo", "in_progress", "done"];
 const CreateTaskModal = ({ projectId, onClose, onTaskCreated }) => {
   const [labels, setLabels] = useState([]);
   const [selectedLabels, setSelectedLabels] = useState([]);
+  const [showConfirmToast, setShowConfirmToast] = useState(false);
+  const [skipDateCheck, setSkipDateCheck] = useState(false);
+
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -46,6 +50,39 @@ const CreateTaskModal = ({ projectId, onClose, onTaskCreated }) => {
     e.preventDefault();
     setIsSubmitting(true);
     setErrors({});
+
+    const newErrors = {};
+
+    if (!formData.title.trim()) {
+      newErrors.title = "Title is required.";
+    }
+
+    if (!formData.description.trim() || formData.description.trim().length < 10) {
+      newErrors.description = "Description is required and should be at least 10 characters.";
+    }
+
+    if (formData.due_date) {
+      const selectedDate = new Date(formData.due_date);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      if (selectedDate < today) {
+        newErrors.due_date = ["Due date cannot be in the past."];
+      }
+    }
+
+    if (!formData.due_date && !skipDateCheck) {
+      setShowConfirmToast(true);
+      setIsSubmitting(false);
+      return;
+    }
+
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      setIsSubmitting(false);
+      return;
+    }
 
     // Client-side validation for missing projectId
     if (!projectId) {
@@ -101,7 +138,6 @@ const CreateTaskModal = ({ projectId, onClose, onTaskCreated }) => {
             <input
               type="text"
               name="title"
-              required
               value={formData.title}
               onChange={handleChange}
               className={`mt-1 w-full px-3 py-2 border-2 rounded-lg ${
@@ -127,7 +163,7 @@ const CreateTaskModal = ({ projectId, onClose, onTaskCreated }) => {
               } focus:outline-none focus:ring-2 focus:ring-blue-400`}
             />
             {errors.description && (
-              <p className="text-red-500 text-sm mt-1">{errors.description[0]}</p>
+              <p className="text-red-500 text-sm mt-1">{errors.description}</p>
             )}
           </div>
 
@@ -248,6 +284,21 @@ const CreateTaskModal = ({ projectId, onClose, onTaskCreated }) => {
           </div>
         </form>
       </div>
+
+
+      {showConfirmToast && (
+        <ConfirmToast
+          message="No due date set. Do you want to continue without setting a due date?"
+          onConfirm={() => {
+            setSkipDateCheck(true);
+            setShowConfirmToast(false);
+            handleSubmit(new Event("submit"));
+          }}
+          onCancel={() => {
+            setShowConfirmToast(false);
+          }}
+        />
+      )}
     </div>
   );
 };
