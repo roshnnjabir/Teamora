@@ -22,4 +22,5 @@ urlpatterns = [
     path("api/", include("tenant_apps.project_management.urls")),
     path("api/", include("tenant_apps.employee.urls")),
     path("api/", include("tenant_apps.communication.urls")),
+    path("api/", include("tenant_apps.notifications.urls")),
 ]
