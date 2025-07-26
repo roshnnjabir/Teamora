@@ -25,6 +25,8 @@ CORS_ALLOWED_ORIGINS = [
     "http://greenpeace.localhost:5173",
     "http://singlebridge.localhost:5173",
     "http://amazon.localhost:5173",
+    "http://flipkart.localhost:5173",
+    "http://iphone.localhost:5173",
 ]
 
 CSRF_TRUSTED_ORIGINS = [
@@ -77,7 +79,7 @@ SWAGGER_SETTINGS = {
     'USE_SESSION_AUTH': False,
 }
 
-REDIS_URL = env("REDIS_URL", default="redis://localhost:6379")
+REDIS_URL = env("REDIS_URL", default="redis://redis:6379")
 
 CHANNEL_LAYERS = {
     'default': {
