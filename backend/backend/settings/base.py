@@ -28,6 +28,7 @@ SHARED_APPS = [
     'django_tenants',
     'shared_apps.tenants',
     'shared_apps.custom_auth',
+    'shared_apps.billing',
 
     'rest_framework',
     'django_filters',
@@ -51,6 +52,7 @@ TENANT_APPS = [
     'tenant_apps.project_management',
     'tenant_apps.employee',
     'tenant_apps.communication',
+    'tenant_apps.notifications',
 
     'django.contrib.contenttypes',
     'django.contrib.sessions',
