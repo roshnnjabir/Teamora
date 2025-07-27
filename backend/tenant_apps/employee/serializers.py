@@ -18,6 +18,48 @@ ALLOWED_EMPLOYEE_ROLES = {
 }
 
 
+class UserProfileSerializer(serializers.ModelSerializer):
+    full_name = serializers.CharField(source='employee.full_name', required=False)
+    
+    job_title = serializers.CharField(source='employee.job_title', read_only=True)
+    department = serializers.CharField(source='employee.department', read_only=True)
+    date_joined = serializers.DateField(source='employee.date_joined', read_only=True)
+
+    class Meta:
+        model = User
+        fields = (
+            'first_name',
+            'last_name',
+            'full_name',
+            'job_title',
+            'department',
+            'date_joined',
+        )
+        extra_kwargs = {
+            'first_name': {'required': False},
+            'last_name': {'required': False},
+        }
+
+    def update(self, instance, validated_data):
+        user_fields = ['first_name', 'last_name']
+        for field in user_fields:
+            if field in validated_data:
+                setattr(instance, field, validated_data[field])
+        instance.save()
+
+        # Update related Employee fields (excluding read-only)
+        employee_data = validated_data.get('employee', {})
+        for read_only_field in ['job_title', 'department', 'date_joined']:
+            employee_data.pop(read_only_field, None)
+
+        employee = instance.employee
+        for attr, value in employee_data.items():
+            setattr(employee, attr, value)
+        employee.save()
+
+        return instance
+
+
 class EmployeeSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(write_only=True, required=False)
     full_name = serializers.CharField()
