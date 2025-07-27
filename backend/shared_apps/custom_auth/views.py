@@ -1,6 +1,6 @@
 from django.shortcuts import render
 from django.http import HttpResponse
-from shared_apps.custom_auth.serializers import MyTokenObtainPairSerializer, UserSerializer
+from shared_apps.custom_auth.serializers import MyTokenObtainPairSerializer, UserSerializer, PasswordChangeSerializer
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
@@ -137,3 +137,14 @@ class MeView(APIView):
         }
         serializer = UserSerializer(instance=data)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class PasswordChangeView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        serializer = PasswordChangeSerializer(data=request.data, context={'request': request})
+        if serializer.is_valid():
+            serializer.save()
+            return Response({"detail": "Password updated successfully."})
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
