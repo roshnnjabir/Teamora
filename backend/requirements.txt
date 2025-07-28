@@ -84,5 +84,6 @@ zope.interface==7.2
 
 
 gunicorn
+stripe
 uvicorn[standard]
 premailer
