@@ -187,12 +187,13 @@ const TenantAdminProjectDetail = () => {
         <TeamMembersSection
           project={project}
           developers={developers}
+          isTenantAdmin={true}
           isProjectActive={project.is_active}
           onManageTeam={() => setShowMembersModal(true)}
           onRemoveMember={handleRemoveMember}
         />
 
-        <div className="flex justify-end space-x-2 mb-4">
+        {/* <div className="flex justify-end space-x-2 mb-4">
           <button onClick={() => setViewMode("tasks")} disabled={viewMode === "tasks"} className={viewMode === "tasks" ? "bg-[#00C4B4] text-white px-3 py-1 rounded" : "bg-gray-200 px-3 py-1 rounded hover:bg-gray-300"}>Task View</button>
           <button onClick={() => setViewMode("subtasks")} disabled={viewMode === "subtasks"} className={viewMode === "subtasks" ? "bg-[#00C4B4] text-white px-3 py-1 rounded" : "bg-gray-200 px-3 py-1 rounded hover:bg-gray-300"}>Subtask View</button>
         </div>
@@ -201,6 +202,7 @@ const TenantAdminProjectDetail = () => {
           <SubtaskAssignmentSection
             projectId={projectId}
             isProjectActive={project.is_active}
+            isTenantAdmin={true}
             tasks={tasks}
             subtasks={subtasks}
             developers={developers}
@@ -210,8 +212,8 @@ const TenantAdminProjectDetail = () => {
             onDragEnd={handleSubtaskDragEnd}
           />
         ) : (
-          <TaskListSection tasks={tasks} projectId={projectId} isProjectActive={project.is_active} onTaskCreated={fetchTasks} />
-        )}
+          <TaskListSection tasks={tasks} projectId={projectId} isProjectActive={project.is_active} isTenantAdmin={true} onTaskCreated={fetchTasks} />
+        )} */}
 
         <ComingSoonSection />
       </div>
