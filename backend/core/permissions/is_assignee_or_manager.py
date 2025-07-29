@@ -1,4 +1,5 @@
 from rest_framework.permissions import BasePermission
+from core.constants import UserRoles
 
 class IsAssigneeOrManager(BasePermission):
     """
@@ -7,9 +8,9 @@ class IsAssigneeOrManager(BasePermission):
 
     def has_object_permission(self, request, view, obj):
         user = request.user
-        if user.is_tenant_admin():
+        if user.role == UserRoles.TENANT_ADMIN:
             return True
-        if user.role == 'project_manager':
+        if user.role == UserRoles.PROJECT_MANAGER:
             return True
         if obj.assigned_to and obj.assigned_to.user_id == user.id:
             return request.method in ['PATCH']

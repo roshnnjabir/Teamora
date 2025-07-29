@@ -83,13 +83,14 @@ PUBLIC_SCHEMA_NAME = 'public'
 PUBLIC_SCHEMA_URLCONF = "shared_apps.tenants.urls"
 
 MIDDLEWARE = [
+    'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django_tenants.middleware.TenantMiddleware',
     
     'corsheaders.middleware.CorsMiddleware',
 
     'backend.middleware.tenant_payment_middleware.TenantPaymentMiddleware',
 
-    'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
