@@ -1,21 +1,24 @@
+from rest_framework import status, generics
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework import status
-from django.core.cache import cache
-from rest_framework import generics
-from shared_apps.tenants.tasks.email_tasks import send_otp_email_task
-from django_tenants.utils import schema_context, get_tenant_model, get_tenant_domain_model
-from rest_framework.permissions import AllowAny
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import AllowAny, IsAdminUser
 from rest_framework.authentication import SessionAuthentication, BasicAuthentication
-from shared_apps.custom_auth.models import User
-from django.utils.crypto import get_random_string
+
+from shared_apps.tenants.models import Client, Domain
+from shared_apps.tenants.tasks.email_tasks import send_otp_email_task
 from shared_apps.tenants.serializers import TenantSignupSerializer
-from django.core.management import call_command
 from shared_apps.custom_auth.models import User
-from core.permissions import IsTenantAdmin
-from rest_framework_simplejwt.tokens import RefreshToken
+
+from django_tenants.utils import schema_context, get_tenant_model, get_tenant_domain_model
+from django.core.management import call_command
+from django.utils.crypto import get_random_string
+from django.core.cache import cache
 from django.db import transaction
 from django.conf import settings
+
+from core.permissions import IsTenantAdmin
+from rest_framework_simplejwt.tokens import RefreshToken
 
 
 Client = get_tenant_model()
@@ -134,3 +137,48 @@ class VerifyOTPView(APIView):
         cache.set(f'otp_verified_{email}', True, timeout=600)
 
         return Response({'detail': 'OTP verified successfully.'}, status=status.HTTP_200_OK)
+
+
+@api_view(["GET"])
+@permission_classes([IsAdminUser])
+def super_admin_dashboard(request):
+    data = []
+    clients = Client.objects.exclude(schema_name="public")
+
+    for client in clients:
+        # get domain name
+        domain = Domain.objects.filter(tenant=client).first()
+        subdomain = domain.domain if domain else None
+
+        # Switch to tenant schema and count users
+        with schema_context(client.schema_name):
+            user_count = User.objects.count()
+
+        data.append({
+            "id": client.id,
+            "name": client.name,
+            "schema": client.schema_name,
+            "subdomain": subdomain,
+            "on_trial": client.on_trial,
+            "paid_until": client.paid_until,
+            "is_blocked": client.is_blocked,
+            "created_on": client.created_on,
+            "user_count": user_count,
+        })
+
+    return Response(data)
+
+@api_view(["POST"])
+@permission_classes([IsAdminUser])
+def toggle_block_tenant(request, tenant_id):
+    try:
+        tenant = Client.objects.get(id=tenant_id)
+
+        if tenant.schema_name == "public":
+            return Response({"error": "Cannot block the public schema."}, status=400)
+
+        tenant.is_blocked = not tenant.is_blocked
+        tenant.save()
+        return Response({"status": "success", "is_blocked": tenant.is_blocked})
+    except Client.DoesNotExist:
+        return Response({"error": "Tenant not found"}, status=404)

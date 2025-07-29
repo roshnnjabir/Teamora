@@ -15,5 +15,9 @@ urlpatterns = [
         path("tenants/check-availability/", views.CheckTenantAvailabilityView.as_view(), name="check-availability"),
         path("tenants/send-otp/", views.SendOTPView.as_view(), name="send-otp"),
         path("tenants/verify-otp/", views.VerifyOTPView.as_view(), name="verify-otp"),
+        
+        path('super-admin-dashboard/', views.super_admin_dashboard, name='super_admin_dashboard'),
+        path('toggle-block/<int:tenant_id>/', views.toggle_block_tenant, name='toggle_block_tenant'),
+
     ])),
 ]

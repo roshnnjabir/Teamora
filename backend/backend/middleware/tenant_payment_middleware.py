@@ -31,6 +31,10 @@ class TenantPaymentMiddleware(MiddlewareMixin):
         today = datetime.date.today()
         created_on = tenant.created_on or today
 
+        if getattr(tenant, "is_blocked", False):
+            logger.warning(f"Tenant '{tenant.schema_name}' is manually blocked.")
+            return self._deny_access("Access denied: Your account has been blocked by the admin.")
+
         if tenant.on_trial:
             trial_end = created_on + datetime.timedelta(days=TRIAL_DAYS)
             if trial_end < today:

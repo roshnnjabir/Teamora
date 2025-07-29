@@ -6,6 +6,7 @@ class Client(TenantMixin):
     paid_until = models.DateField(null=True, blank=True)
     on_trial = models.BooleanField(default=True)
     created_on = models.DateField(auto_now_add=True)
+    is_blocked = models.BooleanField(default=False)
 
     auto_create_schema = True
 
