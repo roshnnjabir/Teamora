@@ -7,7 +7,7 @@ import apiClient from "../../../api/apiClient";
 import PMDeveloperAssignmentManager from "../components/PMDeveloperAssignmentManager";
 import EmployeeFormModal from "../modals/EmployeeFormModal";
 import CreateProjectModal from "../../../components/modals/ProjectModals/CreateProjectModal";
-import SubtaskBlockToast from "../../../components/modals/SubtaskBlockToast";
+import SubtaskBlockToast from "../../../components/Modals/SubtaskBlockToast";
 import NotificationPanel from "../../../components/notifications/NotificationPanel";
 import { useNavigate } from "react-router-dom";
 

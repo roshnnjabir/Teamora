@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import apiClient from "../../../../api/apiClient";
-import ConfirmToast from "../../../../components/modals/ConfirmToast";
+import ConfirmToast from "../../../../components/Modals/ConfirmToast";
 
 const priorities = ["low", "medium", "high"];
 const status = ["todo", "in_progress", "done"];

@@ -1,22 +1,18 @@
 import { useState, useEffect } from "react";
 import apiClient from "../../../../api/apiClient";
-import ConfirmToast from "../../../../components/modals/ConfirmToast";
 
 const priorities = ["low", "medium", "high"];
 const status = ["todo", "in_progress", "done"];
 
-const CreateTaskModal = ({ projectId, onClose, onTaskCreated }) => {
+const EditTaskModal = ({ task, onClose, onUpdated }) => {
   const [labels, setLabels] = useState([]);
-  const [selectedLabels, setSelectedLabels] = useState([]);
-  const [showConfirmToast, setShowConfirmToast] = useState(false);
-  const [skipDateCheck, setSkipDateCheck] = useState(false);
-
+  const [selectedLabels, setSelectedLabels] = useState(task.labels?.map((l) => l.id) || []);
   const [formData, setFormData] = useState({
-    title: "",
-    description: "",
-    priority: "medium",
-    due_date: "",
-    status: "todo",
+    title: task.title || "",
+    description: task.description || "",
+    priority: task.priority || "medium",
+    due_date: task.due_date || "",
+    status: task.status || "todo",
   });
 
   const [errors, setErrors] = useState({});
@@ -51,61 +47,16 @@ const CreateTaskModal = ({ projectId, onClose, onTaskCreated }) => {
     setIsSubmitting(true);
     setErrors({});
 
-    const newErrors = {};
-
-    if (!formData.title.trim()) {
-      newErrors.title = "Title is required.";
-    }
-
-    if (!formData.description.trim() || formData.description.trim().length < 10) {
-      newErrors.description = "Description is required and should be at least 10 characters.";
-    }
-
-    if (formData.due_date) {
-      const selectedDate = new Date(formData.due_date);
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-
-      if (selectedDate < today) {
-        newErrors.due_date = ["Due date cannot be in the past."];
-      }
-    }
-
-    if (!formData.due_date && !skipDateCheck) {
-      setShowConfirmToast(true);
-      setIsSubmitting(false);
-      return;
-    }
-
-
-    if (Object.keys(newErrors).length > 0) {
-      setErrors(newErrors);
-      setIsSubmitting(false);
-      return;
-    }
-
-    // Client-side validation for missing projectId
-    if (!projectId) {
-      setErrors({ general: "Project ID is missing." });
-      setIsSubmitting(false);
-      return;
-    }
-
     try {
       const payload = {
         ...formData,
-        project: projectId,
-        assigned_to: null,
-        due_date: formData.due_date || null,
         label_ids: selectedLabels,
+        due_date: formData.due_date || null,
       };
 
-      const res = await apiClient.post("/api/tasks/", payload);
+      await apiClient.patch(`/api/tasks/${task.id}/`, payload);
 
-      if (onTaskCreated) {
-        onTaskCreated(res.data); // not .results
-      }
-
+      if (onUpdated) onUpdated();
       onClose();
     } catch (error) {
       const response = error?.response?.data;
@@ -125,7 +76,7 @@ const CreateTaskModal = ({ projectId, onClose, onTaskCreated }) => {
           ×
         </button>
 
-        <h2 className="text-xl font-semibold text-[#2F3A4C] mb-4">Create New Task</h2>
+        <h2 className="text-xl font-semibold text-[#2F3A4C] mb-4">Edit Task</h2>
 
         {errors.general && (
           <p className="mb-4 text-sm text-red-600">{errors.general}</p>
@@ -138,17 +89,13 @@ const CreateTaskModal = ({ projectId, onClose, onTaskCreated }) => {
             <input
               type="text"
               name="title"
+              required
               value={formData.title}
               onChange={handleChange}
               className={`mt-1 w-full px-3 py-2 border-2 rounded-lg ${
                 errors.title ? "border-red-500" : "border-gray-200"
               } focus:outline-none focus:ring-2 focus:ring-blue-400`}
             />
-            {errors.title && (
-              <p className="text-red-500 text-sm mt-1">
-                {Array.isArray(errors.title) ? errors.title[0] : errors.title}
-              </p>
-            )}
           </div>
 
           {/* Description */}
@@ -162,13 +109,10 @@ const CreateTaskModal = ({ projectId, onClose, onTaskCreated }) => {
                 errors.description ? "border-red-500" : "border-gray-200"
               } focus:outline-none focus:ring-2 focus:ring-blue-400`}
             />
-            {errors.description && (
-              <p className="text-red-500 text-sm mt-1">{errors.description}</p>
-            )}
           </div>
 
           {/* Due Date & Priority */}
-          <div className="flex gap-4 flex-wrap">
+          <div className="flex gap-4">
             <div className="flex-1 min-w-[140px]">
               <label className="block text-sm font-medium text-gray-700">Due Date</label>
               <input
@@ -184,22 +128,6 @@ const CreateTaskModal = ({ projectId, onClose, onTaskCreated }) => {
               {errors.due_date && (
                 <p className="text-red-500 text-sm mt-1">{errors.due_date[0]}</p>
               )}
-            </div>
-
-            <div className="flex-1 min-w-[140px]">
-              <label className="block text-sm font-medium text-gray-700">Priority</label>
-              <select
-                name="priority"
-                value={formData.priority}
-                onChange={handleChange}
-                className="mt-1 w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
-              >
-                {priorities.map((p) => (
-                  <option key={p} value={p}>
-                    {p.charAt(0).toUpperCase() + p.slice(1)}
-                  </option>
-                ))}
-              </select>
             </div>
 
             <div className="flex-1 min-w-[140px]">
@@ -220,42 +148,55 @@ const CreateTaskModal = ({ projectId, onClose, onTaskCreated }) => {
                 ))}
               </select>
             </div>
+
+            <div className="flex-1 min-w-[140px]">
+              <label className="block text-sm font-medium text-gray-700">Priority</label>
+              <select
+                name="priority"
+                value={formData.priority}
+                onChange={handleChange}
+                className="mt-1 w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
+              >
+                {priorities.map((p) => (
+                  <option key={p} value={p}>
+                    {p.charAt(0).toUpperCase() + p.slice(1)}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
 
           {/* Labels */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Labels</label>
-            {labels.length === 0 ? (
-              <p className="text-sm text-gray-500 italic">No labels available.</p>
-            ) : (
-              <div className="flex flex-wrap gap-2">
-                {labels.map((label) => (
-                  <button
-                    key={label.id}
-                    type="button"
-                    onClick={() => toggleLabel(label.id)}
-                    className={`px-3 py-1 rounded-full text-sm font-medium transition border-2 ${
-                      selectedLabels.includes(label.id)
-                        ? "text-white"
-                        : "text-gray-700"
-                    }`}
-                    style={{
-                      borderColor: label.color,
-                      backgroundColor: selectedLabels.includes(label.id)
-                        ? label.color
-                        : "#fff",
-                      color: selectedLabels.includes(label.id)
-                        ? "#fff"
-                        : label.color,
-                    }}
-                  >
-                    {label.name}
-                  </button>
-                ))}
-              </div>
-            )}
+            <div className="flex flex-wrap gap-2">
+              {labels.map((label) => (
+                <button
+                  key={label.id}
+                  type="button"
+                  onClick={() => toggleLabel(label.id)}
+                  className={`px-3 py-1 rounded-full text-sm font-medium transition border-2 ${
+                    selectedLabels.includes(label.id)
+                      ? "text-white"
+                      : "text-gray-700"
+                  }`}
+                  style={{
+                    borderColor: label.color,
+                    backgroundColor: selectedLabels.includes(label.id)
+                      ? label.color
+                      : "#fff",
+                    color: selectedLabels.includes(label.id)
+                      ? "#fff"
+                      : label.color,
+                  }}
+                >
+                  {label.name}
+                </button>
+              ))}
+            </div>
           </div>
 
+          {/* Errors */}
           {errors.non_field_errors && (
             <div className="mb-4 text-sm text-red-600">
               {errors.non_field_errors.map((err, idx) => (
@@ -276,31 +217,16 @@ const CreateTaskModal = ({ projectId, onClose, onTaskCreated }) => {
             </button>
             <button
               type="submit"
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+              className="px-4 py-2 bg-[#00C4B4] text-white rounded-lg hover:bg-[#009d94] disabled:opacity-50"
               disabled={isSubmitting}
             >
-              {isSubmitting ? "Creating..." : "Create"}
+              {isSubmitting ? "Saving..." : "Save Changes"}
             </button>
           </div>
         </form>
       </div>
-
-
-      {showConfirmToast && (
-        <ConfirmToast
-          message="No due date set. Do you want to continue without setting a due date?"
-          onConfirm={() => {
-            setSkipDateCheck(true);
-            setShowConfirmToast(false);
-            handleSubmit(new Event("submit"));
-          }}
-          onCancel={() => {
-            setShowConfirmToast(false);
-          }}
-        />
-      )}
     </div>
   );
 };
 
-export default CreateTaskModal;
+export default EditTaskModal;

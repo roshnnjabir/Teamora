@@ -14,9 +14,9 @@ import NotFoundState from "../../../components/common/NotFoundState";
 import ComingSoonSection from "../../project/shared/components/ComingSoonSection";
 
 // Modals
-import EditProjectModal from "../../project/manager/modals/EditProjectModal.jsx";
-import ManageMembersModal from "../../project/manager/modals/ManageMembersModal.jsx";
-import CreateTaskModal from "../../../components/modals/ProjectModals/CreateProjectModal.js";
+import EditProjectModal from "../../../domains/project/manager/modals/EditProjectModal";
+import ManageMembersModal from "../../../domains/project/manager/modals/ManageMembersModal";
+import CreateTaskModal from "../../../components/modals/ProjectModals/CreateProjectModal";
 
 // Utils
 import { generateColumns } from "../../../utils/projectUtils";
