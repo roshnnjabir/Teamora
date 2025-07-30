@@ -16,7 +16,7 @@ const CreateProjectModal = ({
     start_date: "",
     end_date: "",
     priority: "medium",
-    assigned_pm: isProjectManager ? currentUser?.id : "",
+    assigned_pm: "",
   });
 
   const [errors, setErrors] = useState({});
