@@ -1,5 +1,7 @@
 from .base import *
 
+ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", default=['localhost'])
+
 DATABASES = {
     "default": {
         "ENGINE": env("POSTGRES_DB_ENGINE"),
@@ -12,6 +14,8 @@ DATABASES = {
 }
 
 DEBUG = env.bool("DEBUG", default=True)
+
+CSRF_TRUSTED_ORIGINS = [f"https://{host}" for host in ALLOWED_HOSTS]
 
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",

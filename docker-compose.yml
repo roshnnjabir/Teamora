@@ -25,6 +25,16 @@ services:
       - DB_PORT=5432
       - REDIS_URL=redis://redis:6379
       - DJANGO_SETTINGS_MODULE=backend.settings.local
+    
+  frontend:
+    build:
+      context: ./frontend
+    container_name: teamora-frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+
 
   celery:
     build:
