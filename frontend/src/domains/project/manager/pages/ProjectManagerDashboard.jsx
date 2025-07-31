@@ -2,7 +2,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { useEffect, useState } from "react";
 import { useNavigate, NavLink } from "react-router-dom";
 import { logoutUser } from "../../../auth/features/authThunks";
-import CreateProjectModal from "../../../../components/modals/ProjectModals/CreateProjectModal.js";
+import CreateProjectModal from "../../../../components/modals/ProjectModals/CreateProjectModal";
 import NotificationPanel from "../../../../components/notifications/NotificationPanel";
 import apiClient from "../../../../api/apiClient";
 

@@ -7,7 +7,7 @@ import Navigation from '../components/landingPage/Navigation';
 import HeroSection from '../components/landingPage/HeroSection';
 import FeaturesSection from '../components/landingPage/FeaturesSection';
 import RoadmapSection from '../components/landingPage/RoadmapSection';
-import SocialProofSection from '../components/LandingPage/SocialProofSection';
+import SocialProofSection from '../components/landingPage/SocialProofSection';
 import EarlyAdopterSection from '../components/landingPage/EarlyAdopterSection';
 import CTASection from '../components/landingPage/CTASection';
 import Footer from '../components/landingPage/Footer';

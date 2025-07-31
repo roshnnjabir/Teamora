@@ -16,7 +16,7 @@ import ComingSoonSection from "../../project/shared/components/ComingSoonSection
 // Modals
 import EditProjectModal from "../../project/manager/modals/EditProjectModal.jsx";
 import ManageMembersModal from "../../project/manager/modals/ManageMembersModal.jsx";
-import CreateTaskModal from "../../../components/modals/ProjectModals/CreateProjectModal.js";
+import CreateTaskModal from "../../../components/modals/ProjectModals/CreateProjectModal.jsx";
 
 // Utils
 import { generateColumns } from "../../../utils/projectUtils";
