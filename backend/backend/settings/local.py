@@ -33,13 +33,6 @@ CORS_ALLOWED_ORIGINS = [
     "http://iphone.localhost:5173",
 ]
 
-CSRF_TRUSTED_ORIGINS = [
-    "http://localhost:5173",
-]
-
-SESSION_COOKIE_DOMAIN = ".localhost"
-CSRF_COOKIE_DOMAIN = ".localhost"
-
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,  # important for Celery to log
@@ -93,5 +86,3 @@ CHANNEL_LAYERS = {
         },
     },
 }
-
-print("LOCAL")

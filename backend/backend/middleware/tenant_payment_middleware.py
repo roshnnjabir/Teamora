@@ -28,6 +28,9 @@ class TenantPaymentMiddleware(MiddlewareMixin):
         if any(request.path.startswith(path) for path in WHITELIST_PATHS):
             return
 
+        if request.path.startswith(settings.STATIC_URL) or request.path.startswith(settings.MEDIA_URL):
+            return
+
         today = datetime.date.today()
         created_on = tenant.created_on or today
 
@@ -51,4 +54,4 @@ class TenantPaymentMiddleware(MiddlewareMixin):
         return JsonResponse({
             "detail": message,
             "code": "payment_required"
-        }, status=403)
+        }, status=402)

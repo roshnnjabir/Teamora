@@ -14,42 +14,52 @@ DATABASES = {
 DEBUG = env.bool("DEBUG", default=False)
 
 ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", default=[
-    "teamora.website",
-    "www.teamora.website",
+    ".teamora.website",
 ])
 
-CSRF_TRUSTED_ORIGINS = [f"https://{host}" for host in ALLOWED_HOSTS]
+CSRF_TRUSTED_ORIGINS = env.list("CSRF_TRUSTED_ORIGINS", default=[
+    "https://*.teamora.website",
+])
 
 CORS_ALLOWED_ORIGINS = env.list("CORS_ALLOWED_ORIGINS", default=[
     "https://teamora.website",
     "https://www.teamora.website",
 ])
 
-CORS_ALLOWED_ORIGIN_REGEXES = [
-    r"^https:\/\/([a-z0-9-]+\.)?chronocrust\.shop$",
-    r"^https:\/\/([a-z0-9-]+\.)?teamora\.vercel\.app$",
-]
+CORS_ALLOWED_ORIGIN_REGEXES = env.list("CORS_ALLOWED_ORIGIN_REGEXES", default=[
+    r"^https:\/\/([a-z0-9-]+\.)?teamora\.website$",
+])
 
-SECURE_SSL_REDIRECT = True
-SESSION_COOKIE_SECURE = True
+SECURE_SSL_REDIRECT = True                # forces all http to https
+SESSION_COOKIE_SECURE = True            
 CSRF_COOKIE_SECURE = True
 
-SECURE_HSTS_SECONDS = 31536000  # 1 year
-SECURE_HSTS_INCLUDE_SUBDOMAINS = True
-SECURE_HSTS_PRELOAD = True
+SECURE_HSTS_SECONDS = 31536000            # 1 year
+SECURE_HSTS_INCLUDE_SUBDOMAINS = True     # (HSTS): tells browsers “always use HTTPS for this domain for X seconds.”
+SECURE_HSTS_PRELOAD = True                # allows your domain to be hard-coded into Chrome/Firefox preload lists.
 
-SESSION_COOKIE_SAMESITE = "None"
-CSRF_COOKIE_SAMESITE = "None"
+SESSION_COOKIE_SAMESITE = "Lax"           # default case
+CSRF_COOKIE_SAMESITE = "Lax"
 
-X_FRAME_OPTIONS = "DENY"
-SECURE_BROWSER_XSS_FILTER = True
-SECURE_CONTENT_TYPE_NOSNIFF = True
+X_FRAME_OPTIONS = "DENY"                  # prevent clickjacking
+SECURE_CONTENT_TYPE_NOSNIFF = True        # block MIME sniffing
+SECURE_REFERRER_POLICY = "same-origin"    # hide tenant URLs when leaving site
+
+CSRF_COOKIE_HTTPONLY = True               # Makes CSRF cookie unreadable by JavaScript.
+
+STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
 SESSION_COOKIE_DOMAIN = ".teamora.website"
 CSRF_COOKIE_DOMAIN = ".teamora.website"
 
-STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
-MEDIA_ROOT = os.path.join(BASE_DIR, "media")
+SIMPLE_JWT.update({
+    "AUTH_COOKIE": "access_token",        # name of access cookie
+    "AUTH_COOKIE_REFRESH": "refresh_token",
+    "AUTH_COOKIE_SECURE": True,
+    "AUTH_COOKIE_HTTP_ONLY": True,
+    "AUTH_COOKIE_PATH": "/",
+    "AUTH_COOKIE_SAMESITE": "None",       # to allow subdomains
+})
 
 LOGGING = {
     'version': 1,

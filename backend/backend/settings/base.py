@@ -5,23 +5,15 @@ from datetime import timedelta
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 env = environ.Env()
-default_env_file = ".env"
 
-if os.getenv("DJANGO_ENV", "development") == "production":
-    default_env_file = ".env.production"
-
-print(f"🔧 Loading environment from: {default_env_file}") 
-
-env.read_env(BASE_DIR / default_env_file)
+env.read_env(BASE_DIR / ".env")
 
 SECRET_KEY = env("SECRET_KEY")
 DEBUG = env.bool("DEBUG", default=False)
-DJANGO_ENV = env("DJANGO_ENV", default="development")
-IS_PRODUCTION = DJANGO_ENV == "production"
 
 CORS_ALLOW_CREDENTIALS = True
 
-CORS_ALLOW_METHODS = ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH']
+CORS_ALLOW_METHODS = ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS',     'PATCH']
 
 SHARED_APPS = [
     'django_tenants',
@@ -70,6 +62,7 @@ CELERY_TASK_SERIALIZER = "json"
 
 TENANT_MODEL = "tenants.Client"
 TENANT_DOMAIN_MODEL = "tenants.Domain"
+DEFAULT_TENANT_DOMAIN = env("DEFAULT_TENANT_DOMAIN")
 
 DATABASE_ROUTERS = (
     'django_tenants.routers.TenantSyncRouter',
@@ -170,4 +163,5 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+MEDIA_ROOT = os.path.join(BASE_DIR, "media")
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
