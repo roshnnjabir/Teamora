@@ -54,6 +54,8 @@ services:
   db:
     image: postgres:17
     container_name: teamora-db
+    env_file:
+      - ./backend/.env
     volumes:
       - postgres_data:/var/lib/postgresql/data/
     ports:
