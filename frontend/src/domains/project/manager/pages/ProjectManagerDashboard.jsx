@@ -1,8 +1,9 @@
 import { useDispatch, useSelector } from "react-redux";
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, NavLink } from "react-router-dom";
 import { logoutUser } from "../../../auth/features/authThunks";
 import CreateProjectModal from "../../../../components/modals/ProjectModals/CreateProjectModal";
+import NotificationPanel from "../../../../components/notifications/NotificationPanel";
 import apiClient from "../../../../api/apiClient";
 
 const PmDashboard = () => {
@@ -89,10 +90,11 @@ const PmDashboard = () => {
         <h2 className="text-2xl font-bold">Manager Panel</h2>
         <nav className="space-y-4">
           <a href="#" className="block hover:text-[#00C4B4]">Dashboard</a>
-          <a href="#" className="block hover:text-[#00C4B4]">Projects</a>
-          <a href="#" className="block hover:text-[#00C4B4]">Teams</a>
-          <a href="#" className="block hover:text-[#00C4B4]">Reports</a>
+          <NavLink to="/profile" className="block hover:text-[#00C4B4]">
+            Profile
+          </NavLink>
         </nav>
+
         <button
           onClick={handleLogout}
           className="mt-auto w-full bg-[#00C4B4] hover:bg-teal-600 text-white py-2 rounded transition"
@@ -103,7 +105,11 @@ const PmDashboard = () => {
 
       {/* Main Content */}
       <main className="flex-1 p-10">
-        <h1 className="text-3xl font-bold text-[#2F3A4C] mb-2">Project Manager Dashboard</h1>
+        <div className="flex justify-between items-center mb-2">
+          <h1 className="text-3xl font-bold text-[#2F3A4C]">Project Manager Dashboard</h1>
+          <NotificationPanel />
+        </div>
+
         <p className="text-[#2F3A4C] mb-6">Welcome, Project Manager! Here's your overview.</p>
 
         {/* Create Button */}
@@ -284,6 +290,13 @@ const PmDashboard = () => {
           )}
         </section>
       </main>
+      <NavLink
+        to="/chat"
+        className="fixed bottom-6 right-6 bg-[#00C4B4] text-white px-4 py-3 rounded-full shadow-lg hover:bg-teal-600 transition flex items-center space-x-2 z-50"
+      >
+        <span>💬</span>
+        <span className="font-semibold">Chat</span>
+      </NavLink>
     </div>
   );
 };

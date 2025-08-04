@@ -3,7 +3,7 @@ import { DragDropContext } from "@hello-pangea/dnd";
 import ScrollContainer from "../../../../components/common/ScrollContainer";
 import TaskColumn from "./TaskColumn";
 import DeleteZone from "./DeleteZone";
-import SubtaskModal from "./SubtaskModal";
+import CreateSubtaskModal from "./CreateSubtaskModal";
 import apiClient from "../../../../api/apiClient";
 
 // Statistics Component
@@ -145,6 +145,7 @@ const EmptyState = () => (
 const SubtaskAssignmentSection = ({
   projectId,
   isProjectActive,
+  isTenantAdmin,
   columns = {},
   columnOrder = [],
   isDragging = false,
@@ -158,14 +159,19 @@ const SubtaskAssignmentSection = ({
   const [tasks, setTasks] = useState([]);
   const [developers, setDevelopers] = useState([]);
 
+  const [selectedTaskId, setSelectedTaskId] = useState(null);
+
   const handleOpenSubtaskModal = async () => {
     try {
       const [taskRes, devRes] = await Promise.all([
         apiClient.get(`/api/projects/${projectId}/tasks/`),
         apiClient.get(`/api/my-developers/?project_id=${projectId}`)
       ]);
-      setTasks(taskRes.data);
-      setDevelopers(devRes.data);
+
+      const fetchedTasks = taskRes.data || [];
+      setTasks(fetchedTasks);
+      setDevelopers(devRes.data || []);
+      setSelectedTaskId(fetchedTasks.length > 0 ? fetchedTasks[0].id : null);
       setShowSubtaskModal(true);
     } catch (err) {
       console.error("Failed to fetch tasks or developers", err);
@@ -235,7 +241,7 @@ const SubtaskAssignmentSection = ({
     return Object.values(processedColumns).reduce((sum, col) => sum + (col?.items?.length || 0), 0);
   }, [processedColumns]);
 
-  const handleCreateSubtask = async (form) => {
+  const handleSubtaskCreated = async (form) => {
     try {
       const res = await apiClient.post(`/api/subtasks/`, {
         title: form.title,
@@ -282,36 +288,35 @@ const SubtaskAssignmentSection = ({
         </div>
 
         <div className="flex items-center gap-3">
-          <button
-            onClick={async () => {
-              if (!isProjectActive) return;
-              await handleOpenSubtaskModal();
-            }}
-            disabled={!isProjectActive}
-            className={`px-4 py-2 rounded-lg transition-colors flex items-center space-x-2 shadow-sm ${
-              isProjectActive 
-                ? "bg-[#00C4B4] hover:bg-teal-600 text-white"
-                : "bg-gray-300 text-gray-500 cursor-not-allowed"
-            }`}
-            title={isProjectActive ? "Create new subtask" : "Project is inactive"}
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-            </svg>
-            <span>New Subtask</span>
-          </button>
+            {!isTenantAdmin && (
+              <button
+                onClick={async () => {
+                  if (!isProjectActive) return;
+                  await handleOpenSubtaskModal();
+                }}
+                disabled={!isProjectActive}
+                className={`px-4 py-2 rounded-lg transition-colors flex items-center space-x-2 shadow-sm ${
+                  isProjectActive
+                    ? "bg-[#00C4B4] hover:bg-teal-600 text-white"
+                    : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                }`}
+                title={isProjectActive ? "Create new subtask" : "Project is inactive"}
+              >
+                Create Subtask
+              </button>
+            )}
         </div>
       </div>
 
       {/* Assignment Statistics */}
-      {hasSubtasks && (
+      {!isTenantAdmin && hasSubtasks && (
         <div className="mb-6 p-4 bg-gray-50 rounded-lg">
           <AssignmentStats columns={processedColumns} totalSubtasks={totalSubtasks} />
         </div>
       )}
 
       {/* View Controls */}
-      {hasSubtasks && (
+      {!isTenantAdmin && hasSubtasks && (
         <ViewControls
           showCompletedTasks={showCompletedTasks}
           onToggleCompleted={setShowCompletedTasks}
@@ -322,19 +327,19 @@ const SubtaskAssignmentSection = ({
         />
       )}
 
-      <SubtaskModal
-        show={showSubtaskModal}
-        onClose={handleCloseSubtaskModal}
-        tasks={tasks}
-        developers={developers}
-        onSubmit={handleCreateSubtask}
-      />
+      {!isTenantAdmin && showSubtaskModal && (
+        <CreateSubtaskModal
+          projectId={projectId}
+          onClose={handleCloseSubtaskModal}
+          onCreated={handleSubtaskCreated}
+        />
+      )}
 
       {/* Drag Instructions */}
       <DragInstructions isDragging={isDragging} hasSubtasks={hasSubtasks} />
 
       {/* Drag and Drop Context */}
-      {hasSubtasks ? (
+      {!isTenantAdmin && hasSubtasks ? (
         <DragDropContext onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
           <div className="relative">
             <ScrollContainer>

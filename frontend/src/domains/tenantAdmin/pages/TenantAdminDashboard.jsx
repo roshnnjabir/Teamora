@@ -2,11 +2,13 @@ import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { logoutUser } from "../../auth/features/authThunks";
 import { format } from "date-fns";
+import { NavLink } from "react-router-dom";
 import apiClient from "../../../api/apiClient";
 import PMDeveloperAssignmentManager from "../components/PMDeveloperAssignmentManager";
 import EmployeeFormModal from "../modals/EmployeeFormModal";
 import CreateProjectModal from "../../../components/modals/ProjectModals/CreateProjectModal";
 import SubtaskBlockToast from "../../../components/Modals/SubTaskBlockToast";
+import NotificationPanel from "../../../components/notifications/NotificationPanel";
 import { useNavigate } from "react-router-dom";
 
 
@@ -203,7 +205,9 @@ const TenantAdminDashboard = () => {
         <h2 className="text-2xl font-bold">Admin Panel</h2>
         <nav className="space-y-4">
           <a href="#" className="block hover:text-[#00C4B4]">Dashboard</a>
-          <a href="#" className="block hover:text-[#00C4B4]">Employees</a>
+          <NavLink to="/profile" className="block hover:text-[#00C4B4]">
+            Profile
+          </NavLink>
         </nav>
         <button
           onClick={handleLogout}
@@ -215,9 +219,12 @@ const TenantAdminDashboard = () => {
 
       {/* Main */}
       <main className="flex-1 p-10">
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold">Tenant Admin Dashboard</h1>
-          <p className="text-[#2F3A4C]">Manage your employees here.</p> 
+        <div className="mb-6 flex justify-between items-center">
+          <div>
+            <h1 className="text-3xl font-bold">Tenant Admin Dashboard</h1>
+            <p className="text-[#2F3A4C]">Manage your employees here.</p> 
+          </div>
+          <NotificationPanel />
         </div>
 
         {notification.message && (
@@ -334,31 +341,75 @@ const TenantAdminDashboard = () => {
         ) : projects.length === 0 ? (
           <p>No projects found.</p>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {projects.map((project) => (
-              <div
-                key={project.id}
-                onClick={() => navigate?.(`/tenant_admin/projects/${project.id}`)}
-                className="bg-white p-4 rounded shadow border border-[#E5E8EC] hover:bg-[#F3F4F6] cursor-pointer transition"
-              >
-                <div className="flex justify-between items-center mb-2">
-                  <h3 className="text-lg font-bold">{project.name}</h3>
-                  <span className="text-sm px-2 py-1 rounded-full bg-blue-100 text-blue-600 capitalize">
-                    {project.status || "planning"}
-                  </span>
+          <>
+            {/* Active Projects */}
+            <div className="mb-10">
+              <h3 className="text-xl font-semibold text-[#2F3A4C] mb-3">🟢 Active Projects</h3>
+              {projects.filter((p) => p.is_active).length === 0 ? (
+                <p className="text-sm text-[#B0B8C5]">No active projects.</p>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {projects.filter((p) => p.is_active).map((project) => (
+                    <div
+                      key={project.id}
+                      onClick={() => navigate(`/tenant_admin/projects/${project.id}`)}
+                      className="bg-white p-4 rounded shadow border border-[#E5E8EC] hover:bg-[#F3F4F6] cursor-pointer transition"
+                    >
+                      <div className="flex justify-between items-center mb-2">
+                        <h3 className="text-lg font-bold">{project.name}</h3>
+                        <span className="text-sm px-2 py-1 rounded-full bg-blue-100 text-blue-600 capitalize">
+                          {project.status || "planning"}
+                        </span>
+                      </div>
+                      <p className="text-sm text-gray-600 mb-4">
+                        {project.description?.slice(0, 100)}...
+                      </p>
+                      <p className="text-sm text-gray-500">
+                        📅 {project.start_date} - {project.end_date || "N/A"}
+                      </p>
+                      <p className="text-sm mt-1">
+                        🔥 Priority: <strong>{project.priority || "medium"}</strong>
+                      </p>
+                    </div>
+                  ))}
                 </div>
-                <p className="text-sm text-gray-600 mb-4">
-                  {project.description?.slice(0, 100)}...
-                </p>
-                <p className="text-sm text-gray-500">
-                  📅 {project.start_date} - {project.end_date || "N/A"}
-                </p>
-                <p className="text-sm mt-1">
-                  🔥 Priority: <strong>{project.priority || "medium"}</strong>
-                </p>
-              </div>
-            ))}
-          </div>
+              )}
+            </div>
+            
+            {/* Inactive Projects */}
+            <div>
+              <h3 className="text-xl font-semibold text-[#2F3A4C] mb-3">⚪ Inactive Projects</h3>
+              {projects.filter((p) => !p.is_active).length === 0 ? (
+                <p className="text-sm text-[#B0B8C5]">No inactive projects.</p>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {projects.filter((p) => !p.is_active).map((project) => (
+                    <div
+                      key={project.id}
+                      onClick={() => navigate(`/tenant_admin/projects/${project.id}`)}
+                      className="bg-white p-4 rounded shadow border border-[#E5E8EC] hover:bg-gray-100 cursor-pointer transition opacity-70"
+                    >
+                      <div className="flex justify-between items-center mb-2">
+                        <h3 className="text-lg font-bold">{project.name}</h3>
+                        <span className="text-sm px-2 py-1 rounded-full bg-gray-200 text-gray-700 capitalize">
+                          {project.status || "planning"}
+                        </span>
+                      </div>
+                      <p className="text-sm text-gray-600 mb-4">
+                        {project.description?.slice(0, 100)}...
+                      </p>
+                      <p className="text-sm text-gray-500">
+                        📅 {project.start_date} - {project.end_date || "N/A"}
+                      </p>
+                      <p className="text-sm mt-1">
+                        🔥 Priority: <strong>{project.priority || "medium"}</strong>
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </>
         )}
 
         {showCreateModal && (
@@ -430,20 +481,21 @@ const TenantAdminDashboard = () => {
             <p>No labels created yet.</p>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-              {labels.map((label) => (
-                <div
-                  key={label.id}
-                  className="flex items-center justify-between p-4 border rounded shadow bg-white"
-                >
-                  <div className="flex items-center gap-2">
-                    <div
-                      className="w-5 h-5 rounded-full"
-                      style={{ backgroundColor: label.color }}
-                    ></div>
-                    <span className="font-medium">{label.name}</span>
-                  </div>
-                </div>
-              ))}
+              <div className="flex flex-wrap gap-2">
+                {labels.map((label) => (
+                  <span
+                    key={label.id}
+                    className="px-3 py-1 rounded-full text-sm font-medium border-2"
+                    style={{
+                      borderColor: label.color,
+                      backgroundColor: label.color + "20",
+                      color: label.color,
+                    }}
+                  >
+                    {label.name}
+                  </span>
+                ))}
+              </div>
             </div>
           )}
         </section>
@@ -451,7 +503,7 @@ const TenantAdminDashboard = () => {
         <section className="mt-10">
           <h2 className="text-xl font-semibold mb-4">Project Manager Assignment History</h2>
           <h3 className="text-lg font-medium mb-2">Filter Logs</h3>
-          <div className="flex flex-wrap gap-4">
+          <div className="flex flex-wrap gap-4 mb-4">
             <select
               onChange={(e) => fetchAuditLogs({ developer: e.target.value || undefined })}
               className="border p-2 rounded"
