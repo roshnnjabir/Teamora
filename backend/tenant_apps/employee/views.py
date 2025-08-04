@@ -1,7 +1,7 @@
 from rest_framework import generics, viewsets
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
-from tenant_apps.employee.serializers import EmployeeSerializer, SetPasswordSerializer
+from tenant_apps.employee.serializers import EmployeeSerializer, SetPasswordSerializer, UserProfileSerializer
 from tenant_apps.employee.models import Employee
 from core.permissions import IsTenantAdmin
 from core.constants import UserRoles
@@ -11,6 +11,21 @@ from tenant_apps.employee.tasks.email_tasks import send_set_password_email_task
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework import status
+
+
+class UserProfileView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        serializer = UserProfileSerializer(request.user)
+        return Response(serializer.data)
+
+    def put(self, request):
+        serializer = UserProfileSerializer(request.user, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class EmployeeViewSet(viewsets.ModelViewSet):

@@ -24,10 +24,13 @@ CSRF_TRUSTED_ORIGINS = [f"https://{host}" for host in ALLOWED_HOSTS]
 
 CORS_ALLOW_CREDENTIALS = True
 
+CORS_ALLOW_METHODS = ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH']
+
 SHARED_APPS = [
     'django_tenants',
     'shared_apps.tenants',
     'shared_apps.custom_auth',
+    'shared_apps.billing',
 
     'rest_framework',
     'django_filters',
@@ -51,6 +54,7 @@ TENANT_APPS = [
     'tenant_apps.project_management',
     'tenant_apps.employee',
     'tenant_apps.communication',
+    'tenant_apps.notifications',
 
     'django.contrib.contenttypes',
     'django.contrib.sessions',
@@ -79,11 +83,14 @@ PUBLIC_SCHEMA_NAME = 'public'
 PUBLIC_SCHEMA_URLCONF = "shared_apps.tenants.urls"
 
 MIDDLEWARE = [
+    'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django_tenants.middleware.TenantMiddleware',
-
+    
     'corsheaders.middleware.CorsMiddleware',
 
-    'django.middleware.security.SecurityMiddleware',
+    'backend.middleware.tenant_payment_middleware.TenantPaymentMiddleware',
+
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -147,6 +154,10 @@ AUTH_PASSWORD_VALIDATORS = [
         'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
     },
 ]
+
+STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY")
+STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET")
+FRONTEND_URL = os.getenv("FRONTEND_URL")
 
 EMAIL_BACKEND = env("EMAIL_BACKEND")
 EMAIL_HOST = env("EMAIL_HOST")

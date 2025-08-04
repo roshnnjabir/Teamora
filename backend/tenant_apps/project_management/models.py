@@ -101,6 +101,11 @@ class Subtask(models.Model):
             )
         ]
 
+    @property
+    def schema_name(self):
+        return self.task.project.created_by.user.tenant.schema_name
+
+
     def __str__(self):
         return self.title
 

@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Action Required: Subtask Blocking Unassignment</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@400;600;700;800&display=swap');
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background-color: #F9FAFB;
+      font-family: 'Nunito Sans', sans-serif;
+      color: #2F3A4C;
+      padding: 24px;
+    }
+
+    .email-wrapper {
+      max-width: 600px;
+      margin: 0 auto;
+      background: #ffffff;
+      border-radius: 16px;
+      box-shadow: 0 6px 24px rgba(0, 0, 0, 0.06);
+      overflow: hidden;
+      border: 1px solid #E5E8EC;
+    }
+
+    .header {
+      background: linear-gradient(135deg, #1A2A44, #2F3A4C);
+      color: #ffffff;
+      text-align: center;
+      padding: 40px 30px 30px;
+    }
+
+    .logo {
+      background: #00C4B4;
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-weight: 800;
+      font-size: 20px;
+      color: white;
+      margin: 0 auto 12px;
+      box-shadow: 0 4px 12px rgba(0, 196, 180, 0.3);
+    }
+
+    .brand-name {
+      font-size: 28px;
+      font-weight: 800;
+      margin-bottom: 12px;
+    }
+
+    .subtitle {
+      font-size: 16px;
+      opacity: 0.9;
+    }
+
+    .section {
+      padding: 32px 30px;
+    }
+
+    .section h2 {
+      font-size: 20px;
+      font-weight: 700;
+      margin-bottom: 12px;
+    }
+
+    .section p {
+      font-size: 15px;
+      line-height: 1.7;
+      margin-bottom: 24px;
+    }
+
+    .project-list {
+      background: #F9FAFB;
+      border-left: 4px solid #00C4B4;
+      padding: 20px;
+      border-radius: 12px;
+      margin-bottom: 24px;
+    }
+
+    .project-list ul {
+      list-style-type: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    .project-list li {
+      background: #ffffff;
+      border: 1px solid #E5E8EC;
+      border-radius: 8px;
+      padding: 10px 14px;
+      margin-bottom: 10px;
+      font-size: 14px;
+      font-weight: 600;
+      color: #1A2A44;
+    }
+
+    .footer {
+      background: #1A2A44;
+      color: #F9FAFB;
+      text-align: center;
+      padding: 24px 20px;
+      font-size: 13px;
+    }
+
+    .footer a {
+      color: #00C4B4;
+      text-decoration: none;
+      margin: 0 8px;
+      font-weight: 500;
+    }
+
+    .footer a:hover {
+      color: #34D399;
+    }
+
+  </style>
+</head>
+<body>
+  <div class="email-wrapper">
+
+    <!-- Header -->
+    <div class="header">
+      <div class="logo">T</div>
+      <div class="brand-name">Teamora</div>
+      <p class="subtitle">Action Required: Developer Unassignment Blocked</p>
+    </div>
+
+    <!-- Main Section -->
+    <div class="section">
+      <h2>👋 Hello {{ pm_name }},</h2>
+      <p>
+        The Tenant Admin attempted to unassign developer <strong>{{ developer_name }}</strong> from your team.
+        However, this action was blocked because they still have <strong>active subtasks</strong> in the following project(s) under your management:
+      </p>
+
+      <div class="project-list">
+        <ul>
+          {% for project in project_names %}
+            <li>{{ project }}</li>
+          {% endfor %}
+        </ul>
+      </div>
+
+      <p>
+        Please reassign, unassign, or complete these subtasks in order to proceed with the developer's unassignment.
+      </p>
+
+      <p>
+        If you have any questions or need assistance, feel free to contact your Tenant Admin or reach out to support.
+      </p>
+
+      <p style="margin-top: 24px;">Thanks,<br/><strong>Team Teamora</strong></p>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+      <p>Need help? <a href="#">Support</a> | <a href="#">Docs</a> | <a href="#">Contact Us</a></p>
+      <p style="margin-top: 12px; font-size: 12px; opacity: 0.6;">© 2025 Teamora Inc. All rights reserved.</p>
+    </div>
+
+  </div>
+</body>
+</html>

@@ -9,6 +9,6 @@ class IsAssignedDeveloperOrReadOnly(BasePermission):
         user = request.user
         if request.method in SAFE_METHODS:
             return True
-        if user.is_tenant_admin() or user.role == UserRoles.PROJECT_MANAGER:
+        if user.role == UserRoles.TENANT_ADMIN or user.role == UserRoles.PROJECT_MANAGER:
             return True
         return obj.assigned_to and obj.assigned_to.user == user

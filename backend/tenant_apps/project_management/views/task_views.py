@@ -15,7 +15,8 @@ from rest_framework.decorators import action
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import IsAuthenticated
 
-from tenant_apps.employee.models import Employee, Notification
+from tenant_apps.employee.models import Employee
+from tenant_apps.notifications.tasks.notification_tasks import send_notification_task
 from tenant_apps.project_management.models import (
     Project, Task, Subtask,
     SubtaskAssignmentAudit, Label,
@@ -136,6 +137,20 @@ class SubtaskViewSet(viewsets.ModelViewSet):
         logger.warning(f"Access denied for user {user} on subtask {obj.id}")
         raise PermissionDenied("You do not have permission to access this subtask.")
 
+    def create(self, request, *args, **kwargs):
+        response = super().create(request, *args, **kwargs)
+        subtask = Subtask.objects.get(id=response.data['id'])
+    
+        # Notify if subtask is assigned on creation
+        if subtask.assigned_to:
+            send_notification_task.delay(
+                schema_name=subtask.schema_name,
+                recipient_id=subtask.assigned_to.id,
+                message=f"You have been assigned a new subtask: {subtask.title}",
+                url=f"/subtasks/{subtask.id}/"
+            )
+        return response
+
     def partial_update(self, request, *args, **kwargs):
         instance = self.get_object()
         ensure_project_is_active(instance.task.project)
@@ -158,8 +173,9 @@ class SubtaskViewSet(viewsets.ModelViewSet):
         response = super().partial_update(request, *args, **kwargs)
     
         # Log reassignment only if 'assigned_to' changed
-        new_assignee_id = request.data.get('assigned_to')
-        if 'assigned_to' in request.data:
+        new_assignee_id = request.data.get('assigned_to_id')
+        if 'assigned_to_id' in request.data:
+            logger.warning("🔔 Reassignment logic triggered")
             new_assignee = None
             if new_assignee_id:
                 try:
@@ -168,13 +184,41 @@ class SubtaskViewSet(viewsets.ModelViewSet):
                     pass
     
             if previous_assignee != new_assignee:
+                project_title = subtask.task.project.name
+                task_title = subtask.task.title
+                subtask_title = subtask.title
+
                 SubtaskAssignmentAudit.objects.create(
                     subtask=subtask,
                     previous_assignee=previous_assignee,
                     new_assignee=new_assignee,
                     changed_by=request.user
                 )
-    
+                
+                # Notify previous assignee (if any)
+                if previous_assignee:
+                    send_notification_task.delay(
+                        schema_name=subtask.schema_name,
+                        recipient_id=previous_assignee.id,
+                        message=(
+                            f"You have been unassigned from subtask: '{subtask_title}' "
+                            f"in task: '{task_title}' under project: '{project_title}'."
+                        ),
+                        url=f"/subtasks/{subtask.id}/"
+                    )
+
+
+                # Notify new assignee (if any)
+                if new_assignee:
+                    send_notification_task.delay(
+                        schema_name=subtask.schema_name,
+                        recipient_id=new_assignee.id,
+                        message=(
+                            f"You have been assigned to subtask: '{subtask_title}' "
+                            f"in task: '{task_title}' under project: '{project_title}'."
+                        ),
+                        url=f"/subtasks/{subtask.id}/"
+                    )
         return response
 
     def destroy(self, request, *args, **kwargs):
