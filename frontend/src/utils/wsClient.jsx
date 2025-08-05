@@ -1,7 +1,7 @@
 import { getSubdomain } from './domainUtils';
 
 export function createWebSocket(path = "/ws/") {
-  const protocol = import.meta.env.VITE_PROTOCOL === "https" ? "wss" : "ws";
+  const protocol = window.location.protocol === "https:" ? "wss" : "ws";
   const isDev = window.location.hostname === "localhost" || window.location.hostname.endsWith(".localhost");
 
   let host;
@@ -17,5 +17,6 @@ export function createWebSocket(path = "/ws/") {
   }
 
   const wsUrl = `${protocol}://${host}${path}`;
+  console.log("🌐 WebSocket connecting to:", wsUrl);
   return new WebSocket(wsUrl);
 }
