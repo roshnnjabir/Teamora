@@ -26,7 +26,7 @@ def send_set_password_email_task(user_id, token):
     domain_obj = Domain.objects.filter(tenant=user.tenant).first()
     domain = domain_obj.domain if domain_obj else getattr(settings, "DEFAULT_TENANT_DOMAIN", "localhost")
 
-    reset_url = f"http://{domain}:5173/set-password/{uid}/{token}"
+    reset_url = f"http://{domain}/set-password/{uid}/{token}"
 
     # Switch to the correct tenant schema to access the Employee model
     with schema_context(user.tenant.schema_name):

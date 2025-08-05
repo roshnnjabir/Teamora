@@ -27,7 +27,7 @@ def send_otp_email_task(subject, otp_code, recipient_list):
 @shared_task
 def send_tenant_created_email_task(to_email, tenant_domain):
     subject = "🎉 Your Teamora Tenant is Ready!"
-    login_url = f"http://{tenant_domain}:5173/login"
+    login_url = f"http://{tenant_domain}/login"
 
     html_message = render_to_string('emails/tenant_created.html', {
         'tenant_domain': tenant_domain,
