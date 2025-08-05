@@ -1,7 +1,7 @@
 import { useState, useEffect, useReducer, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 
-const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+const BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 const RATE_LIMITS = {
   OTP_COOLDOWN: 60000, // 1 minute
