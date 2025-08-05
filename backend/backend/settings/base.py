@@ -23,6 +23,7 @@ SHARED_APPS = [
 
     'rest_framework',
     'django_filters',
+    'django_extensions',
     'corsheaders',
 
     'channels',

@@ -28,6 +28,7 @@ Django==5.2.1
 django-celery-beat==2.8.1
 django-cors-headers==4.7.0
 django-environ==0.12.0
+django-extensions==4.1
 django-filter==25.1
 django-tenants==3.8.0
 django-timezone-field==7.1
