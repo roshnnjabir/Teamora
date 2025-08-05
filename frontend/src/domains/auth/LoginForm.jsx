@@ -21,7 +21,7 @@ export default function LoginForm() {
   const navigate = useNavigate();
   const hostname = window.location.hostname;
   const isRootDomain =
-    hostname === 'chronocrust.shop' || hostname === 'localhost';
+    hostname === 'teamora.website' || hostname === 'localhost';
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -56,7 +56,7 @@ export default function LoginForm() {
       switch (user.role) {
         case 'super_admin':
           if (!isRootDomain) {
-            setError("Super Admin must log in from chronocrust.shop");
+            setError("Super Admin must log in from teamora.website");
             return;
           }
           navigate('/super_admin');

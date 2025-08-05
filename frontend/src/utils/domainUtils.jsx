@@ -1,4 +1,4 @@
-const ROOT_DOMAIN = import.meta.env.VITE_ROOT_DOMAIN || 'chronocrust.shop';
+const ROOT_DOMAIN = import.meta.env.VITE_ROOT_DOMAIN || 'teamora.website';
 
 export const isSubdomain = () => {
   const host = window.location.hostname;

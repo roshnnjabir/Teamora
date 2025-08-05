@@ -220,7 +220,7 @@ export default function TenantSignup() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          subdomain: `${state.formData.subdomain}.localhost`,
+          subdomain: `${state.formData.subdomain}.teamora.website`,
           tenant_name: state.formData.tenantName,
         }),
       });
@@ -340,7 +340,7 @@ export default function TenantSignup() {
     try {
       const payload = {
         tenant_name: state.formData.tenantName,
-        domain_url: `${state.formData.subdomain}.localhost`,
+        domain_url: `${state.formData.subdomain}.teamora.website`,
         email: state.formData.email,
         password: state.formData.password,
         full_name: state.formData.fullName,
