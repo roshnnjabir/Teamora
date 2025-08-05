@@ -30,7 +30,7 @@ CORS_ALLOWED_ORIGIN_REGEXES = env.list("CORS_ALLOWED_ORIGIN_REGEXES", default=[
     r"^https:\/\/([a-z0-9-]+\.)?teamora\.website$",
 ])
 
-SECURE_SSL_REDIRECT = True                # forces all http to https
+# SECURE_SSL_REDIRECT = True                # forces all http to https
 SESSION_COOKIE_SECURE = True            
 CSRF_COOKIE_SECURE = True
 
