@@ -80,13 +80,11 @@ class CheckTenantAvailabilityView(APIView):
     permission_classes = [AllowAny]
 
     def post(self,  request):
-        subdomain_input = request.data.get('subdomain', '').strip().lower()
+        subdomain = request.data.get('subdomain', '').strip().lower()
         tenant_name = request.data.get('tenant_name', '').strip()
 
         if not tenant_name:
             return Response({'detail': 'Tenant name is required'}, status=status.HTTP_400_BAD_REQUEST)
-        
-        subdomain = subdomain_input.split(".")[0] if subdomain_input else ""
 
         valid, error = is_valid_subdomain(subdomain)
         if not valid:

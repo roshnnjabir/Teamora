@@ -9,6 +9,8 @@ def is_valid_subdomain(name: str) -> (bool, str):
     if not name:
         return False, "Subdomain is required."
 
+    name = name.split(".")[0]
+
     # Must be lowercase letters, numbers, hyphens only
     if not re.match(r"^(?!-)[a-z0-9-]{1,63}(?<!-)$", name):
         return False, "Invalid subdomain format."
