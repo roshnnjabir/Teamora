@@ -8,6 +8,7 @@ from rest_framework.authentication import SessionAuthentication, BasicAuthentica
 from shared_apps.tenants.models import Client, Domain
 from shared_apps.tenants.tasks.email_tasks import send_otp_email_task
 from shared_apps.tenants.serializers import TenantSignupSerializer
+from shared_apps.tenants.utils import is_valid_subdomain
 from shared_apps.custom_auth.models import User
 
 from django_tenants.utils import schema_context, get_tenant_model, get_tenant_domain_model
@@ -33,6 +34,11 @@ class TenantSignupView(APIView):
         email = request.data.get('email', '').strip().lower()
         if not cache.get(f'otp_verified_{email}'):
             return Response({"detail": "OTP not verified."}, status=status.HTTP_400_BAD_REQUEST)
+
+        subdomain = request.data.get('subdomain', '').strip().lower()
+        valid, error = is_valid_subdomain(subdomain)
+        if not valid:
+            return Response({'detail': error}, status=status.HTTP_400_BAD_REQUEST)
 
         serializer = TenantSignupSerializer(data=request.data)
         if serializer.is_valid():
@@ -74,13 +80,17 @@ class CheckTenantAvailabilityView(APIView):
     permission_classes = [AllowAny]
 
     def post(self,  request):
-        subdomain = request.data.get('subdomain', '').strip().lower()
+        subdomain_input = request.data.get('subdomain', '').strip().lower()
         tenant_name = request.data.get('tenant_name', '').strip()
 
-        if not subdomain:
-            return Response({'detail': 'Subdomain is required'}, status=status.HTTP_400_BAD_REQUEST)
-        elif not tenant_name:
+        if not tenant_name:
             return Response({'detail': 'Tenant name is required'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        subdomain = subdomain_input.split(".")[0] if subdomain_input else ""
+
+        valid, error = is_valid_subdomain(subdomain)
+        if not valid:
+            return Response({'detail': error}, status=status.HTTP_400_BAD_REQUEST)
 
         domain_exist = Domain.objects.filter(domain=subdomain).exists()
         tenant_name_exist = Client.objects.filter(name__iexact=tenant_name).exists()

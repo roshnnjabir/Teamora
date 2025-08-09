@@ -56,6 +56,12 @@ INSTALLED_APPS = SHARED_APPS + [app for app in TENANT_APPS if app not in SHARED_
 
 ASGI_APPLICATION = "backend.asgi.application"
 
+RESERVED_SUBDOMAINS = [
+    "www", "mail", "ftp", "smtp", "imap", "pop",
+    "api", "admin", "root", "support", "help", "blog",
+    "dashboard", "test", "stage", "staging", "demo",
+]
+
 # Celery Settings
 CELERY_BROKER_URL = "redis://redis:6379/0"
 CELERY_ACCEPT_CONTENT = ["json"]
