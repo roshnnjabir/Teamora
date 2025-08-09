@@ -53,7 +53,6 @@ const initialState = {
     password: '',
   },
   currentStep: 0,
-  loading: false,
   errors: {},
   success: '',
   emailVerified: false,
@@ -65,6 +64,9 @@ const initialState = {
   subdomainChecking: false,
   subdomainAvailable: null,
   tenantNameAvailable: null,
+
+  otpLoading: false,
+  signupLoading: false,
 };
 
 const reducer = (state, action) => {
@@ -79,8 +81,10 @@ const reducer = (state, action) => {
       return { ...state, errors: { ...state.errors, [action.field]: action.error } };
     case 'CLEAR_ERRORS':
       return { ...state, errors: {} };
-    case 'SET_LOADING':
-      return { ...state, loading: action.value };
+    case 'SET_OTP_LOADING':
+      return { ...state, otpLoading: action.value };
+    case 'SET_SIGNUP_LOADING':
+      return { ...state, signupLoading: action.value };
     case 'SET_SUCCESS':
       return { ...state, success: action.message };
     case 'SET_STEP':
@@ -261,7 +265,7 @@ export default function TenantSignup() {
   const handleSendOtp = async () => {
     if (!canSendOtp()) return;
 
-    dispatch({ type: 'SET_LOADING', value: true });
+    dispatch({ type: 'SET_OTP_LOADING', value: true });
     dispatch({ type: 'CLEAR_ERRORS' });
 
     try {
@@ -286,7 +290,7 @@ export default function TenantSignup() {
       dispatch({ type: 'SET_ERROR', field: 'email', error: getErrorMessage(error) });
       dispatch({ type: 'INCREMENT_OTP_ATTEMPTS' });
     } finally {
-      dispatch({ type: 'SET_LOADING', value: false });
+      dispatch({ type: 'SET_OTP_LOADING', value: false });
     }
   };
 
@@ -301,7 +305,7 @@ export default function TenantSignup() {
       return;
     }
 
-    dispatch({ type: 'SET_LOADING', value: true });
+    dispatch({ type: 'SET_OTP_LOADING', value: true });
 
     try {
       const res = await fetch(`${BASE_URL}/api/tenants/verify-otp/`, {
@@ -321,7 +325,7 @@ export default function TenantSignup() {
       dispatch({ type: 'INCREMENT_OTP_VERIFY_ATTEMPTS' });
       dispatch({ type: 'SET_ERROR', field: 'otp', error: getErrorMessage(error) });
     } finally {
-      dispatch({ type: 'SET_LOADING', value: false });
+      dispatch({ type: 'SET_OTP_LOADING', value: false });
     }
   };
 
@@ -334,7 +338,7 @@ export default function TenantSignup() {
       return;
     }
 
-    dispatch({ type: 'SET_LOADING', value: true });
+    dispatch({ type: 'SET_SIGNUP_LOADING', value: true });
     dispatch({ type: 'CLEAR_ERRORS' });
 
     try {
@@ -366,7 +370,7 @@ export default function TenantSignup() {
     } catch (error) {
       dispatch({ type: 'SET_ERROR', field: 'general', error: getErrorMessage(error) });
     } finally {
-      dispatch({ type: 'SET_LOADING', value: false });
+      dispatch({ type: 'SET_SIGNUP_LOADING', value: false });
     }
   };
 
