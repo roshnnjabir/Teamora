@@ -572,16 +572,16 @@ export default function TenantSignup() {
                     <button
                       type="button"
                       onClick={handleSendOtp}
-                      disabled={!canSendOtp() || state.loading}
+                      disabled={!canSendOtp() || state.otpLoading}
                       className={`px-6 py-3 rounded-xl font-semibold text-white transition-all duration-200 min-w-[120px] ${
                         state.emailVerified 
                           ? 'bg-green-500 shadow-lg' 
-                          : !canSendOtp() || state.loading
+                          : !canSendOtp() || state.otpLoading
                             ? 'bg-gray-400 cursor-not-allowed'
                             : 'bg-blue-500 hover:bg-blue-600 shadow-lg hover:shadow-xl'
                       }`}
                     >
-                      {state.loading ? (
+                      {state.otpLoading ? (
                         <div className="flex items-center justify-center">
                           <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                         </div>
@@ -621,14 +621,14 @@ export default function TenantSignup() {
                         <button
                           type="button"
                           onClick={handleVerifyOtp}
-                          disabled={state.loading || state.otp.length !== 6}
+                          disabled={state.otpLoading || state.otp.length !== 6}
                           className={`px-6 py-3 rounded-xl font-semibold text-white transition-all duration-200 ${
-                            state.loading || state.otp.length !== 6
+                            state.otpLoading || state.otp.length !== 6
                               ? 'bg-gray-400 cursor-not-allowed'
                               : 'bg-green-500 hover:bg-green-600 shadow-lg hover:shadow-xl'
                           }`}
                         >
-                          {state.loading ? 'Verifying...' : 'Verify'}
+                          {state.otpLoading ? 'Verifying...' : 'Verify'}
                         </button>
                       </div>
                       {state.errors.otp && (
@@ -705,14 +705,14 @@ export default function TenantSignup() {
               ) : (
                 <button
                   type="submit"
-                  disabled={state.loading || !state.emailVerified}
+                  disabled={state.signupLoading || !state.emailVerified}
                   className={`px-8 py-3 rounded-xl font-semibold shadow-lg transition-all duration-200 text-white ${
-                    state.loading || !state.emailVerified
+                    state.signupLoading || !state.emailVerified
                       ? 'bg-gray-400 cursor-not-allowed'
                       : 'bg-gradient-to-r from-green-500 to-emerald-600 hover:shadow-xl hover:from-green-600 hover:to-emerald-700'
                   }`}
                 >
-                  {state.loading ? (
+                  {state.signupLoading ? (
                     <div className="flex items-center gap-2">
                       <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                       <span>Creating...</span>
