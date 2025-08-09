@@ -35,7 +35,7 @@ class TenantSignupView(APIView):
         if not cache.get(f'otp_verified_{email}'):
             return Response({"detail": "OTP not verified."}, status=status.HTTP_400_BAD_REQUEST)
 
-        subdomain = request.data.get('subdomain', '').strip().lower()
+        subdomain = request.data.get('domain_url', '').strip().lower()
         valid, error = is_valid_subdomain(subdomain)
         if not valid:
             return Response({'detail': error}, status=status.HTTP_400_BAD_REQUEST)
