@@ -226,14 +226,14 @@ export default function TenantSignup() {
       });
       const data = await res.json();
 
-      dispatch({
-        type: 'SET_SUBDOMAIN_AVAILABLE',
-        value: res.ok && data.subdomain_available,
-      });
-      dispatch({
-        type: 'SET_TENANT_NAME_AVAILABLE',
-        value: res.ok && data.tenant_name_available,
-      });
+      if (!res.ok) {
+        // backend error → show in field
+        dispatch({ type: 'SET_ERROR', field: 'subdomain', error: data.detail || 'Invalid subdomain' });
+        dispatch({ type: 'SET_SUBDOMAIN_AVAILABLE', value: false });
+      } else {
+        dispatch({ type: 'SET_SUBDOMAIN_AVAILABLE', value: data.subdomain_available });
+        dispatch({ type: 'SET_TENANT_NAME_AVAILABLE', value: data.tenant_name_available });
+      }
     } catch {
       dispatch({ type: 'SET_SUBDOMAIN_AVAILABLE', value: false });
       dispatch({ type: 'SET_TENANT_NAME_AVAILABLE', value: false });
@@ -502,6 +502,13 @@ export default function TenantSignup() {
                       <div className="ml-2 w-5 h-5 bg-green-500 rounded-full flex items-center justify-center">
                         <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
                           <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                        </svg>
+                      </div>
+                    )}
+                    {state.subdomainAvailable === false && (
+                      <div className="ml-2 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center">
+                        <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M6.225 4.811a1 1 0 011.414 0L10 7.172l2.361-2.361a1 1 0 111.414 1.414L11.414 8.586l2.361 2.361a1 1 0 01-1.414 1.414L10 10l-2.361 2.361a1 1 0 01-1.414-1.414L8.586 8.586 6.225 6.225a1 1 0 010-1.414z" />
                         </svg>
                       </div>
                     )}
