@@ -6,22 +6,16 @@ import json
 
 class ChatConsumer(AsyncWebsocketConsumer):
     async def connect(self):
-        print("ChatConsumer connect called")
-        print(f"[WS CONNECT] User: {self.scope.get('user')}")
         self.room_id = self.scope['url_route']['kwargs']['room_id']
         self.room_group_name = f"chat_{self.room_id}"
-        print("STEP 1")
-        print(self.scope["user"])
 
         if not self.scope["user"].is_authenticated:
             await self.close(code=4401)
             return
-        print("NEXT STEP")
 
         try:
             await self.validate_user_in_room()
         except Exception as e:
-            print(f"Unauthorized attempt to connect to room {self.room_id}: {e}")
             await self.close(code=4403)
             return
 
@@ -30,12 +24,10 @@ class ChatConsumer(AsyncWebsocketConsumer):
         await self.mark_user_online()
 
     async def disconnect(self, close_code):
-        print(f"[WS DISCONNECT] Code: {close_code}")
         await self.channel_layer.group_discard(self.room_group_name, self.channel_name)
         await self.mark_user_offline()
 
     async def receive(self, text_data):
-        print(f"[WS RECEIVE] {text_data}")
         data = json.loads(text_data)
         message = data.get('message')
         temp_id = data.get('temp_id')
@@ -107,7 +99,6 @@ class ChatConsumer(AsyncWebsocketConsumer):
     def validate_user_in_room(self):
         ChatRoom = apps.get_model('communication', 'ChatRoom')
         schema_name = self.scope["tenant"].schema_name
-        print("SCHEMA NAME:", schema_name)
 
         with schema_context(schema_name):
             room = ChatRoom.objects.get(id=self.room_id)

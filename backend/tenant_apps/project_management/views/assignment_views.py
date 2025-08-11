@@ -94,7 +94,6 @@ class ProjectManagerAssignmentViewSet(viewsets.ModelViewSet):
                     except ProjectMember.DoesNotExist:
                         continue
 
-                print("#1")
                 log_pm_assignment_change(developer_id, previous_manager.id, None, assigned_by)
 
                 return Response({
@@ -108,7 +107,6 @@ class ProjectManagerAssignmentViewSet(viewsets.ModelViewSet):
                 existing.assigned_by = assigned_by
                 existing.save()
 
-                print("#2")
                 log_pm_assignment_change(developer_id, previous_manager.id, manager_id, assigned_by)
 
                 serializer = ProjectManagerAssignmentSerializer(existing)
@@ -124,7 +122,6 @@ class ProjectManagerAssignmentViewSet(viewsets.ModelViewSet):
                 developer_id=developer_id,
                 assigned_by=assigned_by
             )
-            print(f"#Dev Id{developer_id} Manager id {manager_id}")
             log_pm_assignment_change(developer_id, None, manager_id, assigned_by)
 
             serializer = ProjectManagerAssignmentSerializer(assignment)

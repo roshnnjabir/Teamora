@@ -10,22 +10,15 @@ class TenantASGIMiddleware:
     async def __call__(self, scope, receive, send):
         host = dict(scope["headers"]).get(b"host", b"").decode().split(":")[0]
 
-        print("Requested host:", host)
-
         try:
             domain = await database_sync_to_async(
                 Domain.objects.select_related("tenant").get
             )(domain=host)
 
-            print("DOMAIN TENANT", domain.tenant)
-
             scope["tenant"] = domain.tenant
             connection.set_schema(domain.tenant)
 
-            print("SUCCESSs")
-
         except Domain.DoesNotExist:
-            print("FAILED")
             await send({
                 "type": "websocket.close",
                 "code": 4401  # Unauthorized

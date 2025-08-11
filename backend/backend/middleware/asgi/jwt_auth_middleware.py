@@ -32,11 +32,8 @@ class JWTAuthMiddleware(BaseMiddleware):
             cookies = dict(item.split("=", 1) for item in cookie_header.split("; ") if "=" in item)
 
             token = cookies.get("access_token")
-            print("TOKEN from cookie:", token)
-
             if token:
                 user = await get_user_from_token(token)
-            print("Authenticated user:", user)
 
         scope["user"] = user
         return await super().__call__(scope, receive, send)
