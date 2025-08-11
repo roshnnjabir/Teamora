@@ -12,11 +12,13 @@ export default function SetPasswordPage() {
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [validating, setValidating] = useState(true);
 
   useEffect(() => {
     const validateToken = async () => {
       try {
         await apiClient.post("/api/validate-set-password/", { uidb64: uid, token });
+        setValidating(false);
       } catch (err) {
         navigate("/login"); // redirect if invalid/expired
       }
@@ -91,6 +93,14 @@ export default function SetPasswordPage() {
       setSubmitting(false);
     }
   };
+
+  if (validating) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-b-4" style={{ borderColor: "#00C4B4" }}></div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
