@@ -7,6 +7,7 @@ from core.permissions import IsTenantAdmin
 from core.constants import UserRoles
 from shared_apps.custom_auth.models import User
 from django.contrib.auth.tokens import default_token_generator
+from django.utils.http import urlsafe_base64_decode
 from tenant_apps.employee.tasks.email_tasks import send_set_password_email_task
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -64,6 +65,23 @@ class EmployeeViewSet(viewsets.ModelViewSet):
         send_set_password_email_task.delay(user.pk, token)
 
         return Response({"detail": "Invitation resent."}, status=status.HTTP_200_OK)
+
+
+class ValidateSetPasswordTokenView(APIView):
+    def post(self, request):
+        uidb64 = request.data.get("uidb64")
+        token = request.data.get("token")
+
+        try:
+            uid = urlsafe_base64_decode(uidb64).decode()
+            user = User.objects.get(pk=uid)
+        except (User.DoesNotExist, ValueError, TypeError, OverflowError):
+            return Response({"detail": "Invalid user."}, status=status.HTTP_400_BAD_REQUEST)
+
+        if not default_token_generator.check_token(user, token):
+            return Response({"detail": "Invalid or expired token."}, status=status.HTTP_400_BAD_REQUEST)
+
+        return Response({"detail": "Valid token."}, status=status.HTTP_200_OK)
 
 
 class SetPasswordView(APIView):

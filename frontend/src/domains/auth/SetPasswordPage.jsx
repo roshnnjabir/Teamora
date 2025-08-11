@@ -14,6 +14,22 @@ export default function SetPasswordPage() {
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
+    const validateToken = async () => {
+      try {
+        await apiClient.post("/api/validate-set-password/", { uidb64: uid, token });
+      } catch (err) {
+        navigate("/login"); // redirect if invalid/expired
+      }
+    };
+
+    if (uid && token) {
+      validateToken();
+    } else {
+      navigate("/login"); // invalid URL params
+    }
+  }, [uid, token, navigate]);
+
+  useEffect(() => {
     if (!uid || !token) {
       setError("Invalid or missing password reset link.");
     }
