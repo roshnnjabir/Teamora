@@ -7,7 +7,7 @@ WORKDIR /app
 
 # Install dependencies
 RUN apt-get update && apt-get install -y \
-    libpq-dev gcc netcat-openbsd curl && \
+    libpq-dev gcc netcat-openbsd curl postgresql-client && \
     pip install --upgrade pip && \
     rm -rf /var/lib/apt/lists/*   # keep the image small
 
