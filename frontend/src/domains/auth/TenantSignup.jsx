@@ -612,17 +612,12 @@ export default function TenantSignup() {
                       )}
                     </button>
                   </div>
-                  {state.touched.email && !state.emailVerified && !state.showOtpSection && (
+                  {state.touched.email && !state.emailVerified && state.formData.email && !validateEmail(state.formData.email) ? (
                     <p className="mt-2 text-sm text-red-600">Enter a valid email.</p>
-                  )}
-                  {state.errors.email && (
+                  ) : state.errors.email ? (
                     <p className="mt-2 text-sm text-red-600">{state.errors.email}</p>
-                  )}
+                  ) : null}
 
-                  {state.errors.email && (
-                    <p className="mt-2 text-sm text-red-600">{state.errors.email}</p>
-                  )}
-                  
                   {/* OTP Section - Visible/Invisible based on state */}
                   {state.showOtpSection && !state.emailVerified && (
                     <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-xl">
