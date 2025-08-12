@@ -15,7 +15,15 @@ const UserProfilePage = () => {
   const [passwordError, setPasswordError] = useState(null);
   const [passwordSuccess, setPasswordSuccess] = useState(null);
 
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [newPasswordConfirmed, setNewPasswordConfirmed] = useState(false);
+
   const navigate = useNavigate();
+
+  const handleNewPasswordChange = (value) => {
+    setPasswordData({ ...passwordData, new_password: value });
+    setNewPasswordConfirmed(false); // revoke confirmation on change
+  };
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -147,16 +155,48 @@ const UserProfilePage = () => {
               />
             </div>
 
-            <div>
+            <div className="relative">
               <label className="block text-sm text-[#2F3A4C]">New Password</label>
               <input
-                type="password"
+                type={showNewPassword ? "text" : "password"}
                 value={passwordData.new_password}
-                onChange={(e) => setPasswordData({ ...passwordData, new_password: e.target.value })}
+                onChange={(e) => handleNewPasswordChange(e.target.value)}
                 required
-                className="w-full mt-1 border border-[#E5E8EC] rounded-md px-3 py-2 text-sm text-[#1A2A44] focus:outline-none focus:ring-2 focus:ring-[#00C4B4]"
+                className={`w-full mt-1 border border-[#E5E8EC] rounded-md px-3 py-2 text-sm text-[#1A2A44] focus:outline-none focus:ring-2 focus:ring-[#00C4B4] ${
+                  newPasswordConfirmed ? 'pr-16' : 'pr-12'
+                }`}
               />
+              
+              {/* Show/hide password */}
+              <button
+                type="button"
+                onClick={() => setShowNewPassword(v => !v)}
+                className="absolute right-10 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-700"
+              >
+                {showNewPassword ? "Hide" : "Show"}
+              </button>
+              
+              {/* Confirm button */}
+              <button
+                type="button"
+                onClick={() => {
+                  if (newPasswordConfirmed) {
+                    setNewPasswordConfirmed(false); // unlock for editing
+                  } else if (passwordData.new_password) {
+                    setNewPasswordConfirmed(true); // confirm password
+                  }
+                }}
+                disabled={!passwordData.new_password}
+                className={`absolute right-3 top-1/2 transform -translate-y-1/2 text-green-500 hover:text-green-700`}
+              >
+                {newPasswordConfirmed ? "✓" : "Confirm"}
+              </button>
             </div>
+            <p className="text-xs text-gray-500 mt-1">
+              {newPasswordConfirmed
+                ? "Password confirmed. You can update now."
+                : "Enter new password and click confirm."}
+            </p>
 
             {passwordError && (
               <div className="text-sm text-[#EF4444] bg-red-50 px-3 py-2 rounded">
@@ -172,7 +212,10 @@ const UserProfilePage = () => {
 
             <button
               type="submit"
-              className="bg-[#00C4B4] hover:bg-[#089e96] text-white text-sm font-semibold px-4 py-2 rounded-md"
+              disabled={!newPasswordConfirmed}
+              className={`bg-[#00C4B4] hover:bg-[#089e96] text-white text-sm font-semibold px-4 py-2 rounded-md ${
+                !newPasswordConfirmed ? 'opacity-50 cursor-not-allowed' : ''
+              }`}
             >
               Update Password
             </button>
