@@ -67,6 +67,15 @@ const initialState = {
 
   otpLoading: false,
   signupLoading: false,
+
+  touched: {
+    email: false,
+    tenantName: false,
+    subdomain: false,
+    fullName: false,
+    password: false,
+    otp: false,
+  },
 };
 
 const reducer = (state, action) => {
@@ -110,6 +119,11 @@ const reducer = (state, action) => {
       return { ...state, subdomainAvailable: action.value };
     case 'SET_TENANT_NAME_AVAILABLE':
       return { ...state, tenantNameAvailable: action.value };
+    case 'SET_TOUCHED':
+      return {
+        ...state,
+        touched: { ...state.touched, [action.field]: true },
+      };
     default:
       return state;
   }
@@ -166,6 +180,10 @@ export default function TenantSignup() {
       field,
       value: processed,
     });
+    
+    if (field === 'email') {
+      dispatch({ type: 'SET_TOUCHED', field });
+    }
 
     dispatch({ type: 'SET_SUCCESS', message: '' });
   };
@@ -594,6 +612,13 @@ export default function TenantSignup() {
                       )}
                     </button>
                   </div>
+                  {state.touched.email && !state.emailVerified && !state.showOtpSection && (
+                    <p className="mt-2 text-sm text-red-600">Enter a valid email.</p>
+                  )}
+                  {state.errors.email && (
+                    <p className="mt-2 text-sm text-red-600">{state.errors.email}</p>
+                  )}
+
                   {state.errors.email && (
                     <p className="mt-2 text-sm text-red-600">{state.errors.email}</p>
                   )}
