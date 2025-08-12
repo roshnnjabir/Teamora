@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import apiClient from "../../api/apiClient";
 import { getInputClasses } from "../../styles/formClasses";
+import InfoModal from "../../components/modals/InfoModal";
 
 export default function SetPasswordPage() {
   const { uid, token } = useParams(); // <-- 🔁 from route
@@ -13,6 +14,10 @@ export default function SetPasswordPage() {
   const [success, setSuccess] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [validating, setValidating] = useState(true);
+
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalTitle, setModalTitle] = useState("");
+  const [modalMessage, setModalMessage] = useState("");
 
   useEffect(() => {
     const validateToken = async () => {
@@ -82,13 +87,20 @@ export default function SetPasswordPage() {
         new_password: newPassword,
       });
       setSuccess(true);
+      setModalTitle("Success");
+      setModalMessage("Password set successfully! Redirecting to login...");
+      setModalOpen(true);
       setTimeout(() => navigate("/login"), 3000);
     } catch (err) {
       const msg =
         err?.response?.data?.detail ||
         Object.values(err?.response?.data || {})?.[0] ||
         "Something went wrong.";
+
       setError(msg);
+      setModalTitle("Error");
+      setModalMessage(msg);
+      setModalOpen(true);
     } finally {
       setSubmitting(false);
     }
@@ -148,6 +160,13 @@ export default function SetPasswordPage() {
           </form>
         )}
       </div>
+
+      <InfoModal
+        open={modalOpen}
+        title={modalTitle}
+        message={modalMessage}
+        onClose={() => setModalOpen(false)}
+      />
     </div>
   );
 }
