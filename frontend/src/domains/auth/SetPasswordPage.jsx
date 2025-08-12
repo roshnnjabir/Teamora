@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import apiClient from "../../api/apiClient";
 import { getInputClasses } from "../../styles/formClasses";
 import InfoModal from "../../components/modals/InfoModal";
+import Toast from "../../components/modals/Toast";
 
 export default function SetPasswordPage() {
   const { uid, token } = useParams(); // <-- 🔁 from route
@@ -15,6 +16,9 @@ export default function SetPasswordPage() {
   const [submitting, setSubmitting] = useState(false);
   const [validating, setValidating] = useState(true);
 
+  const [toastOpen, setToastOpen] = useState(false);
+  const [toastMessage, setToastMessage] = useState("");
+
   const [modalOpen, setModalOpen] = useState(false);
   const [modalTitle, setModalTitle] = useState("");
   const [modalMessage, setModalMessage] = useState("");
@@ -25,7 +29,11 @@ export default function SetPasswordPage() {
         await apiClient.post("/api/validate-set-password/", { uidb64: uid, token });
         setValidating(false);
       } catch (err) {
-        navigate("/login"); // redirect if invalid/expired
+        setToastMessage("Your password setup link is invalid or expired.");
+        setToastOpen(true);
+
+        // Delay navigate so user sees toast
+        setTimeout(() => navigate("/login"), 2500);
       }
     };
 
@@ -119,7 +127,7 @@ export default function SetPasswordPage() {
       <div className="max-w-md w-full bg-white shadow-md p-6 rounded-lg">
         <h2 className="text-xl font-semibold text-center text-[#1A2A44]">Set New Password</h2>
 
-        {error && <p className="mt-4 text-red-600 text-sm text-center">{error}</p>}
+        {error && !modalOpen && <p className="mt-4 text-red-600 text-sm text-center">{error}</p>}
         {success && <p className="mt-4 text-green-600 text-sm text-center">Password set successfully! Redirecting to login...</p>}
 
         {!success && (
@@ -166,6 +174,11 @@ export default function SetPasswordPage() {
         title={modalTitle}
         message={modalMessage}
         onClose={() => setModalOpen(false)}
+      />
+      <Toast
+        show={toastOpen}
+        message={toastMessage}
+        onClose={() => setToastOpen(false)}
       />
     </div>
   );
