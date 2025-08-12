@@ -679,6 +679,17 @@ export default function TenantSignup() {
               </div>
             )}
 
+            {state.signupLoading && (
+              <div className="mb-4 p-4 bg-teal-100 text-teal-800 rounded-lg flex items-center gap-3">
+                <div
+                  className="w-5 h-5 border-2 border-t-2 border-b-2 border-teal-500 rounded-full animate-spin"
+                ></div>
+                <span>
+                  Your workspace is being created! You’ll receive an email shortly with your login details.
+                </span>
+              </div>
+            )}
+
             {/* Navigation */}
             <div className="flex justify-between mt-8">
               <button
