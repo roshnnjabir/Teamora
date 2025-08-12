@@ -40,6 +40,9 @@ export default function SetPasswordPage() {
     if (uid && token) {
       validateToken();
     } else {
+      setToastMessage("Your uid is missing or link is invalid or expired.");
+      setToastOpen(true);
+
       navigate("/login"); // invalid URL params
     }
   }, [uid, token, navigate]);
