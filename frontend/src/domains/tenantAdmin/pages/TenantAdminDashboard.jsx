@@ -585,6 +585,15 @@ const TenantAdminDashboard = () => {
           )}
         </section>
       </main>
+
+      <NavLink
+        to="/chat"
+        className="fixed bottom-6 right-6 bg-[#00C4B4] text-white px-4 py-3 rounded-full shadow-lg hover:bg-teal-600 transition flex items-center space-x-2 z-50"
+      >
+        <span>💬</span>
+        <span className="font-semibold">Chat</span>
+      </NavLink>
+
       {showBlockToast && (
         <SubtaskBlockToast
           developerId={blockedDeveloperId}
