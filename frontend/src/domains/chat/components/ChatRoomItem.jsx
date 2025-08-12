@@ -21,14 +21,18 @@ const ChatRoomItem = ({ room, isActive, onClick, currentUser }) => {
 
   return (
     <div
-      className={`cursor-pointer p-3 rounded-md ${
+      className={`cursor-pointer p-3 rounded-md flex justify-between items-center ${
         isActive ? "bg-blue-100" : "hover:bg-gray-100"
       }`}
       onClick={() => onClick(room)}
     >
-      <div className="font-semibold">{title}</div>
-      {subtitle && (
-        <div className="text-sm text-gray-500 truncate">{subtitle}</div>
+      <div>
+        <div className="font-semibold">{title}</div>
+        {subtitle && <div className="text-sm text-gray-500 truncate">{subtitle}</div>}
+      </div>
+
+      {hasUnread && (
+        <span className="w-2 h-2 bg-red-500 rounded-full ml-2" />
       )}
     </div>
   );

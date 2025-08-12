@@ -34,6 +34,7 @@ const ChatSidebar = ({ rooms, activeRoomId, currentUser, onSelectRoom, onOpenNew
             isActive={room.id === activeRoomId}
             onClick={onSelectRoom}
             currentUser={currentUser}
+            hasUnread={!!unreadRooms[room.id]}
           />
         ))}
       </div>

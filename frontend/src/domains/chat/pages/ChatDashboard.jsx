@@ -20,6 +20,8 @@ const ChatDashboard = () => {
   const prevRoomIdRef = useRef(null);
   const shouldReconnect = useRef(true);
 
+  const [unreadRooms, setUnreadRooms] = useState({}); // { roomId: true } if room has unread messages
+
   const optimisticMessagesRef = useRef({}); // { tempId: true }
 
   useEffect(() => {
@@ -87,29 +89,31 @@ const ChatDashboard = () => {
         timestamp: data.timestamp || new Date().toISOString(),
       };
     
+      // Handle optimistic messages
       if (data.temp_id && optimisticMessagesRef.current[data.temp_id]) {
-          setMessages((prev) =>
-            prev.map((msg) =>
-              msg.id === data.temp_id || (msg.optimistic && msg.content === data.message)
-                ? newMessage
-                : msg
-            )
-          );
+        setMessages((prev) =>
+          prev.map((msg) =>
+            msg.id === data.temp_id || (msg.optimistic && msg.content === data.message)
+              ? newMessage
+              : msg
+          )
+        );
         delete optimisticMessagesRef.current[data.temp_id];
       } else {
         setMessages((prev) => [...prev, newMessage]);
       }
-
+    
+      // Update last_message in chatRooms
       const senderName =
         data.sender_name ||
         chatRooms
           .flatMap((r) => r.participants || [])
           .find((u) => u.id === data.sender_id)?.full_name ||
         "Unknown";
-
+    
       setChatRooms((prevRooms) =>
-        prevRooms.map((room) =>
-          room.id === activeRoom.id
+        prevRooms.map((room) => {
+          const updatedRoom = room.id === activeRoom.id
             ? {
                 ...room,
                 last_message: {
@@ -120,9 +124,15 @@ const ChatDashboard = () => {
                   timestamp: data.timestamp || new Date().toISOString(),
                 },
               }
-            : room
-        )
+            : room;
+            
+          return updatedRoom;
+        })
       );
+    
+      if (data.room_id && data.room_id !== activeRoom?.id) {
+        setUnreadRooms((prev) => ({ ...prev, [data.room_id]: true }));
+      }
     };
 
 
@@ -142,6 +152,12 @@ const ChatDashboard = () => {
 
   const handleRoomSelect = (room) => {
     setActiveRoom(room);
+
+    setUnreadRooms((prev) => {
+      const copy = { ...prev };
+      delete copy[room.id];
+      return copy;
+    });
   };
 
   const handleSendMessage = (text) => {
