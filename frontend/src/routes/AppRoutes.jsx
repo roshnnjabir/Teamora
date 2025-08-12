@@ -1,5 +1,6 @@
 import { Routes, Route } from 'react-router-dom';
 import LoginForm from '../domains/auth/LoginForm';
+import ConditionalAccessWorkspace from '../wrappers/ConditionalAccessWorkspace';
 import TenantSignup from '../domains/auth/TenantSignup';
 import SetPasswordPage from '../domains/auth/SetPasswordPage';
 import SuperAdminDashboard from '../domains/superAdmin/pages/SuperAdminDashboard';
@@ -24,6 +25,7 @@ const AppRoutes = () => (
   <Routes>
     <Route path="/" element={<AppLayout />}>
       <Route index element={<ConditionalLanding />} />
+      <Route path="/accessyourworkspace" element={<ConditionalAccessWorkspace />} />
 
       <Route path="/login" element={
         <UnprotectedRoute>

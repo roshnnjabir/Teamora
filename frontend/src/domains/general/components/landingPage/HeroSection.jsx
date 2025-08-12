@@ -24,7 +24,7 @@ export default function HeroSection() {
             <Link to="/signup" className="px-8 py-4 bg-[#00C4B4] hover:bg-teal-600 text-white rounded-lg font-semibold shadow-lg transition transform hover:scale-105">
               Start Your Organization
             </Link>
-            <Link to="/" className="px-8 py-4 border-2 border-[#1A2A44] text-[#1A2A44] hover:bg-[#1A2A44] hover:text-white rounded-lg font-semibold transition">
+            <Link to="/accessyourworkspace" className="px-8 py-4 border-2 border-[#1A2A44] text-[#1A2A44] hover:bg-[#1A2A44] hover:text-white rounded-lg font-semibold transition">
               Access Your Workspace
             </Link>
           </div>
