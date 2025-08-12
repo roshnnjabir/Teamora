@@ -64,6 +64,8 @@ const UserProfilePage = () => {
       await apiClient.post("/api/password/change/", passwordData);
       setPasswordSuccess("Password updated successfully.");
       setPasswordData({ old_password: "", new_password: "" });
+      setNewPasswordConfirmed(false);
+      setShowNewPassword(false);
     } catch (err) {
       console.error("Password change error:", err);
       const msg =
@@ -89,8 +91,18 @@ const UserProfilePage = () => {
         onClick={() => navigate(-1)}
         className="text-sm text-[#2F3A4C] hover:text-[#1A2A44] mb-4 flex items-center space-x-1"
       >
-        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+        <svg
+          className="w-4 h-4"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M15 19l-7-7 7-7"
+          />
         </svg>
         <span>Back</span>
       </button>
@@ -133,7 +145,11 @@ const UserProfilePage = () => {
             <label className="block text-sm font-medium text-[#2F3A4C]">Date Joined</label>
             <p className="mt-1 text-[#1A2A44]">
               {profile.date_joined
-                ? new Intl.DateTimeFormat('en-US', { year: 'numeric', month: 'long', day: 'numeric' }).format(new Date(profile.date_joined))
+                ? new Intl.DateTimeFormat("en-US", {
+                    year: "numeric",
+                    month: "long",
+                    day: "numeric",
+                  }).format(new Date(profile.date_joined))
                 : "—"}
             </p>
           </div>
@@ -149,100 +165,121 @@ const UserProfilePage = () => {
               <input
                 type="password"
                 value={passwordData.old_password}
-                onChange={(e) => setPasswordData({ ...passwordData, old_password: e.target.value })}
+                onChange={(e) =>
+                  setPasswordData({ ...passwordData, old_password: e.target.value })
+                }
                 required
                 className="w-full mt-1 border border-[#E5E8EC] rounded-md px-3 py-2 text-sm text-[#1A2A44] focus:outline-none focus:ring-2 focus:ring-[#00C4B4]"
               />
             </div>
 
-            <div className="relative">
-              <label className="block text-sm text-[#2F3A4C]">New Password</label>
-              <input
-                type={showNewPassword ? "text" : "password"}
-                value={passwordData.new_password}
-                onChange={(e) => handleNewPasswordChange(e.target.value)}
-                required
-                className={`w-full mt-1 border border-[#E5E8EC] rounded-md px-3 py-2 text-sm text-[#1A2A44] focus:outline-none focus:ring-2 focus:ring-[#00C4B4] ${
-                  newPasswordConfirmed ? 'pr-16' : 'pr-12'
-                }`}
-              />
-              
-              {/* Show/hide password */}
-              <button
-                type="button"
-                onClick={() => setShowNewPassword(v => !v)}
-                className="absolute right-10 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-700"
-              >
-                {showNewPassword ? "Hide" : "Show"}
-              </button>
-              
-              {/* Confirm button */}
-              <button
-                type="button"
-                onClick={() => {
-                  if (newPasswordConfirmed) {
-                    setNewPasswordConfirmed(false); // unlock for editing
-                  } else if (passwordData.new_password) {
-                    setNewPasswordConfirmed(true); // confirm password
-                  }
-                }}
-                disabled={!passwordData.new_password}
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-green-500 hover:text-green-700"
-                aria-label={newPasswordConfirmed ? "Edit password" : "Confirm password"}
-              >
-                {newPasswordConfirmed ? (
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-5 w-5"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    strokeWidth={2}
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <path d="M5 13l4 4L19 7" />
-                  </svg>
-                ) : (
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-5 w-5"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    strokeWidth={2}
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <circle cx="12" cy="12" r="10" />
-                    <path d="M9 12l2 2 4-4" />
-                  </svg>
-                )}
-              </button>
+            {/* New Password Field */}
+            <div>
+              <label className="block text-sm text-[#2F3A4C] mb-1">New Password</label>
+              <div className="flex items-center border border-[#E5E8EC] rounded-md overflow-hidden focus-within:ring-2 focus-within:ring-[#00C4B4]">
+                <input
+                  type={showNewPassword ? "text" : "password"}
+                  value={passwordData.new_password}
+                  onChange={(e) => handleNewPasswordChange(e.target.value)}
+                  required
+                  className="flex-1 px-3 py-2 text-sm text-[#1A2A44] outline-none"
+                  placeholder="Enter new password"
+                />
+                {/* Show/Hide Icon */}
+                <button
+                  type="button"
+                  onClick={() => setShowNewPassword((v) => !v)}
+                  className="px-2 text-gray-400 hover:text-gray-700 flex items-center"
+                  aria-label={showNewPassword ? "Hide password" : "Show password"}
+                >
+                  {showNewPassword ? (
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-5 w-5"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M13.875 18.825A10.05 10.05 0 0112 19c-5.523 0-10-4.477-10-10 0-1.657.402-3.22 1.125-4.575M15 12a3 3 0 11-6 0 3 3 0 016 0zm6.364-2.364A9.956 9.956 0 0021.9 12c0 5.523-4.477 10-10 10a9.956 9.956 0 01-4.364-.964M3 3l18 18"
+                      />
+                    </svg>
+                  ) : (
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-5 w-5"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M15 12a3 3 0 11-6 0 3 3 0 016 0zm7.5 0c0 5.523-4.477 10-10 10S2.5 17.523 2.5 12 6.977 2 12.5 2s10 4.477 10 10z"
+                      />
+                    </svg>
+                  )}
+                </button>
+
+                {/* Confirm Icon */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (newPasswordConfirmed) setNewPasswordConfirmed(false);
+                    else if (passwordData.new_password) setNewPasswordConfirmed(true);
+                  }}
+                  disabled={!passwordData.new_password}
+                  className="px-2 text-green-500 hover:text-green-700 flex items-center"
+                  aria-label={newPasswordConfirmed ? "Edit password" : "Confirm password"}
+                >
+                  {newPasswordConfirmed ? (
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-5 w-5"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                  ) : (
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-5 w-5"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth={2} fill="none" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4" />
+                    </svg>
+                  )}
+                </button>
+              </div>
+              <p className="text-xs text-gray-500 mt-1">
+                {newPasswordConfirmed
+                  ? "Password confirmed. You can update now."
+                  : "Enter new password and click confirm."}
+              </p>
             </div>
-            <p className="text-xs text-gray-500 mt-1">
-              {newPasswordConfirmed
-                ? "Password confirmed. You can update now."
-                : "Enter new password and click confirm."}
-            </p>
 
             {passwordError && (
-              <div className="text-sm text-[#EF4444] bg-red-50 px-3 py-2 rounded">
-                {passwordError}
-              </div>
+              <div className="text-sm text-[#EF4444] bg-red-50 px-3 py-2 rounded">{passwordError}</div>
             )}
 
             {passwordSuccess && (
-              <div className="text-sm text-[#34D399] bg-green-50 px-3 py-2 rounded">
-                {passwordSuccess}
-              </div>
+              <div className="text-sm text-[#34D399] bg-green-50 px-3 py-2 rounded">{passwordSuccess}</div>
             )}
 
             <button
               type="submit"
               disabled={!newPasswordConfirmed}
               className={`bg-[#00C4B4] hover:bg-[#089e96] text-white text-sm font-semibold px-4 py-2 rounded-md ${
-                !newPasswordConfirmed ? 'opacity-50 cursor-not-allowed' : ''
+                !newPasswordConfirmed ? "opacity-50 cursor-not-allowed" : ""
               }`}
             >
               Update Password
