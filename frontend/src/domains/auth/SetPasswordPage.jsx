@@ -128,7 +128,7 @@ export default function SetPasswordPage() {
         <h2 className="text-xl font-semibold text-center text-[#1A2A44]">Set New Password</h2>
 
         {error && !modalOpen && <p className="mt-4 text-red-600 text-sm text-center">{error}</p>}
-        {success && <p className="mt-4 text-green-600 text-sm text-center">Password set successfully! Redirecting to login...</p>}
+        {success && !toastOpen && <p className="mt-4 text-green-600 text-sm text-center">Password set successfully! Redirecting to login...</p>}
 
         {!success && (
           <form onSubmit={handleSubmit} className="mt-6 space-y-4">
