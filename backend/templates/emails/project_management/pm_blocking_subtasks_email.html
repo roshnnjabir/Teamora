@@ -139,7 +139,8 @@
     <div class="section">
       <h2>👋 Hello {{ pm_name }},</h2>
       <p>
-        The Tenant Admin attempted to unassign developer <strong>{{ developer_name }}</strong> from your team.
+        The Tenant Admin attempted to unassign developer <strong>{{ developer_name }}</strong> from your team
+        {% if tenant_name %} in <strong>{{ tenant_name }}</strong>{% endif %}.
         However, this action was blocked because they still have <strong>active subtasks</strong> in the following project(s) under your management:
       </p>
 

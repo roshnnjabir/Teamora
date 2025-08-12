@@ -24,6 +24,7 @@ def send_set_password_email_task(user_id, token):
     uid = urlsafe_base64_encode(force_bytes(user.pk))
 
     domain_obj = Domain.objects.filter(tenant=user.tenant).first()
+    tenant_name = getattr(user.tenant, 'name', 'Your Organization')
     domain = domain_obj.domain if domain_obj else getattr(settings, "DEFAULT_TENANT_DOMAIN", "localhost")
 
     reset_url = f"http://{domain}/set-password/{uid}/{token}"
@@ -42,12 +43,14 @@ def send_set_password_email_task(user_id, token):
         'full_name': full_name,
         'email': user.email,
         'reset_url': reset_url,
+        'tenant_name': tenant_name,
     })
     html_message = transform(html_message)
 
     plain_message = (
         f"Hello {full_name},\n\n"
-        f"An account has been created for you on Teamora using this email: {user.email}\n\n"
+        f"An account has been created for you on Teamora"
+        f"{f' for {tenant_name}' if tenant_name else ''} using this email: {user.email}\n\n"
         f"To set your password and access your account, click the link below:\n\n"
         f"{reset_url}\n\n"
         f"If you did not expect this invitation, you can safely ignore this email.\n\n"
