@@ -160,6 +160,7 @@ export default function TenantSignup() {
   const [otpCooldown, setOtpCooldown] = useState(0);
   const [showPassword, setShowPassword] = useState(false);
   const [passwordConfirmed, setPasswordConfirmed] = useState(false);
+  const [passwordFeedback, setPasswordFeedback] = useState([]);
   const subdomainTimeoutRef = useRef();
   const otpInputRef = useRef();
   const navigate = useNavigate();
@@ -213,9 +214,25 @@ export default function TenantSignup() {
       dispatch({ type: 'SET_TOUCHED', field });
     }
 
-    // If password changes, revoke confirmation
     if (field === 'password') {
       setPasswordConfirmed(false);
+    
+      const pwdCheck = validatePassword(value);
+      if (!pwdCheck.isValid) {
+        dispatch({
+          type: 'SET_ERROR',
+          field: 'password',
+          error: pwdCheck.isValid ? null : pwdCheck.errors.join(', ')
+        });
+
+        setPasswordFeedback(pwdCheck.errors);
+      } else {
+        dispatch({
+          type: 'SET_ERROR',
+          field: 'password',
+          error: null,
+        });
+      }
     }
 
     dispatch({ type: 'SET_SUCCESS', message: '' });
@@ -820,7 +837,7 @@ export default function TenantSignup() {
                       }}
                       className={`absolute right-3 top-1/2 transform -translate-y-1/2 text-green-500 hover:text-green-700 focus:outline-none transition ${passwordConfirmed ? 'opacity-100' : 'opacity-80'}`}
                       aria-label={passwordConfirmed ? "Edit password" : "Confirm password"}
-                      disabled={!state.formData.password || !!state.errors.password}
+                      disabled={!state.formData.password || passwordFeedback.length > 0}
                     >
                       {passwordConfirmed ? (
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -843,9 +860,20 @@ export default function TenantSignup() {
                       </>
                     )}
                   </p>
-                  {state.errors.password && (
-                    <p className="mt-2 text-sm text-red-600">{state.errors.password}</p>
-                  )}
+                  {/* Password feedback */}
+                  <div className="mt-2 text-sm space-y-1">
+                    {passwordFeedback.length > 0 ? (
+                      <ul className="text-red-600 list-disc list-inside">
+                        {passwordFeedback.map((msg, i) => (
+                          <li key={i}>{msg}</li>
+                        ))}
+                      </ul>
+                    ) : (
+                      state.formData.password && (
+                        <p className="text-green-600 font-medium">✅ Strong password!</p>
+                      )
+                    )}
+                  </div>
                 </div>
               </div>
             )}
