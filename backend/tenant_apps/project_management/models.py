@@ -134,9 +134,14 @@ class SubtaskAuditLogRequest(models.Model):
 
 
 class Label(models.Model):
-    name = models.CharField(max_length=50)
-    color = models.CharField(max_length=7, default="#3498db")
-    created_by = models.ForeignKey(Employee, on_delete=models.SET_NULL, null=True, related_name="created_labels")
+    name = models.CharField(max_length=50, unique=True)
+    color = models.CharField(max_length=7, default="#3498db", unique=True)
+    created_by = models.ForeignKey(
+        Employee, 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        related_name="created_labels"
+    )
 
     def __str__(self):
         return self.name
