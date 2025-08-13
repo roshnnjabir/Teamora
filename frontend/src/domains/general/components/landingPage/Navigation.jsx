@@ -62,7 +62,7 @@ export default function Navigation() {
         className={`fixed top-0 right-0 h-full w-2/3 bg-white shadow-2xl border-l border-[#E5E8EC] transform transition-all duration-[900ms] ease-[cubic-bezier(0.33,1,0.68,1)] delay-150 z-40 ${
           menuOpen
             ? "translate-x-0 opacity-100 translate-y-0 backdrop-blur-sm"
-            : "translate-x-5 opacity-0 translate-y-3"
+            : "translate-x-full opacity-0 pointer-events-none"
         }`}
       >
 
