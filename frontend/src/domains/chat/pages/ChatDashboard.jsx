@@ -234,6 +234,7 @@ const ChatDashboard = () => {
         onSelectRoom={handleRoomSelect}
         onOpenNewChat={() => setShowUserList(true)}
         currentUser={currentUser}
+        unreadRooms={unreadRooms}
       />
 
       <div className="flex flex-col flex-1">

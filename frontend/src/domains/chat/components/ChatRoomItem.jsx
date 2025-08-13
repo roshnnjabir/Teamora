@@ -1,7 +1,7 @@
 // domains/chat/components/ChatRoomItem.jsx
 import React from "react";
 
-const ChatRoomItem = ({ room, isActive, onClick, currentUser }) => {
+const ChatRoomItem = ({ room, isActive, onClick, currentUser, hasUnread }) => {
   let title = "";
   let subtitle = "";
 

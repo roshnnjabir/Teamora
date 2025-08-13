@@ -1,7 +1,7 @@
 // domains/chat/components/ChatSidebar.jsx
 import ChatRoomItem from "./ChatRoomItem";
 
-const ChatSidebar = ({ rooms, activeRoomId, currentUser, onSelectRoom, onOpenNewChat }) => {
+const ChatSidebar = ({ rooms, activeRoomId, currentUser, onSelectRoom, onOpenNewChat, unreadRooms }) => {
   // Deduplicate rooms by ID
   const uniqueRooms = Object.values(
     rooms.reduce((acc, room) => {
