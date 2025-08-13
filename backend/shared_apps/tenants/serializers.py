@@ -1,13 +1,15 @@
 from rest_framework import serializers
-from shared_apps.tenants.models import Client, Domain
-from shared_apps.custom_auth.models import User
+from django.core.exceptions import ValidationError as DjangoValidationError
+from django.contrib.auth.password_validation import validate_password
 from django.core.management import call_command
 from django_tenants.utils import schema_context
-from tenant_apps.employee.models import Employee
 from datetime import date
+import re
+
+from shared_apps.tenants.models import Client, Domain
+from shared_apps.custom_auth.models import User
+from tenant_apps.employee.models import Employee
 from core.constants import UserRoles
-from django.utils import timezone
-from rest_framework.exceptions import ValidationError
 from shared_apps.tenants.tasks.email_tasks import send_tenant_created_email_task
 
 
@@ -15,13 +17,38 @@ class TenantSignupSerializer(serializers.Serializer):
     tenant_name = serializers.CharField(max_length=100)
     domain_url = serializers.CharField(max_length=100)  # e.g. tenant1.example.com
     email = serializers.EmailField()
-    password = serializers.CharField(write_only=True)
+    password = serializers.CharField(write_only=True, min_length=8)
     full_name = serializers.CharField(max_length=100)
 
     def validate_domain_url(self, value):
         if Domain.objects.filter(domain=value).exists():
             raise serializers.ValidationError("Domain already exists.")
         return value
+
+    def validate(self, attrs):
+        password = attrs.get('password')
+
+        # Minimum length
+        if len(password) < 8:
+            raise serializers.ValidationError({"password": "Password must be at least 8 characters long."})
+
+        # At least one uppercase letter
+        if not re.search(r'[A-Z]', password):
+            raise serializers.ValidationError({"password": "Password must contain at least one uppercase letter."})
+
+        # At least one lowercase letter
+        if not re.search(r'[a-z]', password):
+            raise serializers.ValidationError({"password": "Password must contain at least one lowercase letter."})
+
+        # At least one digit
+        if not re.search(r'\d', password):
+            raise serializers.ValidationError({"password": "Password must contain at least one number."})
+
+        # At least one special character
+        if not re.search(r'[!@#$%^&*(),.?":{}|<>]', password):
+            raise serializers.ValidationError({"password": "Password must contain at least one special character."})
+
+        return attrs
 
     def create(self, validated_data):
         # Step 1: Create Tenant
