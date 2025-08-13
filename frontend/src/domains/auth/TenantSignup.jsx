@@ -27,6 +27,29 @@ const validateEmail = (email) =>
 const validateSubdomain = (subdomain) =>
   /^[a-z0-9][a-z0-9-]{1,61}[a-z0-9]$/.test(subdomain) && !subdomain.includes('--');
 
+const validateTenantName = (name) => {
+  const trimmed = name.trim();
+  const errors = [];
+
+  if (!trimmed) {
+    errors.push('Organization name is required');
+  }
+  if (trimmed.length < 3) {
+    errors.push('At least 3 characters required');
+  }
+  if (trimmed.length > 63) {
+    errors.push('Cannot exceed 63 characters');
+  }
+  if (!/^[a-zA-Z0-9 ]+$/.test(trimmed)) {
+    errors.push('Only letters, numbers, and spaces allowed');
+  }
+
+  return {
+    isValid: errors.length === 0,
+    errors,
+  };
+};
+
 const validatePassword = (password) => {
   return {
     isValid:
@@ -210,16 +233,20 @@ export default function TenantSignup() {
     });
 
     if (state.currentStep === 0) {
+      const tenantValidation = validateTenantName(state.formData.tenantName);
+      if (!tenantValidation.isValid) {
+        dispatch({ type: 'SET_ERROR', field: 'tenantName', error: tenantValidation.errors.join(', ') });
+        valid = false;
+      } else if (state.tenantNameAvailable === false) {
+        dispatch({ type: 'SET_ERROR', field: 'tenantName', error: 'Organization name already taken' });
+        valid = false;
+      } 
+
       if (!validateSubdomain(state.formData.subdomain)) {
         dispatch({ type: 'SET_ERROR', field: 'subdomain', error: 'Invalid subdomain format' });
         valid = false;
       } else if (state.subdomainAvailable === false) {
         dispatch({ type: 'SET_ERROR', field: 'subdomain', error: 'Subdomain not available' });
-        valid = false;
-      }
-
-      if (state.tenantNameAvailable === false) {
-        dispatch({ type: 'SET_ERROR', field: 'tenantName', error: 'Organization name already taken' });
         valid = false;
       }
     }
