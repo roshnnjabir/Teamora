@@ -494,14 +494,22 @@ const TenantAdminDashboard = () => {
 
           {/* Add New Label */}
           <div className="mb-4 flex items-center gap-4 flex-wrap">
-            <input
-              type="text"
-              placeholder="Label name"
-              value={newLabel.name}
-              onChange={(e) => setNewLabel((prev) => ({ ...prev, name: e.target.value }))}
-              className="border px-4 py-2 rounded"
-            />
-
+            <div className="flex flex-col">
+              <input
+                type="text"
+                placeholder="Label name"
+                value={newLabel.name}
+                onChange={(e) => {
+                  setNewLabel((prev) => ({ ...prev, name: e.target.value }));
+                  setLabelFormError(""); // reset error on typing
+                }}
+                className="border px-4 py-2 rounded"
+              />
+              {labelFormError && (
+                <span className="text-red-600 text-sm mt-1">{labelFormError}</span>
+              )}
+            </div>
+            
             <input
               type="color"
               value={newLabel.color}
@@ -530,36 +538,42 @@ const TenantAdminDashboard = () => {
                 {labels.map((label) => (
                   <div key={label.id} className="relative flex items-center">
                     {editingLabel?.id === label.id ? (
-                      <>
-                        <input
-                          type="text"
-                          value={editingLabel.name}
-                          onChange={(e) =>
-                            setEditingLabel((prev) => ({ ...prev, name: e.target.value }))
-                          }
-                          className="border px-2 py-1 rounded text-sm"
-                        />
-                        <input
-                          type="color"
-                          value={editingLabel.color}
-                          onChange={(e) =>
-                            setEditingLabel((prev) => ({ ...prev, color: e.target.value }))
-                          }
-                          className="h-6 w-10 border rounded ml-2"
-                        />
-                        <button
-                          onClick={handleLabelEdit}
-                          className="text-green-600 text-sm ml-2 hover:underline"
-                        >
-                          Save
-                        </button>
-                        <button
-                          onClick={() => setEditingLabel(null)}
-                          className="text-red-600 text-sm ml-1 hover:underline"
-                        >
-                          Cancel
-                        </button>
-                      </>
+                      <div className="flex flex-col">
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="text"
+                            value={editingLabel.name}
+                            onChange={(e) => {
+                              setEditingLabel((prev) => ({ ...prev, name: e.target.value }));
+                              setLabelFormError(""); // reset error while editing
+                            }}
+                            className="border px-2 py-1 rounded text-sm"
+                          />
+                          <input
+                            type="color"
+                            value={editingLabel.color}
+                            onChange={(e) =>
+                              setEditingLabel((prev) => ({ ...prev, color: e.target.value }))
+                            }
+                            className="h-6 w-10 border rounded"
+                          />
+                          <button
+                            onClick={handleLabelEdit}
+                            className="text-green-600 text-sm hover:underline"
+                          >
+                            Save
+                          </button>
+                          <button
+                            onClick={() => setEditingLabel(null)}
+                            className="text-red-600 text-sm hover:underline"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                        {labelFormError && (
+                          <span className="text-red-600 text-sm mt-1">{labelFormError}</span>
+                        )}
+                      </div>
                     ) : (
                       // Display label with pencil icon inside
                       <span
