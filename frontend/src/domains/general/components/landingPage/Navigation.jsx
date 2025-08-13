@@ -59,8 +59,10 @@ export default function Navigation() {
 
       {/* Mobile Sidebar */}
       <div
-        className={`fixed top-0 right-0 h-full w-2/3 bg-white shadow-xl border-l border-[#E5E8EC] transform transition-all duration-500 ease-[cubic-bezier(0.77,0,0.175,1)] delay-75 z-40 ${
-          menuOpen ? "translate-x-0 opacity-100" : "translate-x-full opacity-0"
+        className={`fixed top-0 right-0 h-full w-2/3 bg-white shadow-2xl border-l border-[#E5E8EC] transform transition-all duration-[900ms] ease-[cubic-bezier(0.33,1,0.68,1)] delay-150 z-40 ${
+          menuOpen
+            ? "translate-x-0 opacity-100 translate-y-0 backdrop-blur-sm"
+            : "translate-x-5 opacity-0 translate-y-3"
         }`}
       >
 
@@ -114,7 +116,7 @@ export default function Navigation() {
       {/* Overlay when sidebar is open */}
       {menuOpen && (
         <div
-          className={`fixed inset-0 bg-black/40 backdrop-blur-md z-30 md:hidden transition-all duration-500 ease-[cubic-bezier(0.77,0,0.175,1)] ${
+          className={`fixed inset-0 bg-black/40 backdrop-blur-md z-30 md:hidden transition-all duration-[900ms] ease-[cubic-bezier(0.33,1,0.68,1)] ${
             menuOpen ? "opacity-100 delay-100" : "opacity-0"
           }`}
           onClick={() => setMenuOpen(false)}
