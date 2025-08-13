@@ -124,7 +124,9 @@ const UserProfilePage = () => {
           <div>
             <label className="block text-sm font-medium text-[#2F3A4C]">Date Joined</label>
             <p className="mt-1 text-[#1A2A44]">
-              {profile.date_joined ? new Date(profile.date_joined).toLocaleDateString() : "—"}
+              {profile.date_joined
+                ? new Intl.DateTimeFormat('en-US', { year: 'numeric', month: 'long', day: 'numeric' }).format(new Date(profile.date_joined))
+                : "—"}
             </p>
           </div>
         </div>
