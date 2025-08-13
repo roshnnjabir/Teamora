@@ -856,6 +856,11 @@ export default function TenantSignup() {
                         </svg>
                       )}
                     </button>
+                    <div className="absolute right-0 top-full mt-1 hidden group-hover:block bg-gray-800 text-white text-xs rounded-md px-2 py-1 whitespace-nowrap z-10">
+                      {passwordConfirmed
+                        ? "Click to edit your password"
+                        : "Click to confirm your password"}
+                    </div>
                   </div>
                   <p className="text-xs text-gray-500 mt-1">
                     {passwordConfirmed ? (
@@ -880,6 +885,12 @@ export default function TenantSignup() {
                       )
                     )}
                   </div>
+
+                  <p className="mt-1 text-xs text-gray-500 italic">
+                    {passwordConfirmed
+                      ? "🔓 Password confirmed. Click the green checkmark again to edit if needed."
+                      : "🔒 Once your password meets all requirements, click the green checkmark to confirm it."}
+                  </p>
                 </div>
               </div>
             )}
