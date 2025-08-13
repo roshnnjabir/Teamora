@@ -262,6 +262,14 @@ export default function TenantSignup() {
       } else {
         dispatch({ type: 'SET_SUBDOMAIN_AVAILABLE', value: data.subdomain_available });
         dispatch({ type: 'SET_TENANT_NAME_AVAILABLE', value: data.tenant_name_available });
+        // Set error if subdomain is not available
+        if (data.subdomain_available === false) {
+          dispatch({ type: 'SET_ERROR', field: 'subdomain', error: 'Subdomain not available' });
+        }
+        // Set error if tenant name is not available
+        if (data.tenant_name_available === false) {
+          dispatch({ type: 'SET_ERROR', field: 'tenantName', error: 'Organization name already taken' });
+        }
       }
     } catch {
       dispatch({ type: 'SET_SUBDOMAIN_AVAILABLE', value: false });
@@ -290,7 +298,10 @@ export default function TenantSignup() {
   const handleSendOtp = async () => {
     if (!canSendOtp()) return;
 
-    dispatch({ type: 'SET_OTP_LOADING', value: true });
+      // Clear email error if user edits the field (enables button again)
+      if (state.errors.email) {
+        dispatch({ type: 'SET_ERROR', field: 'email', error: null });
+      }
     dispatch({ type: 'CLEAR_ERRORS' });
 
     try {
@@ -401,6 +412,32 @@ export default function TenantSignup() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 flex items-center justify-center p-4">
+      <div className="absolute top-6 left-6">
+        <button
+          onClick={() => {
+            if (window.history.length > 1) {
+              navigate(-1); // go back if history exists
+            } else {
+              navigate('/'); // fallback to home
+            }
+          }}
+          className="flex items-center justify-center w-10 h-10 rounded-full bg-white border border-gray-300 hover:bg-gray-100 transition-colors"
+          aria-label="Go back"
+        >
+          <svg
+            className="w-5 h-5 text-gray-700"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={2}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            viewBox="0 0 24 24"
+          >
+            <path d="M15 18l-6-6 6-6" />
+          </svg>
+        </button>
+      </div>
+
       <div className="w-full max-w-2xl">
         {/* Header */}
         <Link to="/" className="block text-center mb-8 group">
@@ -486,18 +523,40 @@ export default function TenantSignup() {
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
                     Organization Name *
                   </label>
-                  <input
-                    type="text"
-                    value={state.formData.tenantName}
-                    onChange={(e) => handleInputChange('tenantName', e.target.value)}
-                    placeholder="e.g., Acme Corporation"
-                    className={`w-full px-4 py-3 rounded-xl border-2 transition-all duration-200 focus:outline-none bg-white/70 ${
-                      state.errors.tenantName 
-                        ? 'border-red-300 focus:border-red-500' 
-                        : 'border-gray-200 focus:border-blue-500'
-                    }`}
-                    autoFocus
-                  />
+                  <div className="relative flex items-center">
+                    <input
+                      type="text"
+                      value={state.formData.tenantName}
+                      onChange={(e) => handleInputChange('tenantName', e.target.value)}
+                      placeholder="e.g., Acme Corporation"
+                      className={`w-full px-4 py-3 rounded-xl border-2 transition-all duration-200 focus:outline-none bg-white/70 ${
+                        state.errors.tenantName 
+                          ? 'border-red-300 focus:border-red-500' 
+                          : state.tenantNameAvailable === true
+                            ? 'border-green-300 focus:border-green-500'
+                            : 'border-gray-200 focus:border-blue-500'
+                      } pr-12`}
+                      autoFocus
+                    />
+                    {/* Visual feedback for org name availability */}
+                    {state.subdomainChecking && (
+                      <div className="absolute right-3 w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                    )}
+                    {!state.subdomainChecking && state.tenantNameAvailable === true && (
+                      <div className="absolute right-3 w-5 h-5 bg-green-500 rounded-full flex items-center justify-center">
+                        <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                        </svg>
+                      </div>
+                    )}
+                    {!state.subdomainChecking && state.tenantNameAvailable === false && (
+                      <div className="absolute right-3 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center">
+                        <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M6.225 4.811a1 1 0 011.414 0L10 7.172l2.361-2.361a1 1 0 111.414 1.414L11.414 8.586l2.361 2.361a1 1 0 01-1.414 1.414L10 10l-2.361 2.361a1 1 0 01-1.414-1.414L8.586 8.586 6.225 6.225a1 1 0 010-1.414z" />
+                        </svg>
+                      </div>
+                    )}
+                  </div>
                   {state.errors.tenantName && (
                     <p className="mt-2 text-sm text-red-600">{state.errors.tenantName}</p>
                   )}
@@ -818,12 +877,12 @@ export default function TenantSignup() {
         {/* Footer */}
         <div className="text-center mt-8">
           <p className="text-gray-600 text-sm">
-            Already have an account?{' '}
+            Already have an account but forgot your workspace?{' '}
             <button 
-              onClick={() => navigate('/login')}
+              onClick={() => navigate('/accessyourworkspace')}
               className="text-blue-600 hover:text-blue-700 font-semibold transition-colors"
             >
-              Sign in
+              Access your workspace
             </button>
           </p>
         </div>
