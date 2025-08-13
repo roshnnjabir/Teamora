@@ -38,7 +38,7 @@ class TenantSignupSerializer(serializers.Serializer):
             raise serializers.ValidationError("Tenant name cannot contain numbers.")
         
         # Only allow letters and hyphens, no special characters like '_', '$', etc.
-        if not re.match(r'^[a-zA-Z-]+$', value):
+        if not re.match(r'^[a-zA-Z-\s]+$', value):
             raise serializers.ValidationError("Tenant name can only contain letters and hyphens (-).")
         
         if value.startswith('-') or value.endswith('-'):
