@@ -8,6 +8,7 @@ import PMDeveloperAssignmentManager from "../components/PMDeveloperAssignmentMan
 import EmployeeFormModal from "../modals/EmployeeFormModal";
 import CreateProjectModal from "../../../components/modals/ProjectModals/CreateProjectModal";
 import SubtaskBlockToast from "../../../components/modals/SubtaskBlockToast";
+import ConfirmToast from "../../../components/modals/ConfirmToast";
 import NotificationPanel from "../../../components/notifications/NotificationPanel";
 import { useNavigate } from "react-router-dom";
 
@@ -28,6 +29,9 @@ const TenantAdminDashboard = () => {
   const [formError, setFormError] = useState("");
   const [notification, setNotification] = useState({ message: "", type: "" });
   const [limit, setLimit] = useState(10);
+  const [editingLabel, setEditingLabel] = useState(null);
+  const [labelFormError, setLabelFormError] = useState(""); 
+  const [confirmData, setConfirmData] = useState(null);
 
   const [projects, setProjects] = useState([]);
   const [loadingProjects, setLoadingProjects] = useState(true);
@@ -97,17 +101,45 @@ const TenantAdminDashboard = () => {
     }
   };
 
-  const handleDelete = async (id) => {
-    const confirmed = window.confirm("Are you sure you want to delete this employee?");
-    if (!confirmed) return;
+  const handleLabelEdit = async () => {
+    if (!editingLabel.name.trim()) {
+      showNotification("Label name is required.", "error");
+      return;
+    }
   
     try {
-      await apiClient.delete(`/api/employees/${id}/`);
-      setEmployees((prev) => prev.filter((emp) => emp.id !== id));
-      showNotification("Employee deleted successfully.", "success");
+      const res = await apiClient.put(`/api/labels/${editingLabel.id}/`, editingLabel);
+      setLabels((prev) =>
+        prev.map((label) => (label.id === editingLabel.id ? res.data : label))
+      );
+      setEditingLabel(null);
+      showNotification("Label updated successfully.");
     } catch (err) {
-      showNotification("Failed to delete employee.", "error");
+      const msg =
+        err?.response?.data?.name?.[0] ||
+        err?.response?.data?.color?.[0] ||
+        "Failed to update label.";
+      setLabelFormError(msg);
+      showNotification(msg, "error");
     }
+  };
+
+  const handleDelete = (employee) => {
+    setConfirmData({
+      message: `Are you sure you want to delete ${employee.full_name}?`,
+      onConfirm: async () => {
+        try {
+          await apiClient.delete(`/api/employees/${employee.id}/`);
+          setEmployees(prev => prev.filter(emp => emp.id !== employee.id));
+          showNotification("Employee deleted successfully.", "success");
+        } catch (err) {
+          showNotification("Failed to delete employee.", "error");
+        } finally {
+          setConfirmData(null);
+        }
+      },
+      onCancel: () => setConfirmData(null),
+    });
   };
 
   const handleSave = async (formData, response) => {
@@ -153,20 +185,25 @@ const TenantAdminDashboard = () => {
     }
   };
 
-  const handleResendInvitation = async (id) => {
-    const confirmed = window.confirm("Resend invitation to this employee?");
-    if (!confirmed) return;
-
-    try {
-      await apiClient.post(`/api/employees/${id}/resend-invitation/`);
-      showNotification("Invitation resent successfully.", "success");
-    } catch (err) {
-      const msg =
-        err?.response?.data?.detail ||
-        Object.values(err?.response?.data || {})?.[0] ||
-        "Failed to resend invitation.";
-      showNotification(msg, "error");
-    }
+  const handleResendInvitation = (id) => {
+    setConfirmData({
+      message: "Resend invitation to this employee?",
+      onConfirm: async () => {
+        try {
+          await apiClient.post(`/api/employees/${id}/resend-invitation/`);
+          showNotification("Invitation resent successfully.", "success");
+        } catch (err) {
+          const msg =
+            err?.response?.data?.detail ||
+            Object.values(err?.response?.data || {})?.[0] ||
+            "Failed to resend invitation.";
+          showNotification(msg, "error");
+        } finally {
+          setConfirmData(null);
+        }
+      },
+      onCancel: () => setConfirmData(null),
+    });
   };
 
   const fetchAuditLogs = async (customFilters = {}, reset = false, url = null) => {
@@ -449,6 +486,7 @@ const TenantAdminDashboard = () => {
         <section className="mt-10">
           <h2 className="text-2xl font-semibold mb-4">Labels</h2>
 
+          {/* Add New Label */}
           <div className="mb-4 flex items-center gap-4 flex-wrap">
             <input
               type="text"
@@ -473,6 +511,7 @@ const TenantAdminDashboard = () => {
             </button>
           </div>
 
+          {/* Labels List */}
           {loadingLabels ? (
             <p>Loading labels...</p>
           ) : labelError ? (
@@ -483,17 +522,61 @@ const TenantAdminDashboard = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
               <div className="flex flex-wrap gap-2">
                 {labels.map((label) => (
-                  <span
-                    key={label.id}
-                    className="px-3 py-1 rounded-full text-sm font-medium border-2"
-                    style={{
-                      borderColor: label.color,
-                      backgroundColor: label.color + "20",
-                      color: label.color,
-                    }}
-                  >
-                    {label.name}
-                  </span>
+                  <div key={label.id} className="flex items-center gap-2">
+                    {editingLabel?.id === label.id ? (
+                      <>
+                        {/* Inline Edit Inputs */}
+                        <input
+                          type="text"
+                          value={editingLabel.name}
+                          onChange={(e) =>
+                            setEditingLabel((prev) => ({ ...prev, name: e.target.value }))
+                          }
+                          className="border px-2 py-1 rounded text-sm"
+                        />
+                        <input
+                          type="color"
+                          value={editingLabel.color}
+                          onChange={(e) =>
+                            setEditingLabel((prev) => ({ ...prev, color: e.target.value }))
+                          }
+                          className="h-6 w-10 border rounded"
+                        />
+                        <button
+                          onClick={handleLabelEdit}
+                          className="text-green-600 text-sm hover:underline"
+                        >
+                          Save
+                        </button>
+                        <button
+                          onClick={() => setEditingLabel(null)}
+                          className="text-red-600 text-sm hover:underline"
+                        >
+                          Cancel
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        {/* Display Label */}
+                        <span
+                          className="px-3 py-1 rounded-full text-sm font-medium border-2"
+                          style={{
+                            borderColor: label.color,
+                            backgroundColor: label.color + "20",
+                            color: label.color,
+                          }}
+                        >
+                          {label.name}
+                        </span>
+                        <button
+                          onClick={() => setEditingLabel(label)}
+                          className="text-blue-600 text-sm hover:underline"
+                        >
+                          Edit
+                        </button>
+                      </>
+                    )}
+                  </div>
                 ))}
               </div>
             </div>
@@ -603,6 +686,14 @@ const TenantAdminDashboard = () => {
             setShowBlockToast(false);
             setSuccess("Project Manager has been notified.");
           }}
+        />
+      )}
+
+      {confirmData && (
+        <ConfirmToast
+          message={confirmData.message}
+          onConfirm={confirmData.onConfirm}
+          onCancel={confirmData.onCancel}
         />
       )}
     </div>
