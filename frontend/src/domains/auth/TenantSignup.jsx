@@ -216,6 +216,11 @@ export default function TenantSignup() {
 
     if (field === 'password') {
       setPasswordConfirmed(false);
+      if (value === '') {
+        setPasswordFeedback([]);
+        dispatch({ type: 'SET_ERROR', field: 'password', error: null });
+        return;
+      }
     
       const pwdCheck = validatePassword(value);
       if (!pwdCheck.isValid) {
@@ -232,6 +237,7 @@ export default function TenantSignup() {
           field: 'password',
           error: null,
         });
+        setPasswordFeedback([]);
       }
     }
 
