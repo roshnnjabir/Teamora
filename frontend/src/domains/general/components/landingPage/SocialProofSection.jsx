@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { ChevronLeft, ChevronRight, Play, Pause } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 const testimonials = [
   {
@@ -200,11 +201,11 @@ export default function SocialProofSection() {
             <div className="text-[#2F3A4C]">
               <span className="font-medium">Ready to join them?</span>
             </div>
-            <a href="/signup">
+            <Link to="/signup">
               <button className="bg-[#00C4B4] hover:bg-[#1A2A44] text-white px-6 py-3 rounded-xl font-medium transition-colors duration-200 shadow-lg">
                 Start Free Trial
               </button>
-            </a>
+            </Link>
           </div>
         </div>
       </div>

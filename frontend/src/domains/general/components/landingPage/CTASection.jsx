@@ -14,9 +14,11 @@ export default function CTASection() {
             <Link to="/signup" className="px-8 py-4 bg-[#00C4B4] hover:bg-teal-600 text-white rounded-lg font-semibold shadow-lg transition">
               Start Free Trial - Get Your Subdomain
             </Link>
-            <button className="px-8 py-4 border-2 border-[#1A2A44] text-[#1A2A44] hover:bg-[#1A2A44] hover:text-white rounded-lg font-semibold transition">
-              Schedule a Demo
-            </button>
+            <Link to="/demo">
+              <button className="px-8 py-4 border-2 border-[#1A2A44] text-[#1A2A44] hover:bg-[#1A2A44] hover:text-white rounded-lg font-semibold transition">
+                Watch Demo
+              </button>
+            </Link>
           </div>
 
           <p className="text-sm text-[#B0B8C5]">

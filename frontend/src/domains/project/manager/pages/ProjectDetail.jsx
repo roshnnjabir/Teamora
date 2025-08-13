@@ -3,6 +3,7 @@ import { useSelector } from "react-redux";
 import { useEffect, useState, useCallback } from "react";
 import apiClient from "../../../../api/apiClient";
 import Toast from "../../../../components/modals/Toast";
+import ConfirmToast from "../../../../components/modals/ConfirmToast";
 
 // Components
 import ProjectHeader from "../../shared/components/ProjectHeader";
@@ -31,6 +32,7 @@ const ProjectManagerProjectDetail = () => {
   const [subtasks, setSubtasks] = useState([]);
   const [developers, setDevelopers] = useState([]);
   const user = useSelector((state) => state.auth.user);
+  const [confirmData, setConfirmData] = useState(null);
   const [allDevelopers, setAllDevelopers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isDragging, setIsDragging] = useState(false);
@@ -157,39 +159,44 @@ const ProjectManagerProjectDetail = () => {
       return;
     }
 
-    const confirmed = window.confirm(`Remove ${member.role} from the project?`);
-    if (!confirmed) return;
+    // Instead of window.confirm, show a modal
+    setConfirmData({
+      message: `Remove ${member.role} from the project?`,
+      onConfirm: async () => {
+        setConfirmData(null);
+        const previousMembers = [...project.members];
+        const previousDevelopers = [...developers];
 
-    const previousMembers = [...project.members];
-    const previousDevelopers = [...developers];
+        setProject(prev => ({
+          ...prev,
+          members: prev.members.filter(m => m.id !== member.id)
+        }));
+        setDevelopers(prev => prev.filter(d => d.id !== member.employee.id));
 
-    setProject(prev => ({
-      ...prev,
-      members: prev.members.filter(m => m.id !== member.id)
-    }));
-    setDevelopers(prev => prev.filter(d => d.id !== member.employee.id));
+        try {
+          await apiClient.delete(`/api/members/${member.id}/`);
+          const [projRes, newDevs] = await Promise.all([
+            apiClient.get(`/api/projects/${projectId}/`),
+            fetchDevelopers()
+          ]);
+          setProject(projRes.data);
+          setDevelopers(newDevs);
+        } catch (err) {
+          const detail = err?.response?.data?.detail;
+          console.error("Failed to remove member:", detail || err.message || err);
 
-    try {
-      await apiClient.delete(`/api/members/${member.id}/`);
-      const [projRes, newDevs] = await Promise.all([
-        apiClient.get(`/api/projects/${projectId}/`),
-        fetchDevelopers()
-      ]);
-      setProject(projRes.data);
-      setDevelopers(newDevs);
-    } catch (err) {
-      const detail = err?.response?.data?.detail;
-      console.error("Failed to remove member:", detail || err.message || err);
-
-      setProject(prev => ({ ...prev, members: previousMembers }));
-      setDevelopers(previousDevelopers);
-      setToast({
-        show: true,
-        message: detail || "Error removing member. Please try again.",
-        type: "error"
-      });
-    }
-  };
+          setProject(prev => ({ ...prev, members: previousMembers }));
+          setDevelopers(previousDevelopers);
+          setToast({
+            show: true,
+            message: detail || "Error removing member. Please try again.",
+            type: "error"
+          });
+        }
+      },
+      onCancel: () => setConfirmData(null),
+    });
+  };  
 
   const handleSubtaskDragEnd = async ({ destination, source, draggableId }) => {
     if (!destination || destination.droppableId === source.droppableId) return;
@@ -358,6 +365,14 @@ const ProjectManagerProjectDetail = () => {
         type={toast.type}
         onClose={() => setToast({ ...toast, show: false })}
       />
+
+      {confirmData && (
+        <ConfirmToast
+          message={confirmData.message}
+          onConfirm={confirmData.onConfirm}
+          onCancel={confirmData.onCancel}
+        />
+      )}
     </div>
   );
 };

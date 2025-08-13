@@ -15,6 +15,7 @@ from tenant_apps.project_management.models import (
 from tenant_apps.employee.models import Employee, ProjectManagerAssignment
 from django.contrib.contenttypes.models import ContentType
 from django.db import IntegrityError
+from rest_framework.validators import UniqueValidator
 from rest_framework.exceptions import ValidationError
 from core.constants import UserRoles, TaskStatus
 from datetime import date
@@ -77,9 +78,28 @@ class ProjectMemberDetailSerializer(serializers.ModelSerializer):
 
 
 class LabelSerializer(serializers.ModelSerializer):
+    name = serializers.CharField(
+        max_length=50,
+        validators=[UniqueValidator(queryset=Label.objects.all(), message="Label name must be unique.")]
+    )
+    color = serializers.CharField(
+        max_length=7,
+        validators=[UniqueValidator(queryset=Label.objects.all(), message="Label color must be unique.")]
+    )
+    def validate_name(self, value):
+        if not value.strip():
+            raise serializers.ValidationError("Label name cannot be empty.")
+        return value.strip()
+
+    def validate_color(self, value):
+        if not value.startswith("#") or len(value) != 7:
+            raise serializers.ValidationError("Color must be in hex format, e.g., #3498db")
+        return value
+
     class Meta:
         model = Label
-        fields = ['id', 'name', 'color']
+        fields = ['id', 'name', 'color', 'created_by']
+        read_only_fields = ['created_by']
 
 
 class CommentSerializer(serializers.ModelSerializer):

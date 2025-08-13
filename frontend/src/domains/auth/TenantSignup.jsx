@@ -132,6 +132,8 @@ const reducer = (state, action) => {
 export default function TenantSignup() {
   const [state, dispatch] = useReducer(reducer, initialState);
   const [otpCooldown, setOtpCooldown] = useState(0);
+  const [showPassword, setShowPassword] = useState(false);
+  const [passwordConfirmed, setPasswordConfirmed] = useState(false);
   const subdomainTimeoutRef = useRef();
   const otpInputRef = useRef();
   const navigate = useNavigate();
@@ -174,15 +176,20 @@ export default function TenantSignup() {
     if (field === 'subdomain') processed = value.toLowerCase().replace(/[^a-z0-9-]/g, '').slice(0, 63);
     if (field === 'email') processed = value.trim().toLowerCase();
     if (field === 'otp') processed = value.replace(/\D/g, '').slice(0, 6);
-    
+
     dispatch({
       type: field === 'otp' ? 'UPDATE_OTP' : 'UPDATE_FIELD',
       field,
       value: processed,
     });
-    
+
     if (field === 'email') {
       dispatch({ type: 'SET_TOUCHED', field });
+    }
+
+    // If password changes, revoke confirmation
+    if (field === 'password') {
+      setPasswordConfirmed(false);
     }
 
     dispatch({ type: 'SET_SUCCESS', message: '' });
@@ -242,7 +249,7 @@ export default function TenantSignup() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          subdomain: `${state.formData.subdomain}.teamora.website`,
+          subdomain: `${state.formData.subdomain}.${import.meta.env.VITE_ROOT_DOMAIN}`,
           tenant_name: state.formData.tenantName,
         }),
       });
@@ -255,6 +262,14 @@ export default function TenantSignup() {
       } else {
         dispatch({ type: 'SET_SUBDOMAIN_AVAILABLE', value: data.subdomain_available });
         dispatch({ type: 'SET_TENANT_NAME_AVAILABLE', value: data.tenant_name_available });
+        // Set error if subdomain is not available
+        if (data.subdomain_available === false) {
+          dispatch({ type: 'SET_ERROR', field: 'subdomain', error: 'Subdomain not available' });
+        }
+        // Set error if tenant name is not available
+        if (data.tenant_name_available === false) {
+          dispatch({ type: 'SET_ERROR', field: 'tenantName', error: 'Organization name already taken' });
+        }
       }
     } catch {
       dispatch({ type: 'SET_SUBDOMAIN_AVAILABLE', value: false });
@@ -283,7 +298,10 @@ export default function TenantSignup() {
   const handleSendOtp = async () => {
     if (!canSendOtp()) return;
 
-    dispatch({ type: 'SET_OTP_LOADING', value: true });
+      // Clear email error if user edits the field (enables button again)
+      if (state.errors.email) {
+        dispatch({ type: 'SET_ERROR', field: 'email', error: null });
+      }
     dispatch({ type: 'CLEAR_ERRORS' });
 
     try {
@@ -362,7 +380,7 @@ export default function TenantSignup() {
     try {
       const payload = {
         tenant_name: state.formData.tenantName,
-        domain_url: `${state.formData.subdomain}.teamora.website`,
+        domain_url: `${state.formData.subdomain}.${import.meta.env.VITE_ROOT_DOMAIN}`,
         email: state.formData.email,
         password: state.formData.password,
         full_name: state.formData.fullName,
@@ -394,19 +412,61 @@ export default function TenantSignup() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 flex items-center justify-center p-4">
+      <div className="absolute top-6 left-6">
+        <button
+          onClick={() => {
+            if (window.history.length > 1) {
+              navigate(-1); // go back if history exists
+            } else {
+              navigate('/'); // fallback to home
+            }
+          }}
+          className="flex items-center justify-center w-10 h-10 rounded-full bg-white border border-gray-300 hover:bg-gray-100 transition-colors"
+          aria-label="Go back"
+        >
+          <svg
+            className="w-5 h-5 text-gray-700"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={2}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            viewBox="0 0 24 24"
+          >
+            <path d="M15 18l-6-6 6-6" />
+          </svg>
+        </button>
+      </div>
+
       <div className="w-full max-w-2xl">
         {/* Header */}
-        <Link to="/" className="block text-center mb-8 group">
-          <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl mb-4 shadow-lg">
-              <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-              </svg>
-            </div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">Create Your Workspace</h1>
-            <p className="text-gray-600">Set up your organization in just a few steps</p>
-          </div>
-        </Link>
+        <div className="text-center mb-8">
+          <Link
+            to="/"
+            className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl mb-4 shadow-lg hover:scale-105 transition-transform"
+          >
+            <svg
+              className="w-8 h-8 text-white"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
+              />
+            </svg>
+          </Link>
+
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+            Create Your Workspace
+          </h1>
+          <p className="text-gray-600">
+            Set up your organization in just a few steps
+          </p>
+        </div>
 
         {/* Main Card */}
         <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-2xl border border-white/20 overflow-hidden">
@@ -479,18 +539,40 @@ export default function TenantSignup() {
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
                     Organization Name *
                   </label>
-                  <input
-                    type="text"
-                    value={state.formData.tenantName}
-                    onChange={(e) => handleInputChange('tenantName', e.target.value)}
-                    placeholder="e.g., Acme Corporation"
-                    className={`w-full px-4 py-3 rounded-xl border-2 transition-all duration-200 focus:outline-none bg-white/70 ${
-                      state.errors.tenantName 
-                        ? 'border-red-300 focus:border-red-500' 
-                        : 'border-gray-200 focus:border-blue-500'
-                    }`}
-                    autoFocus
-                  />
+                  <div className="relative flex items-center">
+                    <input
+                      type="text"
+                      value={state.formData.tenantName}
+                      onChange={(e) => handleInputChange('tenantName', e.target.value)}
+                      placeholder="e.g., Acme Corporation"
+                      className={`w-full px-4 py-3 rounded-xl border-2 transition-all duration-200 focus:outline-none bg-white/70 ${
+                        state.errors.tenantName 
+                          ? 'border-red-300 focus:border-red-500' 
+                          : state.tenantNameAvailable === true
+                            ? 'border-green-300 focus:border-green-500'
+                            : 'border-gray-200 focus:border-blue-500'
+                      } pr-12`}
+                      autoFocus
+                    />
+                    {/* Visual feedback for org name availability */}
+                    {state.subdomainChecking && (
+                      <div className="absolute right-3 w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                    )}
+                    {!state.subdomainChecking && state.tenantNameAvailable === true && (
+                      <div className="absolute right-3 w-5 h-5 bg-green-500 rounded-full flex items-center justify-center">
+                        <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                        </svg>
+                      </div>
+                    )}
+                    {!state.subdomainChecking && state.tenantNameAvailable === false && (
+                      <div className="absolute right-3 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center">
+                        <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M6.225 4.811a1 1 0 011.414 0L10 7.172l2.361-2.361a1 1 0 111.414 1.414L11.414 8.586l2.361 2.361a1 1 0 01-1.414 1.414L10 10l-2.361 2.361a1 1 0 01-1.414-1.414L8.586 8.586 6.225 6.225a1 1 0 010-1.414z" />
+                        </svg>
+                      </div>
+                    )}
+                  </div>
                   {state.errors.tenantName && (
                     <p className="mt-2 text-sm text-red-600">{state.errors.tenantName}</p>
                   )}
@@ -590,10 +672,10 @@ export default function TenantSignup() {
                     <button
                       type="button"
                       onClick={handleSendOtp}
-                      disabled={!canSendOtp() || state.otpLoading}
+                      disabled={state.emailVerified || !canSendOtp() || state.otpLoading}
                       className={`px-6 py-3 rounded-xl font-semibold text-white transition-all duration-200 min-w-[120px] ${
-                        state.emailVerified 
-                          ? 'bg-green-500 shadow-lg' 
+                        state.emailVerified
+                          ? 'bg-green-400 cursor-not-allowed shadow-lg'
                           : !canSendOtp() || state.otpLoading
                             ? 'bg-gray-400 cursor-not-allowed'
                             : 'bg-blue-500 hover:bg-blue-600 shadow-lg hover:shadow-xl'
@@ -665,19 +747,70 @@ export default function TenantSignup() {
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
                     Password *
                   </label>
-                  <input
-                    type="password"
-                    value={state.formData.password}
-                    onChange={(e) => handleInputChange('password', e.target.value)}
-                    placeholder="Strong password required"
-                    className={`w-full px-4 py-3 rounded-xl border-2 transition-all duration-200 focus:outline-none bg-white/70 ${
-                      state.errors.password 
-                        ? 'border-red-300 focus:border-red-500' 
-                        : 'border-gray-200 focus:border-blue-500'
-                    }`}
-                  />
+                  <div className="relative flex items-center">
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      value={state.formData.password}
+                      onChange={(e) => handleInputChange('password', e.target.value)}
+                      placeholder="Strong password required"
+                      className={`w-full px-4 py-3 rounded-xl border-2 transition-all duration-200 focus:outline-none bg-white/70 ${
+                        state.errors.password 
+                          ? 'border-red-300 focus:border-red-500' 
+                          : 'border-gray-200 focus:border-blue-500'
+                      } ${passwordConfirmed ? 'pr-16' : 'pr-12'}`}
+                      disabled={passwordConfirmed}
+                    />
+                    <button
+                      type="button"
+                      tabIndex={-1}
+                      onClick={() => setShowPassword((v) => !v)}
+                      className="absolute right-10 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-700 focus:outline-none"
+                      aria-label={showPassword ? "Hide password" : "Show password"}
+                    >
+                      {showPassword ? (
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-5.523 0-10-4.477-10-10 0-1.657.402-3.22 1.125-4.575M15 12a3 3 0 11-6 0 3 3 0 016 0zm6.364-2.364A9.956 9.956 0 0021.9 12c0 5.523-4.477 10-10 10a9.956 9.956 0 01-4.364-.964M3 3l18 18" />
+                        </svg>
+                      ) : (
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0zm7.5 0c0 5.523-4.477 10-10 10S2.5 17.523 2.5 12 6.977 2 12.5 2s10 4.477 10 10z" />
+                        </svg>
+                      )}
+                    </button>
+                    <button
+                      type="button"
+                      tabIndex={-1}
+                      onClick={() => {
+                        if (passwordConfirmed) {
+                          setPasswordConfirmed(false); // Unlock for editing
+                        } else if (state.formData.password && !state.errors.password) {
+                          setPasswordConfirmed(true);
+                        }
+                      }}
+                      className={`absolute right-3 top-1/2 transform -translate-y-1/2 text-green-500 hover:text-green-700 focus:outline-none transition ${passwordConfirmed ? 'opacity-100' : 'opacity-80'}`}
+                      aria-label={passwordConfirmed ? "Edit password" : "Confirm password"}
+                      disabled={!state.formData.password || !!state.errors.password}
+                    >
+                      {passwordConfirmed ? (
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                      ) : (
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" fill="none" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4" />
+                        </svg>
+                      )}
+                    </button>
+                  </div>
                   <p className="text-xs text-gray-500 mt-1">
-                    At least 8 characters with uppercase, lowercase, and number
+                    {passwordConfirmed ? (
+                      <span className="text-green-600 font-semibold">Password confirmed! You can now continue.</span>
+                    ) : (
+                      <>
+                        Enter your password and click the <span className="inline-block align-middle"><svg xmlns="http://www.w3.org/2000/svg" className="inline h-4 w-4 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" fill="none" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4" /></svg></span> icon to confirm.
+                      </>
+                    )}
                   </p>
                   {state.errors.password && (
                     <p className="mt-2 text-sm text-red-600">{state.errors.password}</p>
@@ -736,9 +869,9 @@ export default function TenantSignup() {
               ) : (
                 <button
                   type="submit"
-                  disabled={state.signupLoading || !state.emailVerified}
+                  disabled={state.signupLoading || !state.emailVerified || !passwordConfirmed}
                   className={`px-8 py-3 rounded-xl font-semibold shadow-lg transition-all duration-200 text-white ${
-                    state.signupLoading || !state.emailVerified
+                    state.signupLoading || !state.emailVerified || !passwordConfirmed
                       ? 'bg-gray-400 cursor-not-allowed'
                       : 'bg-gradient-to-r from-green-500 to-emerald-600 hover:shadow-xl hover:from-green-600 hover:to-emerald-700'
                   }`}
@@ -760,12 +893,12 @@ export default function TenantSignup() {
         {/* Footer */}
         <div className="text-center mt-8">
           <p className="text-gray-600 text-sm">
-            Already have an account?{' '}
+            Already have an account but forgot your workspace?{' '}
             <button 
-              onClick={() => navigate('/login')}
+              onClick={() => navigate('/accessyourworkspace')}
               className="text-blue-600 hover:text-blue-700 font-semibold transition-colors"
             >
-              Sign in
+              Access your workspace
             </button>
           </p>
         </div>

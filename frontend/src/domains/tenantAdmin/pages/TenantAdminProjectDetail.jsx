@@ -2,6 +2,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useEffect, useState, useCallback } from "react";
 import apiClient from "../../../api/apiClient";
 import Toast from "../../../components/modals/Toast.jsx";
+import ConfirmToast from "../../../components/modals/ConfirmToast.jsx";
 
 // Components
 import ProjectHeader from "../../project/shared/components/ProjectHeader";
@@ -34,6 +35,8 @@ const TenantAdminProjectDetail = () => {
   const [isDragging, setIsDragging] = useState(false);
   const [viewMode, setViewMode] = useState("subtasks");
   const [toast, setToast] = useState({ show: false, message: "", type: "" });
+
+  const [confirmData, setConfirmData] = useState(null);
 
   const [showEditModal, setShowEditModal] = useState(false);
   const [showMembersModal, setShowMembersModal] = useState(false);
@@ -110,37 +113,67 @@ const TenantAdminProjectDetail = () => {
     }
   };
 
-  const handleRemoveMember = async member => {
+  const handleRemoveMember = async (  member) => {
     const dev = developers.find(d => d.id === member.employee.id);
-    if (dev?.assigned_subtasks_count > 0) {
-      return setToast({
+    const subtaskCount = dev?.assigned_subtasks_count || 0;
+
+    if (member.employee.email === user.email) {
+      setToast({
         show: true,
-        message: `${member.employee.full_name} has assigned subtasks. Please reassign them first.`,
-        type: "warning"
+        type: "warning",
+        message: `${member.employee.full_name} is the Project Manager, and cannot be removed`
       });
+      return;
     }
-    const confirm = window.confirm(`Remove ${member.role}?`);
-    if (!confirm) return;
 
-    setProject(p => ({
-      ...p,
-      members: p.members.filter(m => m.id !== member.id)
-    }));
-    setDevelopers(d => d.filter(x => x.id !== member.employee.id));
-
-    try {
-      await apiClient.delete(`/api/members/${member.id}/`);
-      const [freshProj, newDevs] = await Promise.all([
-        apiClient.get(`/api/projects/${projectId}/`),
-        fetchDevelopers()
-      ]);
-      setProject(freshProj.data);
-      setDevelopers(newDevs);
-    } catch (err) {
-      console.error(err);
-      setToast({ show: true, message: "Failed to remove member.", type: "error" });
+    if (subtaskCount > 0) {
+      setToast({
+        show: true,
+        type: "warning",
+        message: `${member.employee.full_name} has ${subtaskCount} assigned subtask${subtaskCount > 1 ? 's' : ''}. Please unassign or reassign them before removing this member.`
+      });
+      return;
     }
+
+    setConfirmData({
+      message: `Remove ${member.role} from the project?`,
+      onConfirm: async () => {
+        const previousMembers = [...project.members];
+        const previousDevelopers = [...developers];
+
+        setProject(prev => ({
+          ...prev,
+          members: prev.members.filter(m => m.id !== member.id)
+        }));
+        setDevelopers(prev => prev.filter(d => d.id !== member.employee.id));
+
+        try {
+          await apiClient.delete(`/api/members/${member.id}/`);
+          const [projRes, newDevs] = await Promise.all([
+            apiClient.get(`/api/projects/${projectId}/`),
+            fetchDevelopers()
+          ]);
+          setProject(projRes.data);
+          setDevelopers(newDevs);
+        } catch (err) {
+          const detail = err?.response?.data?.detail;
+          console.error("Failed to remove member:", detail || err.message || err);
+
+          setProject(prev => ({ ...prev, members: previousMembers }));
+          setDevelopers(previousDevelopers);
+          setToast({
+            show: true,
+            message: detail || "Error removing member. Please try again.",
+            type: "error"
+          });
+        } finally {
+          setConfirmData(null);
+        }
+      },
+      onCancel: () => setConfirmData(null)
+    });
   };
+
 
   const handleSubtaskDragEnd = async ({ source, destination, draggableId }) => {
     if (!destination || destination.droppableId === source.droppableId) return;
@@ -234,6 +267,14 @@ const TenantAdminProjectDetail = () => {
 
       {showCreateTaskModal && (
         <CreateTaskModal projectId={projectId} onClose={() => setShowCreateTaskModal(false)} onTaskCreated={fetchTasks} />
+      )}
+
+      {confirmData && (
+        <ConfirmToast
+          message={confirmData.message}
+          onConfirm={confirmData.onConfirm}
+          onCancel={confirmData.onCancel}
+        />
       )}
 
       <Toast {...toast} onClose={() => setToast(prev => ({ ...prev, show: false }))} />
