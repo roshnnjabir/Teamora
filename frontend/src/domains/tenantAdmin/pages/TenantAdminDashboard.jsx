@@ -179,9 +179,15 @@ const TenantAdminDashboard = () => {
       const res = await apiClient.post("/api/labels/", newLabel);
       setLabels((prev) => [...prev, res.data]);
       setNewLabel({ name: "", color: "#00C4B4" });
-      showNotification("Label created successfully.");
+      showNotification("Label created successfully.", "success");
     } catch (err) {
-      showNotification("Failed to create label.", "error");
+      // Extract backend validation message
+      const msg =
+        err?.response?.data?.name?.[0] || // Most APIs return { name: ["..."] }
+        err?.response?.data?.non_field_errors?.[0] ||
+        "Failed to create label.";
+
+      showNotification(msg, "error"); // Display the real error
     }
   };
 
@@ -522,10 +528,9 @@ const TenantAdminDashboard = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
               <div className="flex flex-wrap gap-2">
                 {labels.map((label) => (
-                  <div key={label.id} className="flex items-center gap-2">
+                  <div key={label.id} className="relative flex items-center">
                     {editingLabel?.id === label.id ? (
                       <>
-                        {/* Inline Edit Inputs */}
                         <input
                           type="text"
                           value={editingLabel.name}
@@ -540,41 +545,49 @@ const TenantAdminDashboard = () => {
                           onChange={(e) =>
                             setEditingLabel((prev) => ({ ...prev, color: e.target.value }))
                           }
-                          className="h-6 w-10 border rounded"
+                          className="h-6 w-10 border rounded ml-2"
                         />
                         <button
                           onClick={handleLabelEdit}
-                          className="text-green-600 text-sm hover:underline"
+                          className="text-green-600 text-sm ml-2 hover:underline"
                         >
                           Save
                         </button>
                         <button
                           onClick={() => setEditingLabel(null)}
-                          className="text-red-600 text-sm hover:underline"
+                          className="text-red-600 text-sm ml-1 hover:underline"
                         >
                           Cancel
                         </button>
                       </>
                     ) : (
-                      <>
-                        {/* Display Label */}
-                        <span
-                          className="px-3 py-1 rounded-full text-sm font-medium border-2"
-                          style={{
-                            borderColor: label.color,
-                            backgroundColor: label.color + "20",
-                            color: label.color,
-                          }}
+                      // Display label with pencil icon inside
+                      <span
+                        className="px-3 py-1 rounded-full text-sm font-medium border-2 flex items-center gap-1 cursor-pointer hover:opacity-80"
+                        style={{
+                          borderColor: label.color,
+                          backgroundColor: label.color + "20",
+                          color: label.color,
+                        }}
+                        onClick={() => setEditingLabel(label)} // click label to edit
+                        title="Edit label"
+                      >
+                        {label.name}
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          className="h-3 w-3 text-gray-600"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                          strokeWidth={2}
                         >
-                          {label.name}
-                        </span>
-                        <button
-                          onClick={() => setEditingLabel(label)}
-                          className="text-blue-600 text-sm hover:underline"
-                        >
-                          Edit
-                        </button>
-                      </>
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M15.232 5.232l3.536 3.536M9 11l6-6 3 3-6 6H9v-3z"
+                          />
+                        </svg>
+                      </span>
                     )}
                   </div>
                 ))}
