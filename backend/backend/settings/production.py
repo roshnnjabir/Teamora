@@ -47,8 +47,6 @@ SECURE_REFERRER_POLICY = "same-origin"    # hide tenant URLs when leaving site
 
 CSRF_COOKIE_HTTPONLY = True               # Makes CSRF cookie unreadable by JavaScript.
 
-STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
-
 SESSION_COOKIE_DOMAIN = ".teamora.website"
 CSRF_COOKIE_DOMAIN = ".teamora.website"
 

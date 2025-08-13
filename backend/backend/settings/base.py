@@ -81,7 +81,6 @@ PUBLIC_SCHEMA_URLCONF = "shared_apps.tenants.urls"
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django_tenants.middleware.TenantMiddleware',
     
     'corsheaders.middleware.CorsMiddleware',
