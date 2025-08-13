@@ -64,6 +64,7 @@ const initialState = {
   subdomainChecking: false,
   subdomainAvailable: null,
   tenantNameAvailable: null,
+  dashboardCreated: false,
 
   otpLoading: false,
   signupLoading: false,
@@ -113,6 +114,8 @@ const reducer = (state, action) => {
           ? action.value
           : state.otpVerificationAttempts + 1,
       };
+    case "SET_DASHBOARD_CREATED":
+      return { ...state, dashboardCreated: action.value };
     case 'SET_SUBDOMAIN_CHECKING':
       return { ...state, subdomainChecking: action.value };
     case 'SET_SUBDOMAIN_AVAILABLE':
@@ -401,6 +404,7 @@ export default function TenantSignup() {
         type: 'SET_SUCCESS',
         message: `Workspace created! Login link sent to ${state.formData.email}`,
       });
+      dispatch({ type: 'SET_DASHBOARD_CREATED', value: true });
 
       setTimeout(() => navigate('/'), 3000);
     } catch (error) {
@@ -869,11 +873,13 @@ export default function TenantSignup() {
               ) : (
                 <button
                   type="submit"
-                  disabled={state.signupLoading || !state.emailVerified || !passwordConfirmed}
+                  disabled={state.signupLoading || !state.emailVerified || !passwordConfirmed || state.dashboardCreated}
                   className={`px-8 py-3 rounded-xl font-semibold shadow-lg transition-all duration-200 text-white ${
-                    state.signupLoading || !state.emailVerified || !passwordConfirmed
+                    state.signupLoading || !state.emailVerified || !passwordConfirmed || state.dashboardCreated
                       ? 'bg-gray-400 cursor-not-allowed'
-                      : 'bg-gradient-to-r from-green-500 to-emerald-600 hover:shadow-xl hover:from-green-600 hover:to-emerald-700'
+                      : state.dashboardCreated
+                        ? 'bg-green-500'
+                        : 'bg-gradient-to-r from-green-500 to-emerald-600 hover:shadow-xl hover:from-green-600 hover:to-emerald-700'
                   }`}
                 >
                   {state.signupLoading ? (
@@ -881,10 +887,13 @@ export default function TenantSignup() {
                       <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                       <span>Creating...</span>
                     </div>
+                  ) : state.dashboardCreated ? (
+                    'Workspace Created!'
                   ) : (
                     'Create Workspace'
                   )}
                 </button>
+
               )}
             </div>
           </form>
