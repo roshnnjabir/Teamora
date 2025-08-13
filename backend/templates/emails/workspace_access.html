@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Access Your Teamora Workspace</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@400;600;700;800&display=swap');
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background-color: #F9FAFB;
+      font-family: 'Nunito Sans', sans-serif;
+      color: #2F3A4C;
+      padding: 24px;
+    }
+
+    .email-wrapper {
+      max-width: 600px;
+      margin: 0 auto;
+      background: #ffffff;
+      border-radius: 16px;
+      box-shadow: 0 6px 24px rgba(0, 0, 0, 0.06);
+      overflow: hidden;
+      border: 1px solid #E5E8EC;
+    }
+
+    .header {
+      background: linear-gradient(135deg, #1A2A44, #2F3A4C);
+      color: #ffffff;
+      text-align: center;
+      padding: 40px 30px 30px;
+    }
+
+    .logo {
+      background: #00C4B4;
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-weight: 800;
+      font-size: 20px;
+      color: white;
+      margin: 0 auto 12px;
+      box-shadow: 0 4px 12px rgba(0, 196, 180, 0.3);
+    }
+
+    .brand-name {
+      font-size: 28px;
+      font-weight: 800;
+      margin-bottom: 12px;
+    }
+
+    .subtitle {
+      font-size: 16px;
+      opacity: 0.9;
+    }
+
+    .section {
+      padding: 32px 30px;
+    }
+
+    .section h2 {
+      font-size: 20px;
+      font-weight: 700;
+      margin-bottom: 12px;
+    }
+
+    .section p {
+      font-size: 15px;
+      line-height: 1.7;
+      margin-bottom: 24px;
+    }
+
+    .workspace-info {
+      background: #F9FAFB;
+      border-left: 4px solid #00C4B4;
+      padding: 20px;
+      border-radius: 12px;
+      margin-bottom: 24px;
+    }
+
+    .workspace-info strong {
+      display: block;
+      font-size: 14px;
+      text-transform: uppercase;
+      color: #1A2A44;
+      margin-bottom: 8px;
+      letter-spacing: 0.5px;
+    }
+
+    .workspace-domain {
+      font-family: monospace;
+      background: white;
+      border: 1px solid #E5E8EC;
+      border-radius: 8px;
+      padding: 12px;
+      color: #00C4B4;
+      font-weight: bold;
+      display: inline-block;
+      margin-bottom: 12px;
+    }
+
+    .cta {
+      text-align: center;
+      margin: 32px 0;
+    }
+
+    .cta a {
+      background: #00C4B4;
+      color: white;
+      padding: 16px 32px;
+      border-radius: 12px;
+      font-weight: 700;
+      text-decoration: none;
+      display: inline-block;
+      transition: background 0.3s ease;
+      box-shadow: 0 8px 16px rgba(0, 196, 180, 0.3);
+      font-size: 16px;
+    }
+
+    .cta a:hover {
+      background: #009a98;
+    }
+
+    .security-notice {
+      background: #FFF3CD;
+      border: 1px solid #FFEAA7;
+      border-radius: 12px;
+      padding: 20px;
+      margin: 24px 0;
+    }
+
+    .security-notice h3 {
+      color: #856404;
+      font-size: 16px;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+    }
+
+    .security-notice h3::before {
+      content: "🔒";
+      margin-right: 8px;
+    }
+
+    .security-notice p {
+      color: #856404;
+      font-size: 14px;
+      margin: 0;
+    }
+
+    .footer {
+      background: #1A2A44;
+      color: #F9FAFB;
+      text-align: center;
+      padding: 24px 20px;
+      font-size: 13px;
+    }
+
+    .footer a {
+      color: #00C4B4;
+      text-decoration: none;
+      margin: 0 8px;
+      font-weight: 500;
+    }
+
+    .footer a:hover {
+      color: #34D399;
+    }
+
+    .greeting {
+      font-size: 18px;
+      font-weight: 600;
+      color: #1A2A44;
+      margin-bottom: 16px;
+    }
+  </style>
+</head>
+<body>
+  <div class="email-wrapper">
+
+    <!-- Header -->
+    <div class="header">
+      <div class="logo">T</div>
+      <div class="brand-name">Teamora</div>
+      <p class="subtitle">Access Your Workspace</p>
+    </div>
+
+    <!-- Greeting -->
+    <div class="section">
+      <div class="greeting">Hello {{ user_name }},</div>
+      
+      <p>
+        You requested access to your Teamora workspace. We've found your organization and are ready to get you signed in.
+      </p>
+
+      <div class="workspace-info">
+        <strong>Your Workspace</strong>
+        <div class="workspace-domain">{{ tenant_domain }}</div>
+        <p>Click the button below to access your secure workspace.</p>
+      </div>
+    </div>
+
+    <!-- Call to Action -->
+    <div class="cta">
+      <a href="{{ login_url }}">🚀 Access My Workspace</a>
+    </div>
+
+    <!-- Security Notice -->
+    <div class="security-notice">
+      <h3>Security Notice</h3>
+      <p>
+        This link is secure and will take you directly to your organization's login page. 
+        If you didn't request access to your workspace, please ignore this email or contact your administrator.
+      </p>
+    </div>
+
+    <!-- Additional Info -->
+    <div class="section">
+      <h2>What's Next?</h2>
+      <p>
+        Once you click the link above, you'll be taken to your organization's login page where you can sign in with your credentials. 
+        If you have any issues accessing your workspace, please contact your organization's administrator.
+      </p>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+      <p>Need help? <a href="#">Support</a> | <a href="#">Contact Us</a></p>
+      <p style="margin-top: 12px; font-size: 12px; opacity: 0.6;">© 2025 Teamora Inc. All rights reserved.</p>
+    </div>
+
+  </div>
+</body>
+</html>

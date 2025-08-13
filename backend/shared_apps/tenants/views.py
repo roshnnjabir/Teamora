@@ -6,7 +6,7 @@ from rest_framework.permissions import AllowAny, IsAdminUser
 from rest_framework.authentication import SessionAuthentication, BasicAuthentication
 
 from shared_apps.tenants.models import Client, Domain
-from shared_apps.tenants.tasks.email_tasks import send_otp_email_task
+from shared_apps.tenants.tasks.email_tasks import send_otp_email_task, send_workspace_access_email_task
 from shared_apps.tenants.serializers import TenantSignupSerializer
 from shared_apps.tenants.utils import is_valid_subdomain
 from shared_apps.custom_auth.models import User
@@ -190,3 +190,55 @@ def toggle_block_tenant(request, tenant_id):
         return Response({"status": "success", "is_blocked": tenant.is_blocked})
     except Client.DoesNotExist:
         return Response({"error": "Tenant not found"}, status=404)
+
+
+class FindWorkspaceView(APIView):
+    """
+    API to find if a user exists in any organization and send them a login link
+    """
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        email = request.data.get('email', '').strip().lower()
+        
+        if not email:
+            return Response({'detail': 'Email is required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Check if user exists in any tenant
+        user = User.objects.filter(email=email).first()
+        
+        if not user:
+            # For security, we don't reveal if the user exists or not
+            # We still return success but don't send any email
+            return Response({
+                'found': False,
+                'detail': 'If a workspace exists for this email, we have sent login instructions.'
+            }, status=status.HTTP_200_OK)
+
+        # Get the tenant domain for the user
+        tenant = user.tenant
+        if not tenant:
+            return Response({
+                'found': False,
+                'detail': 'If a workspace exists for this email, we have sent login instructions.'
+            }, status=status.HTTP_200_OK)
+
+        # Get the domain for this tenant
+        domain = Domain.objects.filter(tenant=tenant).first()
+        if not domain:
+            return Response({
+                'found': False,
+                'detail': 'If a workspace exists for this email, we have sent login instructions.'
+            }, status=status.HTTP_200_OK)
+
+        # Send the workspace access email via Celery
+        send_workspace_access_email_task.delay(
+            email=email,
+            tenant_domain=domain.domain,
+            user_name=user.name
+        )
+
+        return Response({
+            'found': True,
+            'detail': f'We have found a workspace for {email}. A sign-in link has been emailed to you.'
+        }, status=status.HTTP_200_OK)
