@@ -20,31 +20,85 @@ class TenantSignupSerializer(serializers.Serializer):
     password = serializers.CharField(write_only=True, min_length=8)
     full_name = serializers.CharField(max_length=100)
 
+    def validate_tenant_name(self, value):
+        if not value.strip():
+            raise serializers.ValidationError("Tenant name cannot be empty.")
+        return value
+
     def validate_domain_url(self, value):
+        if not value.strip():
+            raise serializers.ValidationError("Domain URL cannot be empty.")
+        
+        # Check for existing domain
         if Domain.objects.filter(domain=value).exists():
             raise serializers.ValidationError("Domain already exists.")
         return value
 
-    def validate(self, attrs):
-        password = attrs.get('password')
+    def validate_email(self, value):
+        if not value.strip():
+            raise serializers.ValidationError("Email cannot be empty.")
+        return value
 
-        # Minimum length
+    def validate_password(self, value):
+        if not value.strip():
+            raise serializers.ValidationError("Password cannot be empty.")
+
+        # Minimum length check
+        if len(value) < 8:
+            raise serializers.ValidationError("Password must be at least 8 characters long.")
+        
+        # At least one uppercase letter
+        if not re.search(r'[A-Z]', value):
+            raise serializers.ValidationError("Password must contain at least one uppercase letter.")
+        
+        # At least one lowercase letter
+        if not re.search(r'[a-z]', value):
+            raise serializers.ValidationError("Password must contain at least one lowercase letter.")
+        
+        # At least one digit
+        if not re.search(r'\d', value):
+            raise serializers.ValidationError("Password must contain at least one number.")
+        
+        # At least one special character
+        if not re.search(r'[!@#$%^&*(),.?":{}|<>]', value):
+            raise serializers.ValidationError("Password must contain at least one special character.")
+        
+        return value
+
+    def validate_full_name(self, value):
+        if not value.strip():
+            raise serializers.ValidationError("Full name cannot be empty.")
+        return value
+
+    def validate(self, attrs):
+        # Ensure that none of the required fields are empty
+        if not attrs.get('tenant_name').strip():
+            raise serializers.ValidationError({"tenant_name": "Tenant name is required."})
+        
+        if not attrs.get('domain_url').strip():
+            raise serializers.ValidationError({"domain_url": "Domain URL is required."})
+        
+        if not attrs.get('email').strip():
+            raise serializers.ValidationError({"email": "Email is required."})
+        
+        if not attrs.get('full_name').strip():
+            raise serializers.ValidationError({"full_name": "Full name is required."})
+
+        # Perform additional validation on the password field
+        password = attrs.get('password')
         if len(password) < 8:
             raise serializers.ValidationError({"password": "Password must be at least 8 characters long."})
 
-        # At least one uppercase letter
+        # Check for complexity requirements
         if not re.search(r'[A-Z]', password):
             raise serializers.ValidationError({"password": "Password must contain at least one uppercase letter."})
 
-        # At least one lowercase letter
         if not re.search(r'[a-z]', password):
             raise serializers.ValidationError({"password": "Password must contain at least one lowercase letter."})
 
-        # At least one digit
         if not re.search(r'\d', password):
             raise serializers.ValidationError({"password": "Password must contain at least one number."})
 
-        # At least one special character
         if not re.search(r'[!@#$%^&*(),.?":{}|<>]', password):
             raise serializers.ValidationError({"password": "Password must contain at least one special character."})
 
@@ -69,7 +123,7 @@ class TenantSignupSerializer(serializers.Serializer):
             is_primary=True
         )
 
-        # Step 3: Run migrations inside the tenant's schema 
+        # Step 3: Run migrations inside the tenant's schema
         call_command('migrate_schemas', schema_name=schema_name, interactive=False, verbosity=0)
 
         # Step 4: Create Admin user
