@@ -102,7 +102,11 @@ const AppRoutes = () => (
         </ProtectedRoute>
       } />
       
-      <Route path="project_manager/tasks/:taskId" element={<TaskDetailPage />} />
+      <Route path="project_manager/tasks/:taskId" element={
+        <ProtectedRoute allowedRoles={["Project Manager", "project_manager"]}>
+          <TaskDetailPage />
+        </ProtectedRoute>
+      } />
 
       <Route path="developer" element={
         <ProtectedRoute allowedRoles={["Developer", "developer"]}>
