@@ -32,7 +32,7 @@ export default function LoginPage() {
   useEffect(() => {
     const validateTenant = async () => {
       try {
-        const res = await apiClient.get("/tenant/validate-tenant-name/");
+        const res = await apiClient.get("/api/tenant/validate-tenant-name/");
         if (res.data.exists) {
           setTenantExists(true);
         } else {
