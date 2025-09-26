@@ -1,46 +1,70 @@
-import { useState, useEffect } from 'react';
-import { useDispatch } from 'react-redux';
-import { useNavigate, Link } from 'react-router-dom';
-import apiClient from '../../api/apiClient';
-import { setUser } from './features/authSlice';
-import logo from '../../assets/teamora/teamora.png';
-import { getInputClasses } from '../../styles/formClasses';
+import { useState, useEffect } from "react";
+import { useDispatch } from "react-redux";
+import { useNavigate, Link } from "react-router-dom";
+import apiClient from "../../api/apiClient";
+import { setUser } from "./features/authSlice";
+import logo from "../../assets/teamora/teamora.png";
+import { getInputClasses } from "../../styles/formClasses";
+import Toast from "../../components/modals/Toast";
 
-function extractErrorMessage(error, fallback = 'Something went wrong') {
-  return (
-    error?.response?.data?.non_field_errors?.[0] ||
-    error?.response?.data?.detail ||
-    Object.values(error?.response?.data || {}).flat()?.[0] ||
-    error?.message ||
-    fallback
-  );
-}
-
-export default function LoginForm() {
+export default function LoginPage() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const hostname = window.location.hostname;
-  const isRootDomain =
-    hostname === 'teamora.website' || hostname === 'localhost';
 
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [tenantValidating, setTenantValidating] = useState(true);
+  const [tenantExists, setTenantExists] = useState(false);
+  const [tenantError, setTenantError] = useState("");
+
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
 
+  const [toastOpen, setToastOpen] = useState(false);
+  const [toastMessage, setToastMessage] = useState("");
+
+  const hostname = window.location.hostname;
+  const subdomain = hostname.split(".")[0];
+  const isRootDomain =
+    hostname === "teamora.website" || hostname === "localhost";
+
+  // Tenant validation
   useEffect(() => {
-    document.querySelector('input[type="email"]')?.focus();
-  }, []);
+    const validateTenant = async () => {
+      try {
+        const res = await apiClient.get("/tenant/validate-tenant-name/");
+        if (res.data.exists) {
+          setTenantExists(true);
+        } else {
+          setTenantExists(false);
+          setTenantError("Tenant does not exist.");
+          setToastMessage("Tenant does not exist. Please check your workspace URL.");
+          setToastOpen(true);
+        }
+      } catch (err) {
+        setTenantExists(false);
+        setTenantError("Tenant validation failed.");
+        setToastMessage("Error validating tenant. Try again later.");
+        setToastOpen(true);
+      } finally {
+        setTenantValidating(false);
+      }
+    };
+
+    validateTenant();
+  }, [subdomain]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
     setError(null);
+    setLoading(true);
 
     try {
-      await apiClient.post('/api/token/', { email, password });
+      // Login API call
+      await apiClient.post("/api/token/", { email, password });
 
-      const userRes = await apiClient.get('/api/me/');
+      // Get user info
+      const userRes = await apiClient.get("/api/me/");
       const user = userRes.data;
 
       const roleMap = {
@@ -54,54 +78,73 @@ export default function LoginForm() {
       dispatch(setUser({ ...user, displayRole: roleMap[user.role] || user.role }));
 
       switch (user.role) {
-        case 'super_admin':
+        case "super_admin":
           if (!isRootDomain) {
             setError("Super Admin must log in from teamora.website");
             return;
           }
-          navigate('/super_admin');
+          navigate("/super_admin");
           break;
-        
-        case 'tenant_admin':
-        case 'project_manager':
-        case 'developer':
-        case 'hr':
+
+        case "tenant_admin":
+        case "project_manager":
+        case "developer":
+        case "hr":
           if (isRootDomain) {
             setError("Tenant users must log in from their workspace subdomain.");
             return;
           }
           navigate(`/${user.role}`);
           break;
-        
-        default:
-          navigate('/');
-      }
 
+        default:
+          navigate("/");
+      }
     } catch (err) {
-      console.error("Login/User fetch error:", err);
-      const message = err?.response
-        ? extractErrorMessage(err, 'Login failed.')
-        : 'Server unreachable. Please try again later.';
+      const message =
+        err?.response?.data?.non_field_errors?.[0] ||
+        err?.response?.data?.detail ||
+        Object.values(err?.response?.data || {})?.[0] ||
+        "Login failed.";
       setError(message);
     } finally {
       setLoading(false);
     }
   };
 
+  if (tenantValidating) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div
+          className="animate-spin rounded-full h-12 w-12 border-t-4 border-b-4"
+          style={{ borderColor: "#00C4B4" }}
+        ></div>
+      </div>
+    );
+  }
+
+  if (!tenantExists) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <p className="text-red-600 text-center">{tenantError}</p>
+        <Toast
+          show={toastOpen}
+          message={toastMessage}
+          onClose={() => setToastOpen(false)}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#F9FAFB] px-4">
       <div className="w-full max-w-4xl grid grid-cols-1 md:grid-cols-2 bg-white rounded-lg shadow-lg overflow-hidden">
-        {/* Left - Image */}
+        {/* Left - Logo/Image */}
         <div className="hidden md:block">
-          <img
-            src={logo}
-            alt="Login Visual"
-            className="w-full h-full object-cover"
-          />
+          <img src={logo} alt="Login Visual" className="w-full h-full object-cover" />
         </div>
 
-        {/* Right - Form */}
+        {/* Right - Login Form */}
         <div className="p-8 sm:p-10">
           <div className="mb-6 flex justify-between items-center">
             <h2 className="text-2xl font-semibold text-[#1A2A44]">Login</h2>
@@ -121,7 +164,7 @@ export default function LoginForm() {
                 className={getInputClasses(!!error)}
               />
             </div>
-              
+
             <div>
               <label className="text-sm mb-1 block text-gray-700">Password</label>
               <input
@@ -134,27 +177,30 @@ export default function LoginForm() {
                 className={getInputClasses(!!error)}
               />
             </div>
-              
+
             {error && (
               <div className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-md">
                 {error}
               </div>
             )}
-          
+
             <button
               type="submit"
               disabled={loading}
               className={`w-full py-2 rounded-lg font-semibold text-white transition ${
-                loading
-                  ? 'bg-gray-300 cursor-not-allowed'
-                  : 'bg-[#00C4B4] hover:bg-teal-600'
+                loading ? "bg-gray-300 cursor-not-allowed" : "bg-[#00C4B4] hover:bg-teal-600"
               }`}
             >
-              {loading ? 'Logging in...' : 'Login'}
+              {loading ? "Logging in..." : "Login"}
             </button>
           </form>
         </div>
       </div>
+      <Toast
+        show={toastOpen}
+        message={toastMessage}
+        onClose={() => setToastOpen(false)}
+      />
     </div>
   );
 }
