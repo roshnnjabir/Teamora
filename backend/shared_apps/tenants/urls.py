@@ -13,7 +13,7 @@ urlpatterns = [
 
         path("tenants/signup/", views.TenantSignupView.as_view(), name="tenant-signup"),
         path("tenants/check-availability/", views.CheckTenantAvailabilityView.as_view(), name="check-availability"),
-        path('tenant/validate-tenant-name/', views.validate_tenant_name, name="validate-tenant-name"),
+        path("tenant/validate-tenant-name/", views.validate_tenant_name, name="validate-tenant-name"),
         path("tenants/send-otp/", views.SendOTPView.as_view(), name="send-otp"),
         path("tenants/verify-otp/", views.VerifyOTPView.as_view(), name="verify-otp"),
         path("tenants/find-workspace/", views.FindWorkspaceView.as_view(), name="find-workspace"),
