@@ -99,6 +99,20 @@ class CheckTenantAvailabilityView(APIView):
         })
 
 
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def validate_tenant_name(request):
+    host = request.get_host().split(":")[0]
+    subdomain = host.split(".")[0]
+
+    TenantModel = get_tenant_model()
+    try:
+        tenant = TenantModel.objects.get(schema_name=subdomain)
+        return Response({"exists": True}, status=status.HTTP_200_OK)
+    except TenantModel.DoesNotExist:
+        return Response({"exists": False, "detail": "Tenant does not exist"}, status=451)
+
+
 class SendOTPView(APIView):
     def post(self, request):
         email = request.data.get('email', '').strip().lower()
