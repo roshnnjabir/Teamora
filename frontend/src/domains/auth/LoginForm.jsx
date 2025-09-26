@@ -6,6 +6,9 @@ import { setUser } from "./features/authSlice";
 import logo from "../../assets/teamora/teamora.png";
 import { getInputClasses } from "../../styles/formClasses";
 import Toast from "../../components/modals/Toast";
+import axios from "axios";
+
+const BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 export default function LoginPage() {
   const dispatch = useDispatch();
@@ -32,7 +35,7 @@ export default function LoginPage() {
   useEffect(() => {
     const validateTenant = async () => {
       try {
-        const res = await apiClient.get("/api/tenant/validate-tenant-name/");
+        const res = await axios.get(`${BASE_URL}/api/tenant/validate-tenant-name/`);
         if (res.data.exists) {
           setTenantExists(true);
         } else {
