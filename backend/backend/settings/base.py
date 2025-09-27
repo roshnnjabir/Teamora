@@ -62,6 +62,8 @@ RESERVED_SUBDOMAINS = [
     "dashboard", "test", "stage", "staging", "demo",
 ]
 
+ROOT_DOMAINS = env.list("ROOT_DOMAINS", default=["teamora.website", "localhost"])
+
 # Celery Settings
 CELERY_BROKER_URL = "redis://redis:6379/0"
 CELERY_ACCEPT_CONTENT = ["json"]

@@ -102,15 +102,41 @@ class CheckTenantAvailabilityView(APIView):
 @api_view(["GET"])
 @permission_classes([AllowAny])
 def validate_tenant_name(request):
+    """
+    Validates whether the current request's host corresponds to a valid tenant.
+    Handles both subdomain tenants and the public tenant (root domain).
+    """
     host = request.get_host().split(":")[0]
     subdomain = host.split(".")[0]
 
     TenantModel = get_tenant_model()
+
+    # ✅ Root domain check (from .env)
+    if host in settings.ROOT_DOMAINS:
+        try:
+            tenant = TenantModel.objects.get(schema_name="public")
+            return Response(
+                {"exists": True, "schema": tenant.schema_name},
+                status=status.HTTP_200_OK
+            )
+        except TenantModel.DoesNotExist:
+            return Response(
+                {"exists": False, "detail": "Public tenant not found."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+    # ✅ Otherwise validate subdomain tenant
     try:
         tenant = TenantModel.objects.get(schema_name=subdomain)
-        return Response({"exists": True}, status=status.HTTP_200_OK)
+        return Response(
+            {"exists": True, "schema": tenant.schema_name},
+            status=status.HTTP_200_OK
+        )
     except TenantModel.DoesNotExist:
-        return Response({"exists": False, "detail": "Tenant does not exist"}, status=451)
+        return Response(
+            {"exists": False, "detail": "Tenant does not exist"},
+            status=451,
+        )
 
 
 class SendOTPView(APIView):
