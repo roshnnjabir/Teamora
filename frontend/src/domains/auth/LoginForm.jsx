@@ -37,25 +37,37 @@ export default function LoginPage() {
       try {
         const res = await axios.get(`${BASE_URL}/api/tenant/validate-tenant-name/`);
         if (res.data.exists) {
-          setTenantExists(true);
+          // Optional: handle schema name
+          if (res.data.schema === "public" && !isRootDomain) {
+            // Root/public schema but accessed via subdomain
+            setTenantExists(false);
+            setTenantError("Invalid workspace URL for public tenant.");
+            setToastMessage("This URL does not belong to any workspace.");
+            setToastOpen(true);
+            navigate("/");
+          } else {
+            setTenantExists(true);
+          }
         } else {
           setTenantExists(false);
-          setTenantError("Tenant does not exist.");
+          setTenantError(res.data.detail || "Tenant does not exist.");
           setToastMessage("Tenant does not exist. Please check your workspace URL.");
           setToastOpen(true);
+          navigate("/");
         }
       } catch (err) {
         setTenantExists(false);
         setTenantError("Tenant validation failed.");
         setToastMessage("Error validating tenant. Try again later.");
         setToastOpen(true);
+        navigate("/");
       } finally {
         setTenantValidating(false);
       }
     };
 
     validateTenant();
-  }, [subdomain]);
+  }, [subdomain, navigate]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
