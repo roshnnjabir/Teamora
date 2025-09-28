@@ -10,6 +10,9 @@ const RATE_LIMITS = {
   SUBDOMAIN_CHECK_DEBOUNCE: 500,
 };
 
+// Persist form details within the tab (until a full reload)
+const SIGNUP_STORAGE_KEY = 'tenantSignupDraft';
+
 // Validation and error utils
 const getErrorMessage = (error) => {
   if (error?.response?.status === 429) {
@@ -161,8 +164,11 @@ export default function TenantSignup() {
   const [showPassword, setShowPassword] = useState(false);
   const [passwordConfirmed, setPasswordConfirmed] = useState(false);
   const [passwordFeedback, setPasswordFeedback] = useState([]);
+  const [showConfirmTooltip, setShowConfirmTooltip] = useState(false);
   const subdomainTimeoutRef = useRef();
   const otpInputRef = useRef();
+  const confirmTooltipTimeoutRef = useRef();
+  const emailSuccessTimeoutRef = useRef();
   const navigate = useNavigate();
 
   const steps = [
@@ -187,6 +193,65 @@ export default function TenantSignup() {
     return () => clearTimeout(subdomainTimeoutRef.current);
   }, [state.formData.subdomain, state.formData.tenantName]);
 
+  // Restore draft on mount (but not after a full page reload)
+  useEffect(() => {
+    const navEntry = performance.getEntriesByType('navigation')[0];
+    const isReload = navEntry && navEntry.type === 'reload';
+    if (isReload) {
+      try { sessionStorage.removeItem(SIGNUP_STORAGE_KEY); } catch {}
+      return;
+    }
+
+    try {
+      const raw = sessionStorage.getItem(SIGNUP_STORAGE_KEY);
+      if (!raw) return;
+      const draft = JSON.parse(raw);
+      if (draft && typeof draft === 'object') {
+        const { formData = {}, currentStep, emailVerified } = draft;
+        // Restore non-sensitive fields only
+        const safeForm = {
+          tenantName: formData.tenantName || '',
+          subdomain: formData.subdomain || '',
+          email: formData.email || '',
+          fullName: formData.fullName || '',
+          password: '', // never restore password
+        };
+        Object.keys(safeForm).forEach((k) => {
+          if (safeForm[k] !== '') {
+            dispatch({ type: 'UPDATE_FIELD', field: k, value: safeForm[k] });
+          }
+        });
+        if (Number.isInteger(currentStep)) {
+          dispatch({ type: 'SET_STEP', step: currentStep });
+        }
+        if (emailVerified === true) {
+          dispatch({ type: 'SET_EMAIL_VERIFIED' });
+        }
+      }
+    } catch {}
+  }, []);
+
+  // Save draft (debounced) when form changes
+  useEffect(() => {
+    const saveTimeout = setTimeout(() => {
+      try {
+        const payload = {
+          formData: {
+            tenantName: state.formData.tenantName,
+            subdomain: state.formData.subdomain,
+            email: state.formData.email,
+            fullName: state.formData.fullName,
+            // password intentionally omitted
+          },
+          currentStep: state.currentStep,
+          emailVerified: state.emailVerified,
+        };
+        sessionStorage.setItem(SIGNUP_STORAGE_KEY, JSON.stringify(payload));
+      } catch {}
+    }, 300);
+    return () => clearTimeout(saveTimeout);
+  }, [state.formData.tenantName, state.formData.subdomain, state.formData.email, state.formData.fullName, state.currentStep, state.emailVerified]);
+
   // OTP cooldown countdown
   useEffect(() => {
     if (!state.lastOtpSent) return;
@@ -197,6 +262,14 @@ export default function TenantSignup() {
     }, 1000);
     return () => clearInterval(interval);
   }, [state.lastOtpSent]);
+
+  // Cleanup timeouts on unmount
+  useEffect(() => {
+    return () => {
+      clearTimeout(confirmTooltipTimeoutRef.current);
+      clearTimeout(emailSuccessTimeoutRef.current);
+    };
+  }, []);
 
   const handleInputChange = (field, value) => {
     let processed = value;
@@ -216,6 +289,9 @@ export default function TenantSignup() {
 
     if (field === 'password') {
       setPasswordConfirmed(false);
+      setShowConfirmTooltip(false);
+      clearTimeout(confirmTooltipTimeoutRef.current);
+      
       if (value === '') {
         setPasswordFeedback([]);
         dispatch({ type: 'SET_ERROR', field: 'password', error: null });
@@ -238,6 +314,15 @@ export default function TenantSignup() {
           error: null,
         });
         setPasswordFeedback([]);
+        
+        // Show tooltip when password is valid and not confirmed
+        if (!passwordConfirmed) {
+          setShowConfirmTooltip(true);
+          // Hide tooltip after 2 seconds
+          confirmTooltipTimeoutRef.current = setTimeout(() => {
+            setShowConfirmTooltip(false);
+          }, 2000);
+        }
       }
     }
 
@@ -410,6 +495,10 @@ export default function TenantSignup() {
 
       dispatch({ type: 'SET_EMAIL_VERIFIED' });
       dispatch({ type: 'SET_SUCCESS', message: 'Email verified successfully!' });
+      clearTimeout(emailSuccessTimeoutRef.current);
+      emailSuccessTimeoutRef.current = setTimeout(() => {
+        dispatch({ type: 'SET_SUCCESS', message: '' });
+      }, 3000);
     } catch (error) {
       dispatch({ type: 'INCREMENT_OTP_VERIFY_ATTEMPTS' });
       dispatch({ type: 'SET_ERROR', field: 'otp', error: getErrorMessage(error) });
@@ -801,74 +890,188 @@ export default function TenantSignup() {
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
                     Password *
                   </label>
-                  <div className="relative flex items-center">
-                    <input
-                      type={showPassword ? "text" : "password"}
-                      value={state.formData.password}
-                      onChange={(e) => handleInputChange('password', e.target.value)}
-                      placeholder="Strong password required"
-                      className={`w-full px-4 py-3 rounded-xl border-2 transition-all duration-200 focus:outline-none bg-white/70 ${
-                        state.errors.password 
-                          ? 'border-red-300 focus:border-red-500' 
-                          : 'border-gray-200 focus:border-blue-500'
-                      } ${passwordConfirmed ? 'pr-16' : 'pr-12'}`}
-                      disabled={passwordConfirmed}
-                    />
-                    <button
-                      type="button"
-                      tabIndex={-1}
-                      onClick={() => setShowPassword((v) => !v)}
-                      className="absolute right-10 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-700 focus:outline-none"
-                      aria-label={showPassword ? "Hide password" : "Show password"}
-                    >
-                      {showPassword ? (
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-5.523 0-10-4.477-10-10 0-1.657.402-3.22 1.125-4.575M15 12a3 3 0 11-6 0 3 3 0 016 0zm6.364-2.364A9.956 9.956 0 0021.9 12c0 5.523-4.477 10-10 10a9.956 9.956 0 01-4.364-.964M3 3l18 18" />
-                        </svg>
-                      ) : (
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0zm7.5 0c0 5.523-4.477 10-10 10S2.5 17.523 2.5 12 6.977 2 12.5 2s10 4.477 10 10z" />
-                        </svg>
+                  <div className="flex items-center gap-3">
+                    <div className="relative group flex-1 group/password-field">
+                      <input
+                        type={showPassword ? "text" : "password"}
+                        value={state.formData.password}
+                        onChange={(e) => handleInputChange('password', e.target.value)}
+                        placeholder="Strong password required"
+                        className={`w-full px-4 py-3 rounded-xl border-2 transition-all duration-200 focus:outline-none ${
+                          passwordConfirmed
+                            ? 'bg-green-50 border-green-300 text-green-700'
+                            : `bg-white/70 ${
+                                state.errors.password
+                                  ? 'border-red-300 focus:border-red-500'
+                                  : 'border-gray-200 focus:border-blue-500'
+                              }`
+                        } pr-12`}
+                        disabled={passwordConfirmed}
+                      />
+                      
+                      {/* Password Visibility Toggle Button with Enhanced Tooltip */}
+                      <div className="absolute right-3 top-1/2 transform -translate-y-1/2 group/visibility">
+                        <button
+                          type="button"
+                          tabIndex={0}
+                          onClick={() => setShowPassword((v) => !v)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                              e.preventDefault();
+                              setShowPassword((v) => !v);
+                            }
+                          }}
+                          className="text-gray-400 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-300 focus:ring-opacity-50 rounded-full p-1 transition-all duration-200 hover:scale-105"
+                          aria-label={showPassword ? "Hide password" : "Show password"}
+                          title={showPassword ? "Hide password" : "Show password"}
+                        >
+                          {showPassword ? (
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-5.523 0-10-4.477-10-10 0-1.657.402-3.22 1.125-4.575M15 12a3 3 0 11-6 0 3 3 0 016 0zm6.364-2.364A9.956 9.956 0 0021.9 12c0 5.523-4.477 10-10 10a9.956 9.956 0 01-4.364-.964M3 3l18 18" />
+                            </svg>
+                          ) : (
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0zm7.5 0c0 5.523-4.477 10-10 10S2.5 17.523 2.5 12 6.977 2 12.5 2s10 4.477 10 10z" />
+                            </svg>
+                          )}
+                        </button>
+                        
+                        {/* Visibility Toggle Hover Tooltip */}
+                        <div className="absolute right-0 top-full mt-2 bg-gray-800 text-white text-xs rounded-lg px-3 py-2 whitespace-nowrap z-50 shadow-lg opacity-0 group-hover/visibility:opacity-100 transition-opacity duration-200 pointer-events-none">
+                          <div className="absolute -top-1 right-4 w-2 h-2 bg-gray-800 transform rotate-45"></div>
+                          <div className="flex items-center gap-1">
+                            <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M10 12a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
+                              <path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd" />
+                            </svg>
+                            {showPassword ? "Hide password" : "Show password"}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Password Confirmation Button - Now Outside the Field */}
+                    <div className="relative group/confirm overflow-visible">
+                      <button
+                        type="button"
+                        tabIndex={0}
+                        onClick={() => {
+                          if (passwordConfirmed) {
+                            setPasswordConfirmed(false); // Unlock for editing
+                          } else if (state.formData.password && !state.errors.password) {
+                            setPasswordConfirmed(true);
+                          }
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            if (passwordConfirmed) {
+                              setPasswordConfirmed(false);
+                            } else if (state.formData.password && !state.errors.password) {
+                              setPasswordConfirmed(true);
+                            }
+                          }
+                        }}
+                        className={`flex items-center justify-center w-12 h-12 rounded-xl border-2 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-green-300 focus:ring-opacity-50 ${
+                          passwordConfirmed 
+                            ? 'bg-green-100 border-green-300 text-green-700' 
+                            : 'bg-white border-gray-200 text-green-500 hover:text-green-700'
+                        } ${
+                          !state.formData.password || passwordFeedback.length > 0 || state.signupLoading
+                            ? 'opacity-50 cursor-not-allowed focus:ring-0' 
+                            : 'cursor-pointer hover:shadow-md'
+                        } ${
+                          state.formData.password && !state.errors.password && !passwordConfirmed && !state.signupLoading
+                            ? 'animate-pulse' 
+                            : ''
+                        }`}
+                        aria-label={passwordConfirmed ? "Edit password" : "Confirm password"}
+                        aria-describedby="password-confirm-help"
+                        disabled={!state.formData.password || passwordFeedback.length > 0 || state.signupLoading}
+                        title={passwordConfirmed ? "Click to edit password" : "Click to confirm password"}
+                      >
+                        <div className={`transition-transform duration-200 ${
+                          !state.formData.password || passwordFeedback.length > 0 || state.signupLoading
+                            ? '' 
+                            : 'group-hover/confirm:scale-105'
+                        }`}>
+                          {passwordConfirmed ? (
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                            </svg>
+                          ) : (
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" fill="none" />
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4" />
+                            </svg>
+                          )}
+                        </div>
+                      </button>
+                      
+                       {/* Enhanced Tooltip - Show on password field hover or confirm button hover, or when password is valid */}
+                       {state.formData.password && 
+                        !state.errors.password && 
+                        !passwordConfirmed && 
+                        !state.signupLoading && 
+                        passwordFeedback.length === 0 && (
+                         <div className={`absolute right-0 top-full mt-2 bg-gray-900 text-white text-xs rounded-lg px-3 py-2 whitespace-nowrap z-50 shadow-lg pointer-events-none transform transition-all duration-200 ${
+                           showConfirmTooltip ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-1 group-hover/confirm:opacity-100 group-hover/confirm:translate-y-0 group-hover/password-field:opacity-100 group-hover/password-field:translate-y-0'
+                         }`}>
+                           <div className="absolute -top-1 right-4 w-2 h-2 bg-gray-900 transform rotate-45"></div>
+                           <div className="flex items-center gap-1">
+                             <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                               <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                             </svg>
+                             Click to confirm your password
+                           </div>
+                         </div>
+                       )}
+                      
+                      {/* Tooltip for confirmed state */}
+                      {passwordConfirmed && !state.signupLoading && (
+                        <div className="absolute right-0 top-full mt-2 bg-green-600 text-white text-xs rounded-lg px-3 py-2 whitespace-nowrap z-50 shadow-lg opacity-0 group-hover/confirm:opacity-100 group-hover/password-field:opacity-100 transition-opacity duration-200 pointer-events-none">
+                          <div className="absolute -top-1 right-4 w-2 h-2 bg-green-600 transform rotate-45"></div>
+                          <div className="flex items-center gap-1">
+                            <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clipRule="evenodd" />
+                            </svg>
+                            Click to edit password
+                          </div>
+                        </div>
                       )}
-                    </button>
-                    <button
-                      type="button"
-                      tabIndex={-1}
-                      onClick={() => {
-                        if (passwordConfirmed) {
-                          setPasswordConfirmed(false); // Unlock for editing
-                        } else if (state.formData.password && !state.errors.password) {
-                          setPasswordConfirmed(true);
-                        }
-                      }}
-                      className={`absolute right-3 top-1/2 transform -translate-y-1/2 text-green-500 hover:text-green-700 focus:outline-none transition ${passwordConfirmed ? 'opacity-100' : 'opacity-80'}`}
-                      aria-label={passwordConfirmed ? "Edit password" : "Confirm password"}
-                      disabled={!state.formData.password || passwordFeedback.length > 0}
-                    >
-                      {passwordConfirmed ? (
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                        </svg>
-                      ) : (
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" fill="none" />
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4" />
-                        </svg>
+                      
+                       {/* Tooltip for disabled state */}
+                       {(!state.formData.password || passwordFeedback.length > 0 || state.signupLoading) && (
+                         <div className="absolute right-0 top-full mt-2 bg-gray-600 text-white text-xs rounded-lg px-3 py-2 whitespace-nowrap z-50 shadow-lg opacity-0 group-hover/confirm:opacity-100 group-hover/password-field:opacity-100 transition-opacity duration-200 pointer-events-none">
+                           <div className="absolute -top-1 right-4 w-2 h-2 bg-gray-600 transform rotate-45"></div>
+                          <div className="flex items-center gap-1">
+                            <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M13.477 14.89A6 6 0 015.11 6.524l8.367 8.368zm1.414-1.414L6.524 5.11a6 6 0 018.367 8.367zM18 10a8 8 0 11-16 0 8 8 0 0116 0z" clipRule="evenodd" />
+                            </svg>
+                            {state.signupLoading 
+                              ? "Please wait..." 
+                              : passwordFeedback.length > 0 
+                                ? "Fix password requirements first" 
+                                : "Enter a password first"
+                            }
+                          </div>
+                        </div>
                       )}
-                    </button>
-                    <div className="absolute right-0 top-full mt-1 hidden group-hover:block bg-gray-800 text-white text-xs rounded-md px-2 py-1 whitespace-nowrap z-10">
-                      {passwordConfirmed
-                        ? "Click to edit your password"
-                        : "Click to confirm your password"}
                     </div>
                   </div>
-                  <p className="text-xs text-gray-500 mt-1">
-                    {passwordConfirmed ? (
-                      <span className="text-green-600 font-semibold">Password confirmed! You can now continue.</span>
-                    ) : (
-                      <>
-                        Enter your password and click the <span className="inline-block align-middle"><svg xmlns="http://www.w3.org/2000/svg" className="inline h-4 w-4 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" fill="none" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4" /></svg></span> icon to confirm.
-                      </>
+                  
+                  <p className="text-xs text-gray-500 mt-1" id="password-confirm-help">
+                    {!passwordConfirmed && !state.formData.password && (
+                      <span className="flex items-center gap-1">
+                        Enter your password and click the 
+                        <span className="inline-flex items-center justify-center w-4 h-4 bg-green-100 text-green-600 rounded-full mx-1">
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" fill="none" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4" />
+                          </svg>
+                        </span>
+                        icon to confirm.
+                      </span>
                     )}
                   </p>
                   {/* Password feedback */}
@@ -880,17 +1083,17 @@ export default function TenantSignup() {
                         ))}
                       </ul>
                     ) : (
-                      state.formData.password && (
-                        <p className="text-green-600 font-medium">✅ Strong password!</p>
+                      state.formData.password && !passwordConfirmed && (
+                        <p className="text-green-600 font-medium flex items-center gap-1">
+                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                          Strong password!
+                        </p>
                       )
                     )}
                   </div>
-
-                  <p className="mt-1 text-xs text-gray-500 italic">
-                    {passwordConfirmed
-                      ? "🔓 Password confirmed. Click the green checkmark again to edit if needed."
-                      : "🔒 Once your password meets all requirements, click the green checkmark to confirm it."}
-                  </p>
+                  
                 </div>
               </div>
             )}
@@ -943,28 +1146,48 @@ export default function TenantSignup() {
                   Next
                 </button>
               ) : (
-                <button
-                  type="submit"
-                  disabled={state.signupLoading || !state.emailVerified || !passwordConfirmed || state.dashboardCreated}
-                  className={`px-8 py-3 rounded-xl font-semibold shadow-lg transition-all duration-200 text-white ${
-                    state.signupLoading || !state.emailVerified || !passwordConfirmed || state.dashboardCreated
-                      ? 'bg-gray-400 cursor-not-allowed'
-                      : state.dashboardCreated
-                        ? 'bg-green-500'
-                        : 'bg-gradient-to-r from-green-500 to-emerald-600 hover:shadow-xl hover:from-green-600 hover:to-emerald-700'
-                  }`}
-                >
-                  {state.signupLoading ? (
-                    <div className="flex items-center gap-2">
-                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                      <span>Creating...</span>
+                <div className="relative inline-block group">
+                  <button
+                    type="submit"
+                    disabled={state.signupLoading || !state.emailVerified || !passwordConfirmed || state.dashboardCreated}
+                    className={`px-8 py-3 rounded-xl font-semibold shadow-lg transition-all duration-200 text-white ${
+                      state.signupLoading || !state.emailVerified || !passwordConfirmed || state.dashboardCreated
+                        ? 'bg-gray-400 cursor-not-allowed'
+                        : state.dashboardCreated
+                          ? 'bg-green-500'
+                          : 'bg-gradient-to-r from-green-500 to-emerald-600 hover:shadow-xl hover:from-green-600 hover:to-emerald-700'
+                    }`}
+                  >
+                    {state.signupLoading ? (
+                      <div className="flex items-center gap-2">
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                        <span>Creating...</span>
+                      </div>
+                    ) : state.dashboardCreated ? (
+                      'Workspace Created!'
+                    ) : (
+                      'Create Workspace'
+                    )}
+                  </button>
+
+                  {(!state.emailVerified || !passwordConfirmed) && !state.signupLoading && !state.dashboardCreated && (
+                    <div className="absolute left-1/2 -translate-x-1/2 top-full mt-2 bg-gray-900 text-white text-xs rounded-lg px-3 py-2 whitespace-nowrap z-50 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
+                      <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-gray-900 rotate-45"></div>
+                      <div className="flex items-center gap-1">
+                        <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                        </svg>
+                        {(!state.emailVerified && !passwordConfirmed) ? (
+                          <span>To continue, verify your email and confirm your password</span>
+                        ) : (!state.emailVerified) ? (
+                          <span>To continue, verify your email</span>
+                        ) : (
+                          <span>To continue, confirm your password</span>
+                        )}
+                      </div>
                     </div>
-                  ) : state.dashboardCreated ? (
-                    'Workspace Created!'
-                  ) : (
-                    'Create Workspace'
                   )}
-                </button>
+                </div>
 
               )}
             </div>
