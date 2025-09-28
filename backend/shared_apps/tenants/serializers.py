@@ -6,6 +6,7 @@ from django_tenants.utils import schema_context
 from datetime import date
 import re
 from backend.settings.base import RESERVED_SUBDOMAINS
+from shared_apps.tenants.utils import is_valid_subdomain, validate_tenant_name_format
 
 from shared_apps.tenants.models import Client, Domain
 from shared_apps.custom_auth.models import User
@@ -22,46 +23,28 @@ class TenantSignupSerializer(serializers.Serializer):
     full_name = serializers.CharField(max_length=100)
 
     def validate_tenant_name(self, value):
-        """
-        Validate that tenant name is not empty, does not contain spaces, digits, special characters,
-        and is not a reserved subdomain.
-        """
         value = value.strip()
-
-        if not value:
-            raise serializers.ValidationError("Tenant name cannot be empty.")
-        
-        if value.lower() in RESERVED_SUBDOMAINS:
-            raise serializers.ValidationError(f"Tenant name cannot be one of the reserved names: {', '.join(RESERVED_SUBDOMAINS)}.")
-        
-        if any(char.isdigit() for char in value):
-            raise serializers.ValidationError("Tenant name cannot contain numbers.")
-        
-        # Only allow letters and hyphens, no special characters like '_', '$', etc.
-        if not re.match(r'^[a-zA-Z0-9-\s]+$', value):
-            raise serializers.ValidationError("Tenant name can only contain letters, numbers, spaces, and hyphens (-).")
-        
-        if value.startswith('-') or value.endswith('-'):
-            raise serializers.ValidationError("Tenant name cannot start or end with a hyphen.")
-
+        ok, err = validate_tenant_name_format(value)
+        if not ok:
+            raise serializers.ValidationError(err)
         return value
 
     def validate_domain_url(self, value):
         """
         Validate that the domain URL is not empty, is a valid domain format, and does not already exist.
         """
-        value = value.strip()
-
+        value = value.strip().lower()
         if not value:
             raise serializers.ValidationError("Domain URL cannot be empty.")
-        
-        domain_regex = r"^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z0-9-]{2,}$"
-        if not re.match(domain_regex, value):
-            raise serializers.ValidationError("Invalid domain format.")
-        
+
+        # Reuse subdomain validator for the first label, keep full domain check for existence
+        valid, err = is_valid_subdomain(value)
+        if not valid:
+            raise serializers.ValidationError(err)
+
         if Domain.objects.filter(domain=value).exists():
             raise serializers.ValidationError("Domain already exists.")
-        
+
         return value
 
     def validate_email(self, value):
@@ -124,19 +107,12 @@ class TenantSignupSerializer(serializers.Serializer):
         password = attrs.get('password')
         if len(password) < 8:
             raise serializers.ValidationError({"password": "Password must be at least 8 characters long."})
-
-        # Check for complexity requirements
         if not re.search(r'[A-Z]', password):
             raise serializers.ValidationError({"password": "Password must contain at least one uppercase letter."})
-
         if not re.search(r'[a-z]', password):
             raise serializers.ValidationError({"password": "Password must contain at least one lowercase letter."})
-
         if not re.search(r'\d', password):
             raise serializers.ValidationError({"password": "Password must contain at least one number."})
-
-        if not re.search(r'[!@#$%^&*(),.?":{}|<>]', password):
-            raise serializers.ValidationError({"password": "Password must contain at least one special character."})
 
         return attrs
 

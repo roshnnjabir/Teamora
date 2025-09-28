@@ -8,7 +8,7 @@ from rest_framework.authentication import SessionAuthentication, BasicAuthentica
 from shared_apps.tenants.models import Client, Domain
 from shared_apps.tenants.tasks.email_tasks import send_otp_email_task, send_workspace_access_email_task
 from shared_apps.tenants.serializers import TenantSignupSerializer
-from shared_apps.tenants.utils import is_valid_subdomain
+from shared_apps.tenants.utils import is_valid_subdomain, validate_tenant_name_format
 from shared_apps.custom_auth.models import User
 
 from django_tenants.utils import schema_context, get_tenant_model, get_tenant_domain_model
@@ -83,8 +83,9 @@ class CheckTenantAvailabilityView(APIView):
         subdomain = request.data.get('subdomain', '').strip().lower()
         tenant_name = request.data.get('tenant_name', '').strip()
 
-        if not tenant_name:
-            return Response({'detail': 'Tenant name is required'}, status=status.HTTP_400_BAD_REQUEST)
+        valid_name, name_error = validate_tenant_name_format(tenant_name)
+        if not valid_name:
+            return Response({'detail': name_error}, status=status.HTTP_400_BAD_REQUEST)
 
         valid, error = is_valid_subdomain(subdomain)
         if not valid:
