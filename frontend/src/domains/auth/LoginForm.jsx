@@ -17,6 +17,7 @@ export default function LoginPage() {
   const [tenantValidating, setTenantValidating] = useState(true);
   const [tenantExists, setTenantExists] = useState(false);
   const [tenantError, setTenantError] = useState("");
+  const [counter, setCounter] = useState(5);
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -33,9 +34,8 @@ export default function LoginPage() {
   useEffect(() => {
     const validateTenant = async () => {
       try {
-        // Pass the actual hostname to the backend
         const res = await axios.get(`${BASE_URL}/api/tenant/validate-tenant-name/`, {
-          params: { host: window.location.hostname }
+          params: { host: hostname },
         });
 
         if (!res.data.exists) {
@@ -43,9 +43,6 @@ export default function LoginPage() {
           setTenantError(res.data.detail || "Tenant does not exist.");
           setToastMessage("Tenant does not exist. Redirecting to home...");
           setToastOpen(true);
-          setTimeout(() => {
-            window.location.href = BASE_URL;
-          }, 5000);
           return;
         }
 
@@ -54,29 +51,32 @@ export default function LoginPage() {
           setTenantError("Invalid workspace URL for public tenant.");
           setToastMessage("This URL does not belong to any workspace.");
           setToastOpen(true);
-          setTimeout(() => {
-            window.location.href = BASE_URL;
-          }, 5000);
           return;
         }
 
         setTenantExists(true);
-
       } catch (err) {
         setTenantExists(false);
         setTenantError("Tenant validation failed.");
         setToastMessage("Error validating tenant. Redirecting to home...");
         setToastOpen(true);
-        setTimeout(() => {
-          window.location.href = BASE_URL;
-        }, 5000);
       } finally {
         setTenantValidating(false);
       }
     };
 
     validateTenant();
-  }, [isRootDomain]);
+  }, [hostname, isRootDomain]);
+
+  // ✅ Countdown redirect
+  useEffect(() => {
+    if (!tenantExists && counter > 0 && tenantError) {
+      const timer = setTimeout(() => setCounter(counter - 1), 1000);
+      return () => clearTimeout(timer);
+    } else if (!tenantExists && counter === 0) {
+      window.location.href = BASE_URL;
+    }
+  }, [counter, tenantExists, tenantError]);
 
   // ✅ Handle login
   const handleSubmit = async (e) => {
@@ -127,7 +127,7 @@ export default function LoginPage() {
     }
   };
 
-  // ✅ Show loader while validating
+  // ✅ Show loader while validating tenant
   if (tenantValidating) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -139,17 +139,8 @@ export default function LoginPage() {
     );
   }
 
-  // ✅ If tenant invalid
+  // ✅ Tenant invalid
   if (!tenantExists) {
-    const [counter, setCounter] = useState(5);
-  
-    useEffect(() => {
-      if (counter > 0) {
-        const timer = setTimeout(() => setCounter(counter - 1), 1000);
-        return () => clearTimeout(timer);
-      }
-    }, [counter]);
-  
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 px-4">
         <p className="text-red-600 text-center mb-4">{tenantError}</p>
