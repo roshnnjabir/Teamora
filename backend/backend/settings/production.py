@@ -1,4 +1,5 @@
 from .base import *
+from corsheaders.defaults import default_headers
 
 DATABASES = {
     "default": {
@@ -107,3 +108,16 @@ SWAGGER_SETTINGS = {
     },
     'USE_SESSION_AUTH': False,
 }
+
+CORS_ALLOW_CREDENTIALS = True
+
+CORS_ALLOW_HEADERS = list(default_headers) + [
+    "access-control-allow-origin",
+    "access-control-allow-credentials",
+]
+
+CORS_EXPOSE_HEADERS = [
+    "Content-Type",
+    "X-CSRFToken",
+    "Authorization",
+]
