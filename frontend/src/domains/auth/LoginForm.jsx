@@ -33,37 +33,42 @@ export default function LoginPage() {
   useEffect(() => {
     const validateTenant = async () => {
       try {
-        const res = await axios.get(`${BASE_URL}/api/tenant/validate-tenant-name/`);
+        // Pass the actual hostname to the backend
+        const res = await axios.get(`${BASE_URL}/api/tenant/validate-tenant-name/`, {
+          params: { host: window.location.hostname }
+        });
 
-        if (res.data.exists) {
-          // Root (public) tenant should not be accessed from a subdomain
-          if (res.data.schema === "public" && !isRootDomain) {
-            setTenantExists(false);
-            setTenantError("Invalid workspace URL for public tenant.");
-            setToastMessage("This URL does not belong to any workspace.");
-            setToastOpen(true);
-            setTimeout(() => {
-              window.location.href = BASE_URL; // redirect to root
-            }, 5000);
-          } else {
-            setTenantExists(true);
-          }
-        } else {
+        if (!res.data.exists) {
           setTenantExists(false);
           setTenantError(res.data.detail || "Tenant does not exist.");
           setToastMessage("Tenant does not exist. Redirecting to home...");
           setToastOpen(true);
           setTimeout(() => {
-            window.location.href = BASE_URL; // redirect to root
+            window.location.href = BASE_URL;
           }, 5000);
+          return;
         }
+
+        if (res.data.schema === "public" && !isRootDomain) {
+          setTenantExists(false);
+          setTenantError("Invalid workspace URL for public tenant.");
+          setToastMessage("This URL does not belong to any workspace.");
+          setToastOpen(true);
+          setTimeout(() => {
+            window.location.href = BASE_URL;
+          }, 5000);
+          return;
+        }
+
+        setTenantExists(true);
+
       } catch (err) {
         setTenantExists(false);
         setTenantError("Tenant validation failed.");
         setToastMessage("Error validating tenant. Redirecting to home...");
         setToastOpen(true);
         setTimeout(() => {
-          window.location.href = BASE_URL; // redirect to root
+          window.location.href = BASE_URL;
         }, 5000);
       } finally {
         setTenantValidating(false);
